@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿# ==============================================================================
+# ==============================================================================
 #  1 Click DLSS 5 - Universal Neural Rendering Game Center & Auto-Injector
 #  Official Repository: https://github.com/1Click-DLSS5/1-Click-DLSS5
 #  Architecture: RenoDX DLSS 5 v3 + NVIDIA Streamline 2.13 + nvngx_dlssnr.dll
@@ -11,7 +11,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $script:ProductName = "1 Click DLSS 5"
-$script:Version = "1.1.1"
+$script:Version = "1.2.0"
 $script:AddOnName = "renodx-dlss5.addon64"
 $script:AddonHash = "294B1B7D14902F16C59E3F1F10ACDEFCB6D9EFB5D588147E4510DF396CECC24E"
 $script:ReShadeUrl = "https://reshade.me/downloads/ReShade_Setup_6.8.0_Addon.exe"
@@ -49,6 +49,12 @@ $script:FullFiles = @(
     "nvngx_dlss.dll",
     "nvngx_dlssd.dll",
     "nvngx_dlssg.dll"
+)
+
+$script:OptiScalerFiles = @(
+    "version.dll",
+    "OptiScaler.ini",
+    "libxess.dll"
 )
 
 $script:GameProfiles = @(
@@ -138,7 +144,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 OPEN FOLDER"
             BtnInstructions = "📖 IN-GAME GUIDE"
             StatusHeading = "REAL-TIME DIAGNOSTICS & SYSTEM LOG"
-            Footer = "1 Click DLSS 5 v1.1.1 | RTX 40 & RTX 50 Series | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
+            Footer = "1 Click DLSS 5 v1.2.0 | RTX 40 & RTX 50 Series | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
             Badge100 = "✓ 100% COMPATIBLE (Native DLSS)"
             BadgeDX12 = "✓ COMPATIBLE (DirectX 12)"
             BadgeCheck = "? VERIFY DX12 SUPPORT"
@@ -151,6 +157,17 @@ function Get-Dict {
             SuccessMsg = "DLSS 5 successfully installed!`n`n1. Click [LAUNCH GAME] or open the game.`n2. Enable DLSS Super Resolution in the game settings.`n3. Press [Home] key -> Add-ons tab -> Expand 'DLSS 5' -> Set Preset #2 Cinematic."
             RestoreTitle = "1 Click DLSS 5 - Restoration Complete"
             RestoreMsg = "Game successfully restored to clean factory state! All injected files and logs were wiped."
+            BadgeBridge = "✓ COMPATIBLE VIA OPTISCALER (FSR2/XeSS → DLSS 5)"
+            BadgeUnsupported = "✗ UNSUPPORTED (No Upscaler Detected)"
+            ConfirmInstallTitle = "1 Click DLSS 5 - Confirm Installation"
+            ConfirmInstallDirect = "Install DLSS 5 (Direct Mode) on:\n{0}\n\nNative DLSS detected. Streamline + RenoDX will be injected.\n\nContinue?"
+            ConfirmInstallBridge = "Install DLSS 5 (OptiScaler Bridge) on:\n{0}\n\n{1} detected. OptiScaler will redirect to DLSS Neural Rendering.\n\nContinue?"
+            ConfirmUninstallTitle = "1 Click DLSS 5 - Confirm Restoration"
+            ConfirmUninstall = "Remove ALL DLSS 5 files and restore the game to factory state?\n\n{0}\n\nThis action cannot be undone."
+            MsgUnsupported = "This game has no recognized upscaler (DLSS, FSR2, or XeSS). DLSS 5 cannot be installed."
+            MsgInstalledAlready = "[ALREADY INSTALLED]"
+            MsgModeDirect = "Mode: Direct (Native DLSS)"
+            MsgModeBridge = "Mode: OptiScaler Bridge ({0})"
         }
     } else {
         return @{
@@ -185,7 +202,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 ABRIR PASTA"
             BtnInstructions = "📖 GUIA NO JOGO"
             StatusHeading = "DIAGNÓSTICO E LOG DO SISTEMA EM TEMPO REAL"
-            Footer = "1 Click DLSS 5 v1.1.1 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
+            Footer = "1 Click DLSS 5 v1.2.0 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
             Badge100 = "✓ 100% COMPATÍVEL (DLSS Nativo)"
             BadgeDX12 = "✓ COMPATÍVEL (DirectX 12)"
             BadgeCheck = "? VERIFICAR SUPORTE DX12"
@@ -198,6 +215,17 @@ function Get-Dict {
             SuccessMsg = "DLSS 5 instalado com sucesso!`n`n1. Clique em [INICIAR JOGO] ou abra o jogo.`n2. Ative o DLSS Super Resolution nas opções de vídeo do jogo.`n3. Pressione a tecla [Home] -> Aba Add-ons -> Expanda 'DLSS 5' -> Ative o Preset #2 Cinematic."
             RestoreTitle = "1 Click DLSS 5 - Restauração Completa"
             RestoreMsg = "Jogo restaurado com sucesso ao estado de fábrica original! Todos os arquivos injetados foram removidos."
+            BadgeBridge = "✓ COMPATÍVEL VIA OPTISCALER (FSR2/XeSS → DLSS 5)"
+            BadgeUnsupported = "✗ SEM SUPORTE (Sem Upscaler Detectado)"
+            ConfirmInstallTitle = "1 Click DLSS 5 - Confirmar Instalação"
+            ConfirmInstallDirect = "Instalar DLSS 5 (Modo Direto) em:\n{0}\n\nDLSS nativo detectado. Streamline + RenoDX será injetado.\n\nContinuar?"
+            ConfirmInstallBridge = "Instalar DLSS 5 (Ponte OptiScaler) em:\n{0}\n\n{1} detectado. O OptiScaler redirecionará para a Renderização Neural DLSS.\n\nContinuar?"
+            ConfirmUninstallTitle = "1 Click DLSS 5 - Confirmar Restauração"
+            ConfirmUninstall = "Remover TODOS os arquivos DLSS 5 e restaurar o jogo ao estado de fábrica?\n\n{0}\n\nEsta ação não pode ser desfeita."
+            MsgUnsupported = "Este jogo não possui nenhum upscaler reconhecido (DLSS, FSR2 ou XeSS). O DLSS 5 não pode ser instalado."
+            MsgInstalledAlready = "[JÁ INSTALADO]"
+            MsgModeDirect = "Modo: Direto (DLSS Nativo)"
+            MsgModeBridge = "Modo: Ponte OptiScaler ({0})"
         }
     }
 }
@@ -407,6 +435,30 @@ function Get-DriverVersions {
     return $vers
 }
 
+function Detect-GameUpscalerType {
+    param([Parameter(Mandatory = $true)][string]$GameFolder)
+    $allDlls = @(Get-ChildItem -LiteralPath $GameFolder -Filter "*.dll" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+    # PRIORITY 1: Native DLSS
+    foreach ($dll in $allDlls) {
+        if ($dll.Name -imatch '^(nvngx_dlss\.dll|nvngx_dlssd\.dll|nvngx_dlssg\.dll|sl\.dlss\.dll|sl\.interposer\.dll|_nvngx\.dll)$') {
+            return "NATIVE_DLSS"
+        }
+    }
+    # PRIORITY 2: FSR 2/3
+    foreach ($dll in $allDlls) {
+        if ($dll.Name -imatch '^(ffx_fsr2_api.*\.dll|ffx_fsr3_api.*\.dll|amd_fidelityfx.*\.dll|FSR2\.dll)$') {
+            return "FSR2_BRIDGE"
+        }
+    }
+    # PRIORITY 3: XeSS
+    foreach ($dll in $allDlls) {
+        if ($dll.Name -imatch '^(libxess\.dll|xess\.dll|libxell\.dll)$') {
+            return "XESS_BRIDGE"
+        }
+    }
+    return "UNSUPPORTED"
+}
+
 function Prepare-Payload {
     param([Parameter(Mandatory = $true)][string]$DlssZipPath)
     $cleanZip = Sanitize-PathString -Raw $DlssZipPath
@@ -550,15 +602,44 @@ function Install-Dlss5 {
     if (-not $report.CanInstall) { throw "A verificacao de compatibilidade falhou. Verifique os erros acima." }
     $target = $report.Target
     $targetFolder = $target.InstallFolder
+    $d = Get-Dict -Lang $script:CurrentLang
+
+    # Detect upscaler type
+    $upscalerType = Detect-GameUpscalerType -GameFolder $targetFolder
+    Write-Status -Message "Tipo de upscaler detectado: $upscalerType" -Level "INFO"
+
+    if ($upscalerType -eq "UNSUPPORTED") {
+        Write-Status -Message $d.MsgUnsupported -Level "ERROR"
+        throw $d.MsgUnsupported
+    }
+
+    # Confirmation dialog
+    $confirmMsg = ""
+    if ($upscalerType -eq "NATIVE_DLSS") {
+        $confirmMsg = $d.ConfirmInstallDirect -f $target.ExeName
+    } else {
+        $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2/FSR3" } else { "XeSS" }
+        $confirmMsg = $d.ConfirmInstallBridge -f $target.ExeName, $bridgeName
+    }
+    $result = [System.Windows.Forms.MessageBox]::Show($confirmMsg, $d.ConfirmInstallTitle, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+    if ($result -ne [System.Windows.Forms.DialogResult]::Yes) {
+        Write-Status -Message "Instalacao cancelada pelo usuario." -Level "WARN"
+        return
+    }
+
     $backupFolder = Join-Path $targetFolder $script:BackupName
     [void](New-Item -ItemType Directory -Path $backupFolder -Force)
     $stateFile = Join-Path $targetFolder $script:StateName
     $state = @{
         InstalledAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
         TargetExe = $target.Executable
+        Mode = if ($upscalerType -eq "NATIVE_DLSS") { "DIRECT" } else { "OPTISCALER" }
+        UpscalerType = $upscalerType
         BackedUpFiles = @()
         InjectedFiles = @()
     }
+
+    # Install ReShade if checked
     if ($InstallReShade) {
         $setup = Get-ReShadeSetup
         Install-ReShade -TargetExe $target.Executable -Setup $setup
@@ -566,45 +647,117 @@ function Install-Dlss5 {
         $state.InjectedFiles += "d3d12.dll"
     }
 
-    # Aplica pre-configuracao ideal recomendada pelo relatorio de pesquisa
+    # Apply pre-configured ReShade.ini
     $defaultIni = Join-Path $PSScriptRoot "payload\ReShade.ini"
     $targetIni = Join-Path $targetFolder "ReShade.ini"
     if (Test-Path -LiteralPath $defaultIni -PathType Leaf) {
         Copy-Item -LiteralPath $defaultIni -Destination $targetIni -Force
+        $state.InjectedFiles += "ReShade.ini"
         Write-Status -Message "Pre-configuracao aplicada: Auto Skin Mask ATIVADO, Preset #2 Cinematic e Intensidade 0.80." -Level "OK"
     }
-    # Limpa versoes antigas ou variantes de addons para evitar conflitos no ReShade
-    $legacyAddons = @("renodx-dlss5++.addon64", "renodx-dlss5.addon64", "renodx-dlss5-v3.addon64")
+
+    # Clean up legacy addons
+    $legacyAddons = @("renodx-dlss5++.addon64", "renodx-dlss5-v3.addon64")
     foreach ($la in $legacyAddons) {
         $legacyPath = Join-Path $targetFolder $la
-        if ((Test-Path -LiteralPath $legacyPath -PathType Leaf) -and ($la -ne $script:AddOnName)) {
+        if (Test-Path -LiteralPath $legacyPath -PathType Leaf) {
             Remove-Item -LiteralPath $legacyPath -Force -ErrorAction SilentlyContinue
             Write-Status -Message "Versao anterior do Add-on removida: $la" -Level "INFO"
         }
     }
 
-    $filesToCopy = if ($FullPackage) { $script:FullFiles } else { $script:MinimalFiles }
-    foreach ($fname in $filesToCopy) {
-        $src = Join-Path $script:PayloadFolder $fname
-        $dst = Join-Path $targetFolder $fname
-        if (Test-Path -LiteralPath $src -PathType Leaf) {
-            if (Test-Path -LiteralPath $dst -PathType Leaf) {
-                $backupDst = Join-Path $backupFolder $fname
+    if ($upscalerType -eq "NATIVE_DLSS") {
+        # === DIRECT MODE: Streamline + RenoDX ===
+        Write-Status -Message "Modo DIRETO: Injetando Streamline + RenoDX (DLSS nativo detectado)..." -Level "INFO"
+        $filesToCopy = if ($FullPackage) { $script:FullFiles } else { $script:MinimalFiles }
+        foreach ($fname in $filesToCopy) {
+            $src = Join-Path $script:PayloadFolder $fname
+            $dst = Join-Path $targetFolder $fname
+            if (Test-Path -LiteralPath $src -PathType Leaf) {
+                if (Test-Path -LiteralPath $dst -PathType Leaf) {
+                    $backupDst = Join-Path $backupFolder $fname
+                    if (-not (Test-Path -LiteralPath $backupDst -PathType Leaf)) {
+                        Copy-Item -LiteralPath $dst -Destination $backupDst -Force
+                        $state.BackedUpFiles += $fname
+                    }
+                }
+                Copy-Item -LiteralPath $src -Destination $dst -Force
+                if ($state.InjectedFiles -notcontains $fname) { $state.InjectedFiles += $fname }
+            }
+        }
+    } else {
+        # === OPTISCALER BRIDGE MODE: OptiScaler + RenoDX ===
+        $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2/FSR3" } else { "XeSS" }
+        Write-Status -Message "Modo PONTE OPTISCALER: $bridgeName detectado. Redirecionando para DLSS Neural..." -Level "INFO"
+
+        # Copy OptiScaler.dll as version.dll
+        $optiSrc = Join-Path $PSScriptRoot "payload\optiscaler\OptiScaler.dll"
+        $optiDst = Join-Path $targetFolder "version.dll"
+        if (Test-Path -LiteralPath $optiSrc -PathType Leaf) {
+            if (Test-Path -LiteralPath $optiDst -PathType Leaf) {
+                $backupDst = Join-Path $backupFolder "version.dll"
                 if (-not (Test-Path -LiteralPath $backupDst -PathType Leaf)) {
-                    Copy-Item -LiteralPath $dst -Destination $backupDst -Force
-                    $state.BackedUpFiles += $fname
+                    Copy-Item -LiteralPath $optiDst -Destination $backupDst -Force
+                    $state.BackedUpFiles += "version.dll"
                 }
             }
-            Copy-Item -LiteralPath $src -Destination $dst -Force
-            if ($state.InjectedFiles -notcontains $fname) { $state.InjectedFiles += $fname }
+            Copy-Item -LiteralPath $optiSrc -Destination $optiDst -Force
+            $state.InjectedFiles += "version.dll"
+            Write-Status -Message "OptiScaler instalado como version.dll (proxy DLL)." -Level "OK"
+        } else {
+            throw "OptiScaler.dll nao encontrado em payload\optiscaler\. Verifique a instalacao do programa."
+        }
+
+        # Copy OptiScaler.ini
+        $optiIniSrc = Join-Path $PSScriptRoot "payload\optiscaler\OptiScaler.ini"
+        $optiIniDst = Join-Path $targetFolder "OptiScaler.ini"
+        if (Test-Path -LiteralPath $optiIniSrc -PathType Leaf) {
+            Copy-Item -LiteralPath $optiIniSrc -Destination $optiIniDst -Force
+            $state.InjectedFiles += "OptiScaler.ini"
+        }
+
+        # Copy libxess.dll (if not already present)
+        $xessSrc = Join-Path $PSScriptRoot "payload\optiscaler\libxess.dll"
+        $xessDst = Join-Path $targetFolder "libxess.dll"
+        if (Test-Path -LiteralPath $xessSrc -PathType Leaf) {
+            if (Test-Path -LiteralPath $xessDst -PathType Leaf) {
+                $backupDst = Join-Path $backupFolder "libxess.dll"
+                if (-not (Test-Path -LiteralPath $backupDst -PathType Leaf)) {
+                    Copy-Item -LiteralPath $xessDst -Destination $backupDst -Force
+                    $state.BackedUpFiles += "libxess.dll"
+                }
+            }
+            Copy-Item -LiteralPath $xessSrc -Destination $xessDst -Force
+            $state.InjectedFiles += "libxess.dll"
+        }
+
+        # Copy nvngx_dlssnr.dll from payload
+        $nrSrc = Join-Path $script:PayloadFolder "nvngx_dlssnr.dll"
+        $nrDst = Join-Path $targetFolder "nvngx_dlssnr.dll"
+        if (Test-Path -LiteralPath $nrSrc -PathType Leaf) {
+            Copy-Item -LiteralPath $nrSrc -Destination $nrDst -Force
+            $state.InjectedFiles += "nvngx_dlssnr.dll"
+        }
+
+        # Copy RenoDX addon
+        $addonSrc = Join-Path $PSScriptRoot "payload\$($script:AddOnName)"
+        $addonDst = Join-Path $targetFolder $script:AddOnName
+        if (Test-Path -LiteralPath $addonSrc -PathType Leaf) {
+            Copy-Item -LiteralPath $addonSrc -Destination $addonDst -Force
+            $state.InjectedFiles += $script:AddOnName
         }
     }
+
     ($state | ConvertTo-Json -Depth 4) | Out-File -LiteralPath $stateFile -Encoding utf8 -Force
     Write-Status -Message "==========================================================" -Level "OK"
     Write-Status -Message "1 CLICK DLSS 5 NEURAL INSTALADO COM SUCESSO!" -Level "OK"
-    Write-Status -Message "• No jogo: DLSS ativado -> Aperte [Home] -> Aba Add-ons -> Expanda DLSS 5 -> Escolha NR Preset #2 e NR Style: Cinematic." -Level "OK"
+    if ($upscalerType -eq "NATIVE_DLSS") {
+        Write-Status -Message "Modo: DIRETO | No jogo: Ative DLSS (Qualidade) -> [Home] -> Add-ons -> DLSS 5" -Level "OK"
+    } else {
+        $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2" } else { "XeSS" }
+        Write-Status -Message "Modo: OPTISCALER ($bridgeName) | No jogo: Ative $bridgeName (Qualidade) -> [Home] -> Add-ons -> DLSS 5" -Level "OK"
+    }
     Write-Status -Message "==========================================================" -Level "OK"
-    $d = Get-Dict -Lang $script:CurrentLang
     [System.Windows.Forms.MessageBox]::Show($d.SuccessMsg, $d.SuccessTitle, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
 }
 
@@ -625,7 +778,19 @@ function Uninstall-Dlss5 {
     $targetFolder = $target.InstallFolder
     $stateFile = Join-Path $targetFolder $script:StateName
     $backupFolder = Join-Path $targetFolder $script:BackupName
+    $d = Get-Dict -Lang $script:CurrentLang
+
+    # Confirmation dialog
+    $confirmMsg = $d.ConfirmUninstall -f $target.ExeName
+    $result = [System.Windows.Forms.MessageBox]::Show($confirmMsg, $d.ConfirmUninstallTitle, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+    if ($result -ne [System.Windows.Forms.DialogResult]::Yes) {
+        Write-Status -Message "Restauracao cancelada pelo usuario." -Level "WARN"
+        return
+    }
+
     Write-Status -Message "Restaurando arquivos de fabrica em: $targetFolder" -Level "INFO"
+
+    # Restore backed up files
     if (Test-Path -LiteralPath $backupFolder -PathType Container) {
         $backedFiles = Get-ChildItem -LiteralPath $backupFolder -File -ErrorAction SilentlyContinue
         foreach ($bf in $backedFiles) {
@@ -635,23 +800,50 @@ function Uninstall-Dlss5 {
         }
         Remove-Item -LiteralPath $backupFolder -Recurse -Force -ErrorAction SilentlyContinue
     }
+
+    # Complete purge list (covers DIRECT + OPTISCALER modes)
     $purgeList = @(
-        "d3d12.dll", "dxgi.dll", "renodx-dlss5.addon64", "renodx-dlss5.addon64",
-        "nvngx_dlssnr.dll", "sl.dlss_nr.dll", "ReShade.ini", "ReShadePreset.ini",
-        "ReShade.log", "sl.config.json", "sl.param.global.log", $script:StateName,
+        "d3d12.dll", "dxgi.dll",
+        "renodx-dlss5.addon64", "renodx-dlss5++.addon64", "renodx-dlss5-v3.addon64",
+        "nvngx_dlssnr.dll", "sl.dlss_nr.dll",
+        "version.dll", "OptiScaler.ini", "OptiScaler.log",
+        "ReShade.ini", "ReShadePreset.ini", "ReShade.log",
+        "sl.common.dll", "sl.interposer.dll", "sl.deepdvc.dll",
+        "sl.dlss.dll", "sl.dlss_d.dll", "sl.dlss_g.dll",
+        "sl.nis.dll", "sl.pcl.dll", "sl.reflex.dll",
+        "sl.config.json", "sl.param.global.log",
+        $script:StateName,
         "_DLSS5_Easy_Installer_State.json", "dlss5_backup_manifest.json"
     )
+
+    # Only remove files that are NOT in the backup (those were originals)
+    $backedUpNames = @()
+    if (Test-Path -LiteralPath $stateFile -PathType Leaf) {
+        try {
+            $savedState = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
+            $backedUpNames = @($savedState.BackedUpFiles)
+        } catch {}
+    }
+
     foreach ($pf in $purgeList) {
+        if ($backedUpNames -contains $pf) { continue }
         $p = Join-Path $targetFolder $pf
         if (Test-Path -LiteralPath $p -PathType Leaf) {
             Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue
         }
     }
+
+    # Remove state file itself
+    if (Test-Path -LiteralPath $stateFile -PathType Leaf) {
+        Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
+    }
+
+    # Remove reshade-shaders folder
     $reshadeDir = Join-Path $targetFolder "reshade-shaders"
     if (Test-Path -LiteralPath $reshadeDir -PathType Container) {
         Remove-Item -LiteralPath $reshadeDir -Recurse -Force -ErrorAction SilentlyContinue
     }
-    $d = Get-Dict -Lang $script:CurrentLang
+
     Write-Status -Message "Jogo 100% restaurado ao estado de fabrica!" -Level "OK"
     [System.Windows.Forms.MessageBox]::Show($d.RestoreMsg, $d.RestoreTitle, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
 }
@@ -700,16 +892,30 @@ function Scan-DriveForGames {
                     $binFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*.exe" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue | Where-Object { $_.FullName.ToLower().Contains("binaries\win64") })
                     if ($binFiles.Count -gt 0) { $isUe = $true; $hasDx12 = $true }
 
+                    $hasFsr2 = $false
+                    $hasXess = $false
+
+                    $fsrFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*fidelityfx*" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+                    $fsrFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "ffx_fsr*" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+                    if ($fsrFiles.Count -gt 0) { $hasFsr2 = $true }
+
+                    $xessFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "libxess*" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+                    $xessFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "xess.dll" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+                    if ($xessFiles.Count -gt 0) { $hasXess = $true }
+
                     $badge = ""
                     $order = 3
                     if ($hasDlss) {
                         $badge = $dDict.Badge100
                         $order = 1
+                    } elseif ($hasFsr2 -or $hasXess) {
+                        $badge = $dDict.BadgeBridge
+                        $order = 2
                     } elseif ($hasDx12 -or $isUe) {
                         $badge = $dDict.BadgeDX12
-                        $order = 2
+                        $order = 3
                     } else {
-                        $badge = $dDict.BadgeCheck
+                        $badge = $dDict.BadgeUnsupported
                         $order = 4
                     }
 
@@ -767,17 +973,17 @@ function Style-Button {
 
 function Show-Instructions {
     if ($script:CurrentLang -eq "PT") {
-        $msg = "GUIA DE OTIMIZACAO E USO DO 1 CLICK DLSS 5 (NEURAL RENDERING):`n`n1. OPCOES GRAFICAS NO JOGO:`n - Ative o NVIDIA DLSS Super Resolution (Qualidade, Balanceado ou Desempenho).`n - DICA CRITICA: Mantenha o HDR DESATIVADO no jogo para evitar estouro de cores no modelo neural.`n`n2. ABRIR O PAINEL NO JOGO:`n - Pressione a tecla [Home] (ou Pos1) para abrir a barra do ReShade/RenoDX.`n`n3. CONFIGURACOES RECOMENDADAS (ABAS ADD-ONS -> DLSS 5):`n - Auto Skin Mask: ATIVADO (evita distorcoes e envelhecimento em rostos de personagens).`n - NR Preset: Preset #2 (Cinematic / Iluminacao Coerente).`n - Neural Intensity: 0.75 a 0.85 (equilibrio perfeito de iluminacao e sombras).`n - Structure / Local Tone Strength: Padrao.`n`n4. COMPATIBILIDADE DE HARDWARE:`n - O DLSS 5 Neural opera em matrizes FP8 nas GPUs RTX 40 e 50.`n`n5. INICIAR JOGO:`n - Use o botao [INICIAR JOGO] para abrir diretamente com as DLLs injetadas!"
+        $msg = "GUIA DE OTIMIZACAO E USO DO 1 CLICK DLSS 5 (NEURAL RENDERING):`n`n1. OPCOES GRAFICAS NO JOGO:`n - Ative o NVIDIA DLSS Super Resolution (Qualidade, Balanceado ou Desempenho).`n - DICA CRITICA: Mantenha o HDR DESATIVADO no jogo para evitar estouro de cores no modelo neural.`n`n2. ABRIR O PAINEL NO JOGO:`n - Pressione a tecla [Home] (ou Pos1) para abrir a barra do ReShade/RenoDX.`n`n3. CONFIGURACOES RECOMENDADAS (ABAS ADD-ONS -> DLSS 5):`n - Auto Skin Mask: ATIVADO (evita distorcoes e envelhecimento em rostos de personagens).`n - NR Preset: Preset #2 (Cinematic / Iluminacao Coerente).`n - Neural Intensity: 0.75 a 0.85 (equilibrio perfeito de iluminacao e sombras).`n - Structure / Local Tone Strength: Padrao.`n`n4. COMPATIBILIDADE DE HARDWARE:`n - O DLSS 5 Neural opera em matrizes FP8 nas GPUs RTX 40 e 50.`n`n5. INICIAR JOGO:`n - Use o botao [INICIAR JOGO] para abrir diretamente com as DLLs injetadas!`n`n6. JOGOS SEM DLSS NATIVO (FSR2/XeSS):`n - O programa detectou e instalou automaticamente a ponte OptiScaler.`n - Ative o upscaler original do jogo (FSR2 ou XeSS) no modo Qualidade.`n - O OptiScaler redireciona automaticamente para o modelo neural DLSS 5."
         [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Instrucoes", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     } else {
-        $msg = "1 CLICK DLSS 5 OPTIMIZATION & USAGE GUIDE:`n`n1. IN-GAME GRAPHICS SETTINGS:`n - Enable NVIDIA DLSS Super Resolution (Quality, Balanced or Performance).`n - CRITICAL TIP: Keep in-game HDR DISABLED for accurate SDR neural color space.`n`n2. OPEN IN-GAME OVERLAY:`n - Press the [Home] (or Pos1) key to open the ReShade/RenoDX menu.`n`n3. RECOMMENDED TUNING (ADD-ONS TAB -> DLSS 5):`n - Auto Skin Mask: ENABLED (prevents facial warping and artificial aging on characters).`n - NR Preset: Preset #2 (Cinematic / Coherent Lighting).`n - Neural Intensity: 0.75 - 0.85 (ideal physical lighting & contact shadows).`n - Structure / Local Tone: Default.`n`n4. HARDWARE ARCHITECTURE:`n - DLSS 5 Neural Rendering runs native FP8 on RTX 40 & RTX 50 Series.`n`n5. DIRECT LAUNCH:`n - Click [LAUNCH GAME] to start playing with all neural modules active!"
+        $msg = "1 CLICK DLSS 5 OPTIMIZATION & USAGE GUIDE:`n`n1. IN-GAME GRAPHICS SETTINGS:`n - Enable NVIDIA DLSS Super Resolution (Quality, Balanced or Performance).`n - CRITICAL TIP: Keep in-game HDR DISABLED for accurate SDR neural color space.`n`n2. OPEN IN-GAME OVERLAY:`n - Press the [Home] (or Pos1) key to open the ReShade/RenoDX menu.`n`n3. RECOMMENDED TUNING (ADD-ONS TAB -> DLSS 5):`n - Auto Skin Mask: ENABLED (prevents facial warping and artificial aging on characters).`n - NR Preset: Preset #2 (Cinematic / Coherent Lighting).`n - Neural Intensity: 0.75 - 0.85 (ideal physical lighting & contact shadows).`n - Structure / Local Tone: Default.`n`n4. HARDWARE ARCHITECTURE:`n - DLSS 5 Neural Rendering runs native FP8 on RTX 40 & RTX 50 Series.`n`n5. DIRECT LAUNCH:`n - Click [LAUNCH GAME] to start playing with all neural modules active!`n`n6. GAMES WITHOUT NATIVE DLSS (FSR2/XeSS):`n - The program detected and automatically installed the OptiScaler bridge.`n - Enable the original upscaler (FSR2 or XeSS) in Quality mode.`n - OptiScaler automatically redirects to the DLSS 5 neural model."
         [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Instructions", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     }
 }
 
 # --- FORMULARIO PRINCIPAL: STEAM-STYLE GAME CENTER ---
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "1 Click DLSS 5 • Universal Neural Game Center"
+$form.Text = "1 Click DLSS 5 v1.2.0 • Universal Neural Game Center"
 $form.Size = New-Object System.Drawing.Size(1200, 900)
 $form.MinimumSize = New-Object System.Drawing.Size(1100, 820)
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
@@ -1161,7 +1367,7 @@ $status.ScrollBars = [System.Windows.Forms.RichTextBoxScrollBars]::Vertical
 $script:StatusBox = $status
 
 # FOOTER
-$footer = New-Label -Text "1 Click DLSS 5 v1.1.1 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format" -X 20 -Y 825 -Width 1145 -Height 22
+$footer = New-Label -Text "1 Click DLSS 5 v1.2.0 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format" -X 20 -Y 825 -Width 1145 -Height 22
 $footer.Anchor = "Bottom, Left, Right"
 $footer.ForeColor = [System.Drawing.Color]::FromArgb(120, 140, 170)
 $footer.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)
@@ -1179,10 +1385,12 @@ function Select-GameInInspector {
 
     if ($GameObj.Badge.Contains("100%")) {
         $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
-    } elseif ($GameObj.Badge.Contains("COMPAT")) {
-        $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(130, 205, 255)
-    } else {
+    } elseif ($GameObj.Badge.Contains("OPTISCALER")) {
+        $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(100, 180, 255)
+    } elseif ($GameObj.Badge.Contains("COMPAT") -or $GameObj.Badge.Contains("DX12")) {
         $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 90)
+    } else {
+        $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(180, 180, 180)
     }
 
     try {
@@ -1195,6 +1403,21 @@ function Select-GameInInspector {
             $picGameIcon.Image = $null
         }
         Write-Status -Message ($d.MsgSelected -f $GameObj.Name, $resolved.ExeName) -Level "INFO"
+
+        # Check if DLSS 5 is already installed
+        $existingState = Join-Path $resolved.InstallFolder $script:StateName
+        if (Test-Path -LiteralPath $existingState -PathType Leaf) {
+            try {
+                $savedState = Get-Content -LiteralPath $existingState -Raw | ConvertFrom-Json
+                $modeText = if ($savedState.Mode -eq "OPTISCALER") {
+                    $d.MsgModeBridge -f $savedState.UpscalerType
+                } else {
+                    $d.MsgModeDirect
+                }
+                $lblSelectedGameBadge.Text = $d.MsgInstalledAlready + " " + $modeText
+                $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(255, 185, 50)
+            } catch {}
+        }
     } catch {
         $txtInjectFolder.Text = $GameObj.Path
         $txtExeName.Text = "Detectar na verificacao..."
@@ -1260,7 +1483,7 @@ function Update-Language {
     $dlssBrowse.Text = $d.BtnChangeZip
     $copyReShade.Text = $d.OptReShade
     $fullPackage.Text = $d.OptFull
-    $scan.Text = $d.BtnScan
+    $scan.Text = $d.BtnVerify
     $install.Text = $d.BtnInstall
     $launchGame.Text = $d.BtnLaunch
     $uninstall.Text = $d.BtnUninstall
@@ -1312,10 +1535,12 @@ function Refresh-GameLibrary {
 
         if ($g.Badge.Contains("100%")) {
             $item.ForeColor = [System.Drawing.Color]::FromArgb(130, 240, 140)
-        } elseif ($g.Badge.Contains("COMPAT")) {
-            $item.ForeColor = [System.Drawing.Color]::FromArgb(140, 215, 255)
-        } else {
+        } elseif ($g.Badge.Contains("OPTISCALER")) {
+            $item.ForeColor = [System.Drawing.Color]::FromArgb(100, 180, 255)
+        } elseif ($g.Badge.Contains("COMPAT") -or $g.Badge.Contains("DX12")) {
             $item.ForeColor = [System.Drawing.Color]::FromArgb(255, 210, 110)
+        } else {
+            $item.ForeColor = [System.Drawing.Color]::FromArgb(180, 180, 180)
         }
 
         [void]$gameListView.Items.Add($item)
@@ -1340,12 +1565,19 @@ $browse.Add_Click({
         $d = Get-Dict -Lang $script:CurrentLang
         try {
             $resolved = Resolve-GameTarget -TargetPath $manualPath
+            $uType = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder
+            $manualBadge = switch ($uType) {
+                "NATIVE_DLSS" { $d.Badge100 }
+                "FSR2_BRIDGE" { $d.BadgeBridge }
+                "XESS_BRIDGE" { $d.BadgeBridge }
+                default { $d.BadgeUnsupported }
+            }
             $manualObj = [pscustomobject]@{
                 Order = 1
-                DisplayName = "$($d.Badge100) $(Split-Path -Leaf $manualPath)"
+                DisplayName = "$manualBadge $(Split-Path -Leaf $manualPath)"
                 Name = (Split-Path -Leaf $manualPath)
                 Path = $manualPath
-                Badge = $d.Badge100
+                Badge = $manualBadge
                 Icon = $resolved.Icon
                 ExeName = $resolved.ExeName
             }
@@ -1421,3 +1653,4 @@ $form.Add_Shown({
 })
 
 [void]$form.ShowDialog()
+

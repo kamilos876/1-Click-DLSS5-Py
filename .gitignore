@@ -9,6 +9,8 @@ $RECYCLE.BIN/
 *.zip
 payload/*.zip
 payload/streamline.zip
+payload/optiscaler/OptiScaler.dll
+payload/optiscaler/libxess.dll
 
 # Temporary & Runtime Logs
 *.log
