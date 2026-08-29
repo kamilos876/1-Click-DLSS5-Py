@@ -13,7 +13,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $script:ProductName = "1 Click DLSS 5"
 $script:Version = "1.2.0"
 $script:AddOnName = "renodx-dlss5.addon64"
-$script:AddonHash = "FE505B73D6E319B3A5E6FE09E4E6CA6FB0D5E9141A6112CAE528B11E4BCB4C07"
+$script:AddonHash = "E1C28FDE0922B12FC10734E58C3D24A36808E575247F4FD4F36226540D7EE023"
 $script:ReShadeUrl = "https://reshade.me/downloads/ReShade_Setup_6.8.0_Addon.exe"
 $script:ReShadeHash = "AFE4C8F13048306307983B8B3D41D5BF00A86820440B0E57DEA10950E1176445"
 $script:StateName = "_1Click_DLSS5_State.json"
