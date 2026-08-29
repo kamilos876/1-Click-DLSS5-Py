@@ -12,5 +12,11 @@ if %ERRORLEVEL% neq 0 (
 )
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp01-Click-DLSS5.ps1"
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ERROR] 1 Click DLSS 5 finished with error code %ERRORLEVEL%.
+    pause
+    exit /b %ERRORLEVEL%
+)
 
-exit /b %ERRORLEVEL%
+exit /b 0
