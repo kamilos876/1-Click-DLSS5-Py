@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+﻿﻿# ==============================================================================
 #  1 Click DLSS 5 - Universal Neural Rendering Game Center & Auto-Injector
 #  Official Repository: https://github.com/1Click-DLSS5/1-Click-DLSS5
 #  Architecture: RenoDX DLSS 5 v3 + NVIDIA Streamline 2.13 + nvngx_dlssnr.dll
@@ -11,8 +11,8 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $script:ProductName = "1 Click DLSS 5"
-$script:Version = "1.1.0"
-$script:AddOnName = "renodx-dlss5++.addon64"
+$script:Version = "1.1.1"
+$script:AddOnName = "renodx-dlss5.addon64"
 $script:AddonHash = "294B1B7D14902F16C59E3F1F10ACDEFCB6D9EFB5D588147E4510DF396CECC24E"
 $script:ReShadeUrl = "https://reshade.me/downloads/ReShade_Setup_6.8.0_Addon.exe"
 $script:ReShadeHash = "AFE4C8F13048306307983B8B3D41D5BF00A86820440B0E57DEA10950E1176445"
@@ -29,12 +29,12 @@ $script:DiscoveredGames = @()
 $script:SelectedGameObj = $null
 
 $script:MinimalFiles = @(
-    "renodx-dlss5++.addon64",
+    "renodx-dlss5.addon64",
     "nvngx_dlssnr.dll"
 )
 
 $script:FullFiles = @(
-    "renodx-dlss5++.addon64",
+    "renodx-dlss5.addon64",
     "nvngx_dlssnr.dll",
     "sl.dlss_nr.dll",
     "sl.common.dll",
@@ -138,7 +138,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 OPEN FOLDER"
             BtnInstructions = "📖 IN-GAME GUIDE"
             StatusHeading = "REAL-TIME DIAGNOSTICS & SYSTEM LOG"
-            Footer = "1 Click DLSS 5 v1.1.0 | RTX 40 & RTX 50 Series | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
+            Footer = "1 Click DLSS 5 v1.1.1 | RTX 40 & RTX 50 Series | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
             Badge100 = "✓ 100% COMPATIBLE (Native DLSS)"
             BadgeDX12 = "✓ COMPATIBLE (DirectX 12)"
             BadgeCheck = "? VERIFY DX12 SUPPORT"
@@ -185,7 +185,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 ABRIR PASTA"
             BtnInstructions = "📖 GUIA NO JOGO"
             StatusHeading = "DIAGNÓSTICO E LOG DO SISTEMA EM TEMPO REAL"
-            Footer = "1 Click DLSS 5 v1.1.0 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
+            Footer = "1 Click DLSS 5 v1.1.1 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
             Badge100 = "✓ 100% COMPATÍVEL (DLSS Nativo)"
             BadgeDX12 = "✓ COMPATÍVEL (DirectX 12)"
             BadgeCheck = "? VERIFICAR SUPORTE DX12"
@@ -611,7 +611,7 @@ function Uninstall-Dlss5 {
         Remove-Item -LiteralPath $backupFolder -Recurse -Force -ErrorAction SilentlyContinue
     }
     $purgeList = @(
-        "d3d12.dll", "dxgi.dll", "renodx-dlss5++.addon64", "renodx-dlss5.addon64",
+        "d3d12.dll", "dxgi.dll", "renodx-dlss5.addon64", "renodx-dlss5.addon64",
         "nvngx_dlssnr.dll", "sl.dlss_nr.dll", "ReShade.ini", "ReShadePreset.ini",
         "ReShade.log", "sl.config.json", "sl.param.global.log", $script:StateName,
         "_DLSS5_Easy_Installer_State.json", "dlss5_backup_manifest.json"
@@ -1136,7 +1136,7 @@ $status.ScrollBars = [System.Windows.Forms.RichTextBoxScrollBars]::Vertical
 $script:StatusBox = $status
 
 # FOOTER
-$footer = New-Label -Text "1 Click DLSS 5 v1.1.0 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format" -X 20 -Y 825 -Width 1145 -Height 22
+$footer = New-Label -Text "1 Click DLSS 5 v1.1.1 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format" -X 20 -Y 825 -Width 1145 -Height 22
 $footer.Anchor = "Bottom, Left, Right"
 $footer.ForeColor = [System.Drawing.Color]::FromArgb(120, 140, 170)
 $footer.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)

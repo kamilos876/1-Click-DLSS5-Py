@@ -1,29 +1,11 @@
-This public-safe release does not bundle any NVIDIA DLSS or Streamline archive.
-The RenoDX DLSS5 v3 add-on has an experimental binary compatibility patch for
-common typeless color formats. The installer verifies the bundled add-on hash
-before use and accepts a user-supplied DLSS ZIP at runtime.
+1 Click DLSS 5 - Official Payload Manifest
+=================================================
+Package Version: 1.1.1
+Build: RenoDX DLSS 5 Stable Build (2.5) + NVIDIA Streamline 2.13
 
-The patched v3 binary is stored and installed as renodx-dlss5++.addon64. This
-distinct filename avoids silently overwriting an older build from a previous
-installer.
+Included Modules in /payload:
+1. renodx-dlss5.addon64 - RenoDX DLSS 5 Stable ReShade Add-on (Build 2.5)
+2. ReShade_Setup_6.8.0_Addon.exe - Official ReShade 6.8.0 Add-on Runtime Installer
+3. streamline.zip - NVIDIA Streamline 2.13 & DLSS-NR Core Neural Runtime (nvngx_dlssnr.dll)
 
-Minimal mode installs only renodx-dlss5++.addon64 and nvngx_dlssnr.dll from the
-user ZIP. Advanced mode copies the matching DLSS/Streamline DLL set from the
-user ZIP.
-
-ReShade is not bundled. Its official full-add-on setup is downloaded from
-reshade.me and checked against the pinned hash in the installer.
-
-The patch changes only the add-on's isolated format-normalization helper. It
-does not bypass resource capability checks, guide/output dimension checks, or
-NGX validation. The exact, version-locked patch script is included under tools.
-The installer accepts a game root folder and performs bounded executable and
-DLSS-runtime discovery within that folder. Version 1.0.1 adds explicit profiles
-for Microsoft Flight Simulator 2024 (including its Content-folder layout)
-and Resident Evil Requiem / Resident Evil 9 (`re9.exe`).
-The final build bundles the supplied branded logo at
-`assets\logo.png` and `assets\logo.ico`, plus a built-in INSTRUCTIONS guide.
-
-This build is experimental and unofficial. It cannot add DLSS to a game that
-does not already expose compatible NVIDIA NGX DLSS resources. Do not use it in
-online or anti-cheat-protected games.
+All runtime files are automatically checked and verified by 1 Click DLSS 5.
