@@ -1,4 +1,4 @@
-﻿﻿﻿# ==============================================================================
+﻿﻿﻿﻿# ==============================================================================
 #  1 Click DLSS 5 - Universal Neural Rendering Game Center & Auto-Injector
 #  Official Repository: https://github.com/1Click-DLSS5/1-Click-DLSS5
 #  Architecture: RenoDX DLSS 5 v3 + NVIDIA Streamline 2.13 + nvngx_dlssnr.dll
@@ -512,7 +512,14 @@ function Get-Compatibility {
         [void]$warnings.Add("Nenhuma nvngx_dlss.dll encontrada previamente. Certifique-se de que o jogo suporta DirectX 12.")
     }
     $gpus = @(Get-GpuNames)
-    if ($gpus.Count -gt 0) { [void]$info.Add("GPU Detectada: " + ($gpus -join ", ") + " (Suporte RTX 40/50 Ativo)") }
+    if ($gpus.Count -gt 0) { $gpuText = $gpus -join ", "
+        if ($gpuText -match "RTX\s*(40|50)") {
+            [void]$info.Add("GPU Compativel: $gpuText (Tensor Cores 4a/5a Geracao - FP8 Nativo Ativo)")
+        } elseif ($gpuText -match "RTX\s*(20|30)") {
+            [void]$warnings.Add("GPU Detectada: $gpuText. Nota: Modelos RTX 20/30 nao possuem instrucoes FP8 em silicio para DLSS-NR.")
+        } else {
+            [void]$info.Add("GPU Detectada: $gpuText")
+        } }
     $drivers = @(Get-DriverVersions)
     if ($drivers.Count -gt 0) { [void]$info.Add("Driver NVIDIA: " + ($drivers -join ", ")) }
     try {
@@ -752,10 +759,10 @@ function Style-Button {
 
 function Show-Instructions {
     if ($script:CurrentLang -eq "PT") {
-        $msg = "GUIA DE USO RAPIDO DO 1 CLICK DLSS 5:`n`n1. ATIVACAO NO JOGO:`n - Abra o jogo e va nas opcoes de video/graficos.`n - Ative o NVIDIA DLSS (Super Resolucao) e/ou Frame Generation.`n`n2. ABRIR O PAINEL DE CONTROLE:`n - Durante o jogo, pressione a tecla [Home] (ou Pos1) no teclado.`n - A barra do ReShade sera exibida.`n`n3. CONFIGURACAO RECOMENDADA:`n - Acesse a aba Add-ons.`n - Expanda DLSS 5 (verifique se o status esta ACTIVE).`n - Defina:`n   * NR Preset: Preset #2`n   * NR Style: Cinematic`n`n4. INICIAR DIRETO:`n - Voce pode abrir o jogo diretamente pelo botao [INICIAR JOGO] do 1 Click DLSS 5!"
+        $msg = "GUIA DE OTIMIZACAO E USO DO 1 CLICK DLSS 5 (NEURAL RENDERING):`n`n1. OPCOES GRAFICAS NO JOGO:`n - Ative o NVIDIA DLSS Super Resolution (Qualidade, Balanceado ou Desempenho).`n - DICA CRITICA: Mantenha o HDR DESATIVADO no jogo para evitar estouro de cores no modelo neural.`n`n2. ABRIR O PAINEL NO JOGO:`n - Pressione a tecla [Home] (ou Pos1) para abrir a barra do ReShade/RenoDX.`n`n3. CONFIGURACOES RECOMENDADAS (ABAS ADD-ONS -> DLSS 5):`n - Auto Skin Mask: ATIVADO (evita distorcoes e envelhecimento em rostos de personagens).`n - NR Preset: Preset #2 (Cinematic / Iluminacao Coerente).`n - Neural Intensity: 0.75 a 0.85 (equilibrio perfeito de iluminacao e sombras).`n - Structure / Local Tone Strength: Padrao.`n`n4. COMPATIBILIDADE DE HARDWARE:`n - O DLSS 5 Neural opera em matrizes FP8 nas GPUs RTX 40 e 50.`n`n5. INICIAR JOGO:`n - Use o botao [INICIAR JOGO] para abrir diretamente com as DLLs injetadas!"
         [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Instrucoes", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     } else {
-        $msg = "1 CLICK DLSS 5 QUICK GUIDE:`n`n1. IN-GAME ACTIVATION:`n - Launch the game and go to video/graphics settings.`n - Enable NVIDIA DLSS (Super Resolution) and/or Frame Generation.`n`n2. OPEN THE OVERLAY PANEL:`n - In-game, press the [Home] (or Pos1) key on your keyboard.`n - The ReShade top bar will appear.`n`n3. RECOMMENDED SETTINGS:`n - Click the Add-ons tab.`n - Expand DLSS 5 (verify status is ACTIVE).`n - Set:`n   * NR Preset: Preset #2`n   * NR Style: Cinematic`n`n4. DIRECT LAUNCH:`n - You can launch the game immediately via the [LAUNCH GAME] button!"
+        $msg = "1 CLICK DLSS 5 OPTIMIZATION & USAGE GUIDE:`n`n1. IN-GAME GRAPHICS SETTINGS:`n - Enable NVIDIA DLSS Super Resolution (Quality, Balanced or Performance).`n - CRITICAL TIP: Keep in-game HDR DISABLED for accurate SDR neural color space.`n`n2. OPEN IN-GAME OVERLAY:`n - Press the [Home] (or Pos1) key to open the ReShade/RenoDX menu.`n`n3. RECOMMENDED TUNING (ADD-ONS TAB -> DLSS 5):`n - Auto Skin Mask: ENABLED (prevents facial warping and artificial aging on characters).`n - NR Preset: Preset #2 (Cinematic / Coherent Lighting).`n - Neural Intensity: 0.75 - 0.85 (ideal physical lighting & contact shadows).`n - Structure / Local Tone: Default.`n`n4. HARDWARE ARCHITECTURE:`n - DLSS 5 Neural Rendering runs native FP8 on RTX 40 & RTX 50 Series.`n`n5. DIRECT LAUNCH:`n - Click [LAUNCH GAME] to start playing with all neural modules active!"
         [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Instructions", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     }
 }
