@@ -1,4 +1,4 @@
-﻿﻿# ==============================================================================
+﻿﻿﻿# ==============================================================================
 #  1 Click DLSS 5 - Universal Neural Rendering Game Center & Auto-Injector
 #  Official Repository: https://github.com/1Click-DLSS5/1-Click-DLSS5
 #  Architecture: RenoDX DLSS 5 v3 + NVIDIA Streamline 2.13 + nvngx_dlssnr.dll
@@ -558,6 +558,16 @@ function Install-Dlss5 {
         $state.InjectedFiles += "dxgi.dll"
         $state.InjectedFiles += "d3d12.dll"
     }
+    # Limpa versoes antigas ou variantes de addons para evitar conflitos no ReShade
+    $legacyAddons = @("renodx-dlss5++.addon64", "renodx-dlss5.addon64", "renodx-dlss5-v3.addon64")
+    foreach ($la in $legacyAddons) {
+        $legacyPath = Join-Path $targetFolder $la
+        if ((Test-Path -LiteralPath $legacyPath -PathType Leaf) -and ($la -ne $script:AddOnName)) {
+            Remove-Item -LiteralPath $legacyPath -Force -ErrorAction SilentlyContinue
+            Write-Status -Message "Versao anterior do Add-on removida: $la" -Level "INFO"
+        }
+    }
+
     $filesToCopy = if ($FullPackage) { $script:FullFiles } else { $script:MinimalFiles }
     foreach ($fname in $filesToCopy) {
         $src = Join-Path $script:PayloadFolder $fname
