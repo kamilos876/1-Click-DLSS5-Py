@@ -1,4 +1,4 @@
-﻿﻿﻿﻿# ==============================================================================
+﻿﻿﻿﻿﻿# ==============================================================================
 #  1 Click DLSS 5 - Universal Neural Rendering Game Center & Auto-Injector
 #  Official Repository: https://github.com/1Click-DLSS5/1-Click-DLSS5
 #  Architecture: RenoDX DLSS 5 v3 + NVIDIA Streamline 2.13 + nvngx_dlssnr.dll
@@ -564,6 +564,14 @@ function Install-Dlss5 {
         Install-ReShade -TargetExe $target.Executable -Setup $setup
         $state.InjectedFiles += "dxgi.dll"
         $state.InjectedFiles += "d3d12.dll"
+    }
+
+    # Aplica pre-configuracao ideal recomendada pelo relatorio de pesquisa
+    $defaultIni = Join-Path $PSScriptRoot "payload\ReShade.ini"
+    $targetIni = Join-Path $targetFolder "ReShade.ini"
+    if (Test-Path -LiteralPath $defaultIni -PathType Leaf) {
+        Copy-Item -LiteralPath $defaultIni -Destination $targetIni -Force
+        Write-Status -Message "Pre-configuracao aplicada: Auto Skin Mask ATIVADO, Preset #2 Cinematic e Intensidade 0.80." -Level "OK"
     }
     # Limpa versoes antigas ou variantes de addons para evitar conflitos no ReShade
     $legacyAddons = @("renodx-dlss5++.addon64", "renodx-dlss5.addon64", "renodx-dlss5-v3.addon64")
