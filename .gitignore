@@ -1,0 +1,32 @@
+# Operating System Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Large Binaries and Release Packages (>100MB for GitHub)
+*.zip
+payload/*.zip
+payload/streamline.zip
+
+# Temporary & Runtime Logs
+*.log
+ReShade.log
+sl.param.global.log
+sl.config.json
+
+# Local Installer Backups & State Manifests
+_1Click_DLSS5_Backup/
+_1Click_DLSS5_State.json
+_DLSS5_Easy_Backup/
+_DLSS5_Easy_Installer_State.json
+dlss5_backup_manifest.json
+
+# Local AppData Caches & Python Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+user-payload-*/
+test_*.ps1
+test_*.py
