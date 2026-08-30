@@ -578,17 +578,42 @@ function Install-ReShade {
         [Parameter(Mandatory = $true)][string]$TargetExe,
         [Parameter(Mandatory = $true)][string]$Setup
     )
-    $arguments = "--headless --api dxgi `"$TargetExe`""
-    $process = Start-Process -FilePath $Setup -ArgumentList $arguments -Wait -PassThru
-    if ($process.ExitCode -ne 0) { throw "Instalador do ReShade retornou codigo de erro $($process.ExitCode)." }
     $folder = Split-Path -Parent $TargetExe
     $dxgi = Join-Path $folder "dxgi.dll"
     $d3d12 = Join-Path $folder "d3d12.dll"
-    if ($TargetExe.ToLower().Contains("binaries\win64") -or $TargetExe.ToLower().Contains("htgame") -or $TargetExe.ToLower().Contains("hitman")) {
+    $isUe = $TargetExe.ToLower().Contains("binaries\win64") -or $TargetExe.ToLower().Contains("htgame") -or $TargetExe.ToLower().Contains("hitman")
+
+    # If ReShade is already installed and functional in the target folder, reuse it without failing
+    $reshadeExists = $false
+    if (Test-Path -LiteralPath $d3d12 -PathType Leaf) {
+        $item = Get-Item -LiteralPath $d3d12
+        if ($item.Length -gt 2MB) { $reshadeExists = $true }
+    } elseif (Test-Path -LiteralPath $dxgi -PathType Leaf) {
+        $item = Get-Item -LiteralPath $dxgi
+        if ($item.Length -gt 2MB) { $reshadeExists = $true }
+    }
+
+    if ($reshadeExists) {
+        Write-Status -Message "ReShade com Add-on Support ja esta presente no jogo. Mantendo binario integro..." -Level "OK"
+        if ($isUe -and (Test-Path -LiteralPath $dxgi -PathType Leaf) -and (-not (Test-Path -LiteralPath $d3d12 -PathType Leaf))) {
+            Move-Item -LiteralPath $dxgi -Destination $d3d12 -Force
+        }
+        return
+    }
+
+    $arguments = "--headless --api dxgi `"$TargetExe`""
+    $process = Start-Process -FilePath $Setup -ArgumentList $arguments -Wait -PassThru
+    
+    if ($isUe) {
         if ((Test-Path -LiteralPath $dxgi -PathType Leaf) -and (-not (Test-Path -LiteralPath $d3d12 -PathType Leaf))) {
             Move-Item -LiteralPath $dxgi -Destination $d3d12 -Force
             Write-Status -Message "ReShade configurado como d3d12.dll para compatibilidade nativa." -Level "OK"
         }
+    }
+
+    $hasDll = (Test-Path -LiteralPath $dxgi -PathType Leaf) -or (Test-Path -LiteralPath $d3d12 -PathType Leaf)
+    if (-not $hasDll -and $process.ExitCode -ne 0) {
+        throw "Instalador do ReShade retornou codigo de erro $($process.ExitCode)."
     }
 }
 
@@ -776,12 +801,20 @@ function Install-Dlss5 {
     $backupFolder = Join-Path $targetFolder $script:BackupName
     [void](New-Item -ItemType Directory -Path $backupFolder -Force)
     $stateFile = Join-Path $targetFolder $script:StateName
+    $priorBackedUp = @()
+    if (Test-Path -LiteralPath $stateFile -PathType Leaf) {
+        try {
+            $priorState = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
+            if ($priorState.BackedUpFiles) { $priorBackedUp = @($priorState.BackedUpFiles) }
+        } catch {}
+    }
+
     $state = @{
         InstalledAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
         TargetExe = $target.Executable
         Mode = if ($upscalerType -eq "NATIVE_DLSS") { "DIRECT" } else { "OPTISCALER" }
         UpscalerType = $upscalerType
-        BackedUpFiles = @()
+        BackedUpFiles = $priorBackedUp
         InjectedFiles = @()
     }
 
