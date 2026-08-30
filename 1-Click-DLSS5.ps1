@@ -11,9 +11,9 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $script:ProductName = "1 Click DLSS 5"
-$script:Version = "1.2.2"
+$script:Version = "1.3.0"
 $script:AddOnName = "renodx-dlss5.addon64"
-$script:AddonHash = "E1C28FDE0922B12FC10734E58C3D24A36808E575247F4FD4F36226540D7EE023"
+$script:AddonHash = "9150097CDEE2953CDC9894D2E5606EA5100E6C8F95FC7BB1B407328B4391A07A"
 $script:ReShadeUrl = "https://reshade.me/downloads/ReShade_Setup_6.8.0_Addon.exe"
 $script:ReShadeHash = "AFE4C8F13048306307983B8B3D41D5BF00A86820440B0E57DEA10950E1176445"
 $script:StateName = "_1Click_DLSS5_State.json"
@@ -120,9 +120,9 @@ function Get-Dict {
     param([string]$Lang)
     if ($Lang -eq "EN") {
         return @{
-            Eyebrow = "OFFICIAL RENO DX ECOSYSTEM • NVIDIA NGX NEURAL RUNTIME v310.8.0.0"
+            Eyebrow = "OFFICIAL RENO DX ECOSYSTEM • UNIVERSAL DLSS-NR (RTX 20 / 30 / 40 / 50 SERIES)"
             Title = "1 CLICK DLSS 5"
-            Subtitle = "Steam-Style Game Center • 1-Click Neural Injection • Full RTX 40 & RTX 50 Support"
+            Subtitle = "Steam-Style Game Center • 1-Click Neural Injection • Universal RTX 20/30/40/50 & RE Engine Support"
             LibraryTitle = "GAME LIBRARY & COMPATIBILITY"
             SearchPlaceholder = "Search installed games..."
             DriveLabel = "Drive:"
@@ -151,7 +151,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 OPEN FOLDER"
             BtnInstructions = "📖 IN-GAME GUIDE"
             StatusHeading = "REAL-TIME DIAGNOSTICS & SYSTEM LOG"
-            Footer = "1 Click DLSS 5 v1.2.2 | RTX 40 & RTX 50 Series | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
+            Footer = "1 Click DLSS 5 v1.3.0 | RTX 20/30/40/50 Series & RE Engine | DirectX 12 | Streamline 2.13 | RenoDX v4.55"
             Badge100 = "✓ 100% COMPATIBLE (Native DLSS)"
             BadgeDX12 = "✓ COMPATIBLE (DirectX 12)"
             BadgeCheck = "? VERIFY DX12 SUPPORT"
@@ -184,9 +184,9 @@ function Get-Dict {
         }
     } else {
         return @{
-            Eyebrow = "ECOSSISTEMA OFICIAL RENO DX • RUNTIME NEURAL NVIDIA NGX v310.8.0.0"
+            Eyebrow = "ECOSSISTEMA OFICIAL RENO DX • RUNTIME NEURAL UNIVERSAL (SÉRIES RTX 20 / 30 / 40 / 50)"
             Title = "1 CLICK DLSS 5"
-            Subtitle = "Interface Estilo Steam • Injeção Neural em 1-Clique • Detecção Exata do Executável do Jogo"
+            Subtitle = "Interface Estilo Steam • Injeção Neural em 1-Clique • Suporte Universal a RTX 20/30/40/50 e RE Engine"
             LibraryTitle = "BIBLIOTECA DE JOGOS E COMPATIBILIDADE"
             SearchPlaceholder = "Pesquisar jogos instalados..."
             DriveLabel = "Disco:"
@@ -215,7 +215,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 ABRIR PASTA"
             BtnInstructions = "📖 GUIA NO JOGO"
             StatusHeading = "DIAGNÓSTICO E LOG DO SISTEMA EM TEMPO REAL"
-            Footer = "1 Click DLSS 5 v1.2.2 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
+            Footer = "1 Click DLSS 5 v1.3.0 | Séries RTX 20/30/40/50 & RE Engine | DirectX 12 | Streamline 2.13 | RenoDX v4.55"
             Badge100 = "✓ 100% COMPATÍVEL (DLSS Nativo)"
             BadgeDX12 = "✓ COMPATÍVEL (DirectX 12)"
             BadgeCheck = "? VERIFICAR SUPORTE DX12"
@@ -645,10 +645,8 @@ function Get-Compatibility {
     }
     $gpus = @(Get-GpuNames)
     if ($gpus.Count -gt 0) { $gpuText = $gpus -join ", "
-        if ($gpuText -match "RTX\s*(40|50)") {
-            [void]$info.Add("GPU Compativel: $gpuText (Tensor Cores 4a/5a Geracao - FP8 Nativo Ativo)")
-        } elseif ($gpuText -match "RTX\s*(20|30)") {
-            [void]$warnings.Add("GPU Detectada: $gpuText. Nota: Modelos RTX 20/30 nao possuem instrucoes FP8 em silicio para DLSS-NR.")
+        if ($gpuText -match "RTX\s*(20|30|40|50)") {
+            [void]$info.Add("GPU Totalmente Compativel: $gpuText (Suporte Universal RTX 20/30/40/50 Ativo)")
         } else {
             [void]$info.Add("GPU Detectada: $gpuText")
         } }
@@ -1232,7 +1230,7 @@ function Show-Instructions {
 
 # --- FORMULARIO PRINCIPAL: STEAM-STYLE GAME CENTER ---
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "1 Click DLSS 5 v1.2.2 • Universal Neural Game Center"
+$form.Text = "1 Click DLSS 5 v1.3.0 • Universal Neural Game Center (RTX 20/30/40/50)"
 $form.Size = New-Object System.Drawing.Size(1200, 900)
 $form.MinimumSize = New-Object System.Drawing.Size(1100, 820)
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
@@ -1266,7 +1264,7 @@ $headerAccent.Size = New-Object System.Drawing.Size(6, 105)
 $headerAccent.BackColor = [System.Drawing.Color]::FromArgb(118, 185, 0)
 [void]$header.Controls.Add($headerAccent)
 
-$eyebrow = New-Label -Text "ECOSSISTEMA OFICIAL RENO DX • RUNTIME NEURAL NVIDIA NGX v310.8.0.0" -X 24 -Y 12 -Width 750 -Height 18
+$eyebrow = New-Label -Text "ECOSSISTEMA OFICIAL RENO DX • RUNTIME NEURAL UNIVERSAL (SÉRIES RTX 20 / 30 / 40 / 50)" -X 24 -Y 12 -Width 750 -Height 18
 $eyebrow.ForeColor = [System.Drawing.Color]::FromArgb(118, 185, 0)
 $eyebrow.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 8.5)
 [void]$header.Controls.Add($eyebrow)
@@ -1278,7 +1276,7 @@ $title.Font = New-Object System.Drawing.Font("Segoe UI", 21, [System.Drawing.Fon
 $title.ForeColor = [System.Drawing.Color]::White
 [void]$header.Controls.Add($title)
 
-$subtitle = New-Label -Text "Interface Estilo Steam • Injeção Neural em 1-Clique • Detecção Exata do Executável do Jogo" -X 24 -Y 72 -Width 750 -Height 22
+$subtitle = New-Label -Text "Interface Estilo Steam • Injeção Neural em 1-Clique • Suporte Universal a RTX 20/30/40/50 e RE Engine" -X 24 -Y 72 -Width 750 -Height 22
 $subtitle.ForeColor = [System.Drawing.Color]::FromArgb(160, 185, 215)
 [void]$header.Controls.Add($subtitle)
 
@@ -1616,7 +1614,7 @@ $status.ScrollBars = [System.Windows.Forms.RichTextBoxScrollBars]::Vertical
 $script:StatusBox = $status
 
 # FOOTER
-$footer = New-Label -Text "1 Click DLSS 5 v1.2.2 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format" -X 20 -Y 825 -Width 1145 -Height 22
+$footer = New-Label -Text "1 Click DLSS 5 v1.3.0 | Séries RTX 20/30/40/50 & RE Engine | DirectX 12 | Streamline 2.13 | RenoDX v4.55" -X 20 -Y 825 -Width 1145 -Height 22
 $footer.Anchor = "Bottom, Left, Right"
 $footer.ForeColor = [System.Drawing.Color]::FromArgb(120, 140, 170)
 $footer.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)

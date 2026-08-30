@@ -1,12 +1,12 @@
 1 Click DLSS 5 - Official Payload Manifest
 =================================================
-Package Version: 1.2.2
-Build: RenoDX DLSS 5 Add-on v4.x (Latest Build) + NVIDIA Streamline 2.13 + OptiScaler v0.9.4 Bridge
+Package Version: 1.3.0
+Build: RenoDX DLSS 5 Add-on v4.55 (RE Engine & Universal Games) + NVIDIA Streamline 2.13 + Universal RTX 20/30/40/50 DLSS-NR + OptiScaler v0.9.4 Bridge
 
 Included Modules in /payload:
-1. renodx-dlss5.addon64 - RenoDX DLSS 5 ReShade Add-on (Latest Build)
+1. renodx-dlss5.addon64 - RenoDX DLSS 5 ReShade Add-on v4.55 (RE Engine Support, F5 A/B, F6 toggle)
 2. ReShade_Setup_6.8.0_Addon.exe - Official ReShade 6.8.0 Add-on Runtime Installer
-3. streamline.zip - NVIDIA Streamline 2.13 & DLSS-NR Core Neural Runtime (nvngx_dlssnr.dll)
+3. streamline.zip - NVIDIA Streamline 2.13 & Patched Universal DLSS-NR Core Neural Runtime (nvngx_dlssnr.dll with native RTX 20, 30, 40, and 50 Series support)
 4. optiscaler/ - OptiScaler v0.9.4 Universal Bridge Runtime:
    - OptiScaler.dll - Universal upscaler bridge runtime (installed as version.dll)
    - OptiScaler.ini - Pre-configured settings routing FSR2/XeSS to DLSS-NR
