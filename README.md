@@ -14,6 +14,12 @@
 [![RenoDX](https://img.shields.io/badge/RenoDX-Stable%20Build-FF6B6B.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 [![OptiScaler](https://img.shields.io/badge/OptiScaler-v0.9.4%20Bridge-purple.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 
+<br>
+
+<img src="docs/ui_preview.png" alt="1 Click DLSS 5 Game Center Interface" width="850">
+
+<br>
+
 [English](#english) • [Português (Brasil)](#português-brasil)
 
 </div>
