@@ -639,6 +639,101 @@ function Get-Compatibility {
     }
 }
 
+function Set-Dlss5ReShadeIni {
+    param([Parameter(Mandatory = $true)][string]$IniPath)
+
+    $defaultIni = Join-Path $script:AppRoot "payload\ReShade.ini"
+    if (-not (Test-Path -LiteralPath $IniPath -PathType Leaf)) {
+        if (Test-Path -LiteralPath $defaultIni -PathType Leaf) {
+            Copy-Item -LiteralPath $defaultIni -Destination $IniPath -Force
+        }
+        return
+    }
+
+    try {
+        $iniText = [System.IO.File]::ReadAllText($IniPath, [System.Text.Encoding]::UTF8)
+        $lines = $iniText -split "\r?\n"
+        $keptLines = New-Object System.Collections.Generic.List[string]
+        $currentSection = ""
+        $ignoreSections = @("RenoDX.DLSS5", "ADDON", "DLSS5", "RenoDX")
+
+        foreach ($line in $lines) {
+            $trimmed = $line.Trim()
+            if ($trimmed -match '^\[(.*)\]$') {
+                $currentSection = $matches[1]
+            }
+            if ($ignoreSections -contains $currentSection) {
+                continue
+            }
+            if ($trimmed -match '^(Neural|NRPreset|NRStyle|NRIntensity|NRLocalTone|NRLocalStructure|NRSkinStructure|NRAutoMask|NRUICorrection|AutoSkinMask|LocalToneStrength|StructureStrength|SkinStructure|NeuralIntensity|NeuralUplift|Preset=|Style=|Enabled=|LoadFromDllMain=renodx)') {
+                continue
+            }
+            [void]$keptLines.Add($line)
+        }
+
+        $baseText = ($keptLines -join "`r`n").Trim()
+
+        $sectionsToAdd = @"
+
+[ADDON]
+LoadFromDllMain=renodx-dlss5.addon64
+
+[RenoDX.DLSS5]
+NeuralUplift=1
+NREnableUpscaling=0
+NRPreset=2
+NRStyle=1
+NRIntensity=0.850000
+NRLocalTone=1.000000
+NRLocalStructure=1.000000
+NRSkinStructure=-0.500000
+NRAutoMask=1
+NRUICorrection=1
+NRPaperWhiteScale=1.000000
+NRTransferStrength=1.000000
+NRColorStrength=1.000000
+NRDepthMode=0
+NRMVecScaleX=1.000000
+NRMVecScaleY=1.000000
+EnableHooks=2
+NRToggleKey=117
+NRScreenshotKey=116
+
+[DLSS5]
+Enabled=1
+AutoSkinMask=1
+NRAutoMask=1
+Preset=2
+NRPreset=2
+Style=1
+NRStyle=1
+NeuralIntensity=0.850000
+NRIntensity=0.850000
+LocalToneStrength=1.000000
+StructureStrength=1.000000
+SkinStructure=-0.500000
+
+[RenoDX]
+NeuralUplift=1
+AutoSkinMask=1
+NRAutoMask=1
+NeuralIntensity=0.850000
+NRIntensity=0.850000
+Preset=2
+NRPreset=2
+Style=1
+NRStyle=1
+"@
+
+        $finalContent = if ([string]::IsNullOrWhiteSpace($baseText)) { $sectionsToAdd.Trim() } else { $baseText + "`r`n" + $sectionsToAdd }
+        [System.IO.File]::WriteAllText($IniPath, $finalContent, (New-Object System.Text.UTF8Encoding($false)))
+    } catch {
+        if (Test-Path -LiteralPath $defaultIni -PathType Leaf) {
+            Copy-Item -LiteralPath $defaultIni -Destination $IniPath -Force
+        }
+    }
+}
+
 function Install-Dlss5 {
     param(
         [Parameter(Mandatory = $true)][string]$TargetPath,
@@ -698,14 +793,11 @@ function Install-Dlss5 {
         $state.InjectedFiles += "d3d12.dll"
     }
 
-    # Apply pre-configured ReShade.ini
-    $defaultIni = Join-Path $script:AppRoot "payload\ReShade.ini"
+    # Apply pre-configured ReShade.ini with optimal DLSS 5 defaults
     $targetIni = Join-Path $targetFolder "ReShade.ini"
-    if (Test-Path -LiteralPath $defaultIni -PathType Leaf) {
-        Copy-Item -LiteralPath $defaultIni -Destination $targetIni -Force
-        $state.InjectedFiles += "ReShade.ini"
-        Write-Status -Message "Pre-configuracao aplicada: Auto Skin Mask ATIVADO, Preset #2 Cinematic e Intensidade 0.80." -Level "OK"
-    }
+    Set-Dlss5ReShadeIni -IniPath $targetIni
+    if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
+    Write-Status -Message "Pre-configuracao ideal aplicada: Neural Uplift ATIVADO, Auto Skin Mask ATIVADO, Preset #2 Cinematic, Estilo Cinematic e Intensidade 0.85." -Level "OK"
 
     # Clean up legacy addons
     $legacyAddons = @("renodx-dlss5++.addon64", "renodx-dlss5-v3.addon64")
@@ -1083,10 +1175,10 @@ function Style-Button {
 
 function Show-Instructions {
     if ($script:CurrentLang -eq "PT") {
-        $msg = "GUIA DE OTIMIZACAO E USO DO 1 CLICK DLSS 5 (NEURAL RENDERING):`n`n1. OPCOES GRAFICAS NO JOGO:`n - Ative o NVIDIA DLSS Super Resolution (Qualidade, Balanceado ou Desempenho).`n - DICA CRITICA: Mantenha o HDR DESATIVADO no jogo para evitar estouro de cores no modelo neural.`n`n2. ABRIR O PAINEL NO JOGO:`n - Pressione a tecla [Home] (ou Pos1) para abrir a barra do ReShade/RenoDX.`n`n3. CONFIGURACOES RECOMENDADAS (ABAS ADD-ONS -> DLSS 5):`n - Auto Skin Mask: ATIVADO (evita distorcoes e envelhecimento em rostos de personagens).`n - NR Preset: Preset #2 (Cinematic / Iluminacao Coerente).`n - Neural Intensity: 0.75 a 0.85 (equilibrio perfeito de iluminacao e sombras).`n - Structure / Local Tone Strength: Padrao.`n`n4. COMPATIBILIDADE DE HARDWARE:`n - O DLSS 5 Neural opera em matrizes FP8 nas GPUs RTX 40 e 50.`n`n5. INICIAR JOGO:`n - Use o botao [INICIAR JOGO] para abrir diretamente com as DLLs injetadas!`n`n6. JOGOS SEM DLSS NATIVO (FSR2/XeSS):`n - O programa detectou e instalou automaticamente a ponte OptiScaler.`n - Ative o upscaler original do jogo (FSR2 ou XeSS) no modo Qualidade.`n - O OptiScaler redireciona automaticamente para o modelo neural DLSS 5."
+        $msg = "GUIA DE OTIMIZACAO E USO DO 1 CLICK DLSS 5 (NEURAL RENDERING):`n`n1. CONFIGURACOES PRE-APLICADAS AUTOMATICAMENTE:`n - Todas as configuracoes ideais ja estao ativadas de fabrica no seu jogo:`n   * Neural Uplift: ATIVADO (1)`n   * Auto Skin Mask: ATIVADO (evita distorcoes/rugas em rostos humanos)`n   * Skin Structure Strength: -0.50 (suavizacao facial natural)`n   * NR Preset: Preset #2 (Cinematic / Iluminacao Coerente e Sombras de Contato)`n   * NR Style: Cinematic (1)`n   * Neural Intensity: 0.85 (equilibrio perfeito de profundidade neural)`n   * UI Correction: ATIVADO (protege interfaces e miras de distorcao de cor)`n   * EnableHooks: 2 (Modo Seguro NGX sem travamentos no boot)`n`n2. NOVO: ATALHOS RAPIDOS NO TECLADO:`n - Tecla [F6]: Liga / Desliga o DLSS 5 em tempo real para comparacao no mesmo frame!`n - Tecla [F5]: Captura screenshot em modo comparativo perfeito A/B.`n - Tecla [Home] / [Pos1]: Abre o menu completo do ReShade / RenoDX.`n`n3. NO JOGO:`n - Ative o NVIDIA DLSS Super Resolution (Qualidade, Balanceado ou Desempenho).`n - DICA CRITICA: Mantenha o HDR nativo do jogo DESATIVADO para calibracao precisa de cores.`n`n4. JOGOS SEM DLSS NATIVO (FSR2/XeSS):`n - O OptiScaler redireciona automaticamente para o modelo neural DLSS 5.`n - Basta ativar FSR2 ou XeSS no modo Qualidade dentro do jogo."
         [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Instrucoes", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     } else {
-        $msg = "1 CLICK DLSS 5 OPTIMIZATION & USAGE GUIDE:`n`n1. IN-GAME GRAPHICS SETTINGS:`n - Enable NVIDIA DLSS Super Resolution (Quality, Balanced or Performance).`n - CRITICAL TIP: Keep in-game HDR DISABLED for accurate SDR neural color space.`n`n2. OPEN IN-GAME OVERLAY:`n - Press the [Home] (or Pos1) key to open the ReShade/RenoDX menu.`n`n3. RECOMMENDED TUNING (ADD-ONS TAB -> DLSS 5):`n - Auto Skin Mask: ENABLED (prevents facial warping and artificial aging on characters).`n - NR Preset: Preset #2 (Cinematic / Coherent Lighting).`n - Neural Intensity: 0.75 - 0.85 (ideal physical lighting & contact shadows).`n - Structure / Local Tone: Default.`n`n4. HARDWARE ARCHITECTURE:`n - DLSS 5 Neural Rendering runs native FP8 on RTX 40 & RTX 50 Series.`n`n5. DIRECT LAUNCH:`n - Click [LAUNCH GAME] to start playing with all neural modules active!`n`n6. GAMES WITHOUT NATIVE DLSS (FSR2/XeSS):`n - The program detected and automatically installed the OptiScaler bridge.`n - Enable the original upscaler (FSR2 or XeSS) in Quality mode.`n - OptiScaler automatically redirects to the DLSS 5 neural model."
+        $msg = "1 CLICK DLSS 5 OPTIMIZATION & USAGE GUIDE:`n`n1. PRE-APPLIED OPTIMAL SETTINGS (AUTOMATIC):`n - All optimal cinematic parameters are automatically injected into your game:`n   * Neural Uplift: ENABLED (1)`n   * Auto Skin Mask: ENABLED (prevents facial warping & uncanny valley aging)`n   * Skin Structure Strength: -0.50 (natural skin smoothing)`n   * NR Preset: Preset #2 (Cinematic / Coherent Physical Lighting & Shadows)`n   * NR Style: Cinematic (1)`n   * Neural Intensity: 0.85 (perfect neural depth balance)`n   * UI Correction: ENABLED (protects HUD & crosshairs from color shift)`n   * EnableHooks: 2 (Safe NGX mode - no crash at boot)`n`n2. NEW: IN-GAME HOTKEYS:`n - Key [F6]: Quick ON/OFF comparison of DLSS 5 on the exact same frame!`n - Key [F5]: Capture perfect A/B comparison screenshot.`n - Key [Home] / [Pos1]: Open full ReShade / RenoDX in-game overlay.`n`n3. IN-GAME GRAPHICS SETTINGS:`n - Enable NVIDIA DLSS Super Resolution (Quality, Balanced or Performance).`n - CRITICAL TIP: Keep in-game HDR DISABLED for accurate neural color transfer.`n`n4. GAMES WITHOUT NATIVE DLSS (FSR2/XeSS):`n - OptiScaler automatically redirects FSR2/XeSS to DLSS 5 Neural Rendering.`n - Just enable FSR2 or XeSS in Quality mode in-game."
         [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Instructions", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     }
 }
