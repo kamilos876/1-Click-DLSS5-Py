@@ -159,6 +159,10 @@ function Get-Dict {
             MsgScanning = "Scanning drives ({0}) and reading game executables and icons..."
             MsgScanDone = "Scan complete! {0} games loaded into your library, sorted by compatibility."
             MsgPayloadLoaded = "Official 1 Click DLSS 5 payload loaded automatically."
+            MsgScanProgressTitle = "Scanning Games..."
+            MsgScanFolder = "Scanning: {0}"
+            MsgScanProgressDrive = "Scanning drive {0} ({1}/{2})..."
+            MsgLibraryEmpty = "Click [SCAN DISKS] to discover your games, or [BROWSE GAME] to select a folder manually."
             MsgSelected = "Selected game: {0} ({1})"
             SuccessTitle = "1 Click DLSS 5 - Installation Complete"
             SuccessMsg = "DLSS 5 successfully installed!`n`n1. Click [LAUNCH GAME] or open the game.`n2. Enable DLSS Super Resolution in the game settings.`n3. Press [Home] key -> Add-ons tab -> Expand 'DLSS 5' -> Set Preset #2 Cinematic."
@@ -217,6 +221,10 @@ function Get-Dict {
             MsgScanning = "Escaneando discos ({0}) e extraindo ícones reais dos executáveis..."
             MsgScanDone = "Varredura concluída! {0} jogos carregados na biblioteca e ordenados por compatibilidade."
             MsgPayloadLoaded = "Pacote oficial 1 Click DLSS 5 embutido carregado com sucesso."
+            MsgScanProgressTitle = "Escaneando Jogos..."
+            MsgScanFolder = "Escaneando: {0}"
+            MsgScanProgressDrive = "Escaneando disco {0} ({1}/{2})..."
+            MsgLibraryEmpty = "Clique em [ESCANEAR DISCOS] para descobrir seus jogos, ou [PROCURAR JOGO] para selecionar uma pasta manualmente."
             MsgSelected = "Jogo selecionado: {0} ({1})"
             SuccessTitle = "1 Click DLSS 5 - Instalação Concluída"
             SuccessMsg = "DLSS 5 instalado com sucesso!`n`n1. Clique em [INICIAR JOGO] ou abra o jogo.`n2. Ative o DLSS Super Resolution nas opções de vídeo do jogo.`n3. Pressione a tecla [Home] -> Aba Add-ons -> Expanda 'DLSS 5' -> Ative o Preset #2 Cinematic."
@@ -929,7 +937,10 @@ function Uninstall-Dlss5 {
 }
 
 function Scan-DriveForGames {
-    param([string]$DriveLetter = "ALL")
+    param(
+        [string]$DriveLetter = "ALL",
+        [scriptblock]$ProgressCallback = $null
+    )
     $results = New-Object System.Collections.Generic.List[pscustomobject]
     $rootsToScan = New-Object System.Collections.Generic.List[string]
     $drives = @()
@@ -952,73 +963,92 @@ function Scan-DriveForGames {
     $ignored = @("steamworks shared", "_commonredist", "directx", "vcredist", "dotnet", "crashreport", "tools", "easyanticheat", "battleye")
     $dDict = Get-Dict -Lang $script:CurrentLang
 
+    # Collect all game directories first for accurate progress
+    $allGameDirs = New-Object System.Collections.Generic.List[pscustomobject]
     foreach ($root in $rootsToScan) {
         if (Test-Path -LiteralPath $root -PathType Container) {
             try {
                 $dirs = Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue
                 foreach ($dir in $dirs) {
                     if ($ignored -contains $dir.Name.ToLower()) { continue }
-                    $gamePath = $dir.FullName
-                    $hasDlss = $false
-                    $hasDx12 = $false
-                    $isUe = $false
-
-                    $dlssFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*dlss*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-                    if ($dlssFiles.Count -gt 0) { $hasDlss = $true }
-
-                    $d3d12Files = @(Get-ChildItem -LiteralPath $gamePath -Filter "*d3d12*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-                    if ($d3d12Files.Count -gt 0) { $hasDx12 = $true }
-
-                    $binFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*.exe" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue | Where-Object { $_.FullName.ToLower().Contains("binaries\win64") })
-                    if ($binFiles.Count -gt 0) { $isUe = $true; $hasDx12 = $true }
-
-                    $hasFsr2 = $false
-                    $hasXess = $false
-
-                    $fsrFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*fidelityfx*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-                    $fsrFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "ffx_fsr*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-                    if ($fsrFiles.Count -gt 0) { $hasFsr2 = $true }
-
-                    $xessFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "libxess*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-                    $xessFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "xess.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-                    if ($xessFiles.Count -gt 0) { $hasXess = $true }
-
-                    $badge = ""
-                    $order = 3
-                    if ($hasDlss) {
-                        $badge = $dDict.Badge100
-                        $order = 1
-                    } elseif ($hasFsr2 -or $hasXess) {
-                        $badge = $dDict.BadgeBridge
-                        $order = 2
-                    } elseif ($hasDx12 -or $isUe) {
-                        $badge = $dDict.BadgeDX12
-                        $order = 3
-                    } else {
-                        $badge = $dDict.BadgeUnsupported
-                        $order = 4
-                    }
-
-                    $icon = $null
-                    $exeName = ""
-                    try {
-                        $resolved = Resolve-GameTarget -TargetPath $gamePath
-                        $icon = $resolved.Icon
-                        $exeName = $resolved.ExeName
-                    } catch {}
-
-                    [void]$results.Add([pscustomobject]@{
-                        Order = $order
-                        DisplayName = "$badge $($dir.Name)"
-                        Name = $dir.Name
-                        Path = $gamePath
-                        Badge = $badge
-                        Icon = $icon
-                        ExeName = $exeName
-                    })
+                    [void]$allGameDirs.Add([pscustomobject]@{ Root = $root; Dir = $dir })
                 }
             } catch {}
         }
+    }
+
+    $totalGames = $allGameDirs.Count
+    if ($totalGames -eq 0) { return @() }
+    $currentIdx = 0
+
+    foreach ($entry in $allGameDirs) {
+        $dir = $entry.Dir
+        $gamePath = $dir.FullName
+        $currentIdx++
+
+        # Report progress
+        if ($null -ne $ProgressCallback) {
+            $pct = [int](($currentIdx / $totalGames) * 100)
+            try { & $ProgressCallback $pct $dir.Name } catch {}
+        }
+
+        $hasDlss = $false
+        $hasDx12 = $false
+        $isUe = $false
+
+        $dlssFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*dlss*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        if ($dlssFiles.Count -gt 0) { $hasDlss = $true }
+
+        $d3d12Files = @(Get-ChildItem -LiteralPath $gamePath -Filter "*d3d12*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        if ($d3d12Files.Count -gt 0) { $hasDx12 = $true }
+
+        $binFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*.exe" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue | Where-Object { $_.FullName.ToLower().Contains("binaries\win64") })
+        if ($binFiles.Count -gt 0) { $isUe = $true; $hasDx12 = $true }
+
+        $hasFsr2 = $false
+        $hasXess = $false
+
+        $fsrFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*fidelityfx*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        $fsrFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "ffx_fsr*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        if ($fsrFiles.Count -gt 0) { $hasFsr2 = $true }
+
+        $xessFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "libxess*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        $xessFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "xess.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        if ($xessFiles.Count -gt 0) { $hasXess = $true }
+
+        $badge = ""
+        $order = 3
+        if ($hasDlss) {
+            $badge = $dDict.Badge100
+            $order = 1
+        } elseif ($hasFsr2 -or $hasXess) {
+            $badge = $dDict.BadgeBridge
+            $order = 2
+        } elseif ($hasDx12 -or $isUe) {
+            $badge = $dDict.BadgeDX12
+            $order = 3
+        } else {
+            $badge = $dDict.BadgeUnsupported
+            $order = 4
+        }
+
+        $icon = $null
+        $exeName = ""
+        try {
+            $resolved = Resolve-GameTarget -TargetPath $gamePath
+            $icon = $resolved.Icon
+            $exeName = $resolved.ExeName
+        } catch {}
+
+        [void]$results.Add([pscustomobject]@{
+            Order = $order
+            DisplayName = "$badge $($dir.Name)"
+            Name = $dir.Name
+            Path = $gamePath
+            Badge = $badge
+            Icon = $icon
+            ExeName = $exeName
+        })
     }
     $sorted = @($results | Sort-Object -Property Order, Name)
     return $sorted
@@ -1593,7 +1623,25 @@ function Update-Language {
         $btnLangPT.BackColor = [System.Drawing.Color]::FromArgb(25, 60, 25)
     }
 
-    Refresh-GameLibrary
+    # Re-badge existing games with new language (no rescan)
+    if ($script:DiscoveredGames -and $script:DiscoveredGames.Count -gt 0) {
+        $gameListView.BeginUpdate()
+        foreach ($lvItem in $gameListView.Items) {
+            $g = $lvItem.Tag
+            if ($null -ne $g) {
+                $newBadge = switch -Wildcard ($g.Badge) {
+                    "*100%*"       { $d.Badge100 }
+                    "*OPTISCALER*" { $d.BadgeBridge }
+                    "*DX12*"       { $d.BadgeDX12 }
+                    default        { $d.BadgeUnsupported }
+                }
+                $g.Badge = $newBadge
+                $g.DisplayName = "$newBadge $($g.Name)"
+                $lvItem.SubItems[1].Text = $newBadge
+            }
+        }
+        $gameListView.EndUpdate()
+    }
 }
 
 $btnLangPT.Add_Click({ Update-Language "PT" })
@@ -1603,8 +1651,78 @@ function Refresh-GameLibrary {
     $selDrive = if ($driveCombo.SelectedIndex -le 0) { "ALL" } else { $driveCombo.SelectedItem.ToString() }
     $d = Get-Dict -Lang $script:CurrentLang
     Write-Status -Message ($d.MsgScanning -f $selDrive) -Level "INFO"
-    $script:DiscoveredGames = @(Scan-DriveForGames -DriveLetter $selDrive)
 
+    # Disable scan/browse buttons during scan
+    $btnScanDrives.Enabled = $false
+    $browse.Enabled = $false
+
+    # --- Build progress dialog ---
+    $progressForm = New-Object System.Windows.Forms.Form
+    $progressForm.Text = $d.MsgScanProgressTitle
+    $progressForm.Size = New-Object System.Drawing.Size(520, 180)
+    $progressForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterParent
+    $progressForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+    $progressForm.MaximizeBox = $false
+    $progressForm.MinimizeBox = $false
+    $progressForm.ControlBox = $false
+    $progressForm.BackColor = [System.Drawing.Color]::FromArgb(18, 22, 36)
+    $progressForm.ShowInTaskbar = $false
+    $progressForm.TopMost = $true
+
+    $lblProgressTitle = New-Object System.Windows.Forms.Label
+    $lblProgressTitle.Text = $d.MsgScanProgressTitle
+    $lblProgressTitle.Location = New-Object System.Drawing.Point(20, 15)
+    $lblProgressTitle.Size = New-Object System.Drawing.Size(470, 22)
+    $lblProgressTitle.ForeColor = [System.Drawing.Color]::FromArgb(120, 200, 255)
+    $lblProgressTitle.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 11)
+    [void]$progressForm.Controls.Add($lblProgressTitle)
+
+    $progressBar = New-Object System.Windows.Forms.ProgressBar
+    $progressBar.Location = New-Object System.Drawing.Point(20, 48)
+    $progressBar.Size = New-Object System.Drawing.Size(465, 26)
+    $progressBar.Minimum = 0
+    $progressBar.Maximum = 100
+    $progressBar.Value = 0
+    $progressBar.Style = [System.Windows.Forms.ProgressBarStyle]::Continuous
+    [void]$progressForm.Controls.Add($progressBar)
+
+    $lblProgressDetail = New-Object System.Windows.Forms.Label
+    $lblProgressDetail.Text = ""
+    $lblProgressDetail.Location = New-Object System.Drawing.Point(20, 84)
+    $lblProgressDetail.Size = New-Object System.Drawing.Size(465, 20)
+    $lblProgressDetail.ForeColor = [System.Drawing.Color]::FromArgb(200, 200, 200)
+    $lblProgressDetail.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+    [void]$progressForm.Controls.Add($lblProgressDetail)
+
+    $lblProgressPct = New-Object System.Windows.Forms.Label
+    $lblProgressPct.Text = "0%"
+    $lblProgressPct.Location = New-Object System.Drawing.Point(20, 108)
+    $lblProgressPct.Size = New-Object System.Drawing.Size(465, 20)
+    $lblProgressPct.ForeColor = [System.Drawing.Color]::FromArgb(160, 160, 160)
+    $lblProgressPct.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)
+    $lblProgressPct.TextAlign = [System.Drawing.ContentAlignment]::MiddleRight
+    [void]$progressForm.Controls.Add($lblProgressPct)
+
+    $progressForm.Show($form)
+    $progressForm.Refresh()
+
+    # --- Progress callback ---
+    $progressCallback = {
+        param([int]$pct, [string]$gameName)
+        $progressBar.Value = [Math]::Min($pct, 100)
+        $lblProgressDetail.Text = ($d.MsgScanFolder -f $gameName)
+        $lblProgressPct.Text = "$pct%"
+        [System.Windows.Forms.Application]::DoEvents()
+    }.GetNewClosure()
+
+    # --- Run scan ---
+    $script:DiscoveredGames = @(Scan-DriveForGames -DriveLetter $selDrive -ProgressCallback $progressCallback)
+
+    # --- Close progress dialog ---
+    $progressForm.Close()
+    $progressForm.Dispose()
+
+    # --- Populate list view ---
     $gameListView.BeginUpdate()
     $gameListView.Items.Clear()
     $imageListSmall.Images.Clear()
@@ -1640,6 +1758,11 @@ function Refresh-GameLibrary {
         $gameListView.Items[0].Selected = $true
         Select-GameInInspector -GameObj $gameListView.Items[0].Tag
     }
+
+    # Re-enable buttons
+    $btnScanDrives.Enabled = $true
+    $browse.Enabled = $true
+
     Write-Status -Message ($d.MsgScanDone -f $script:DiscoveredGames.Count) -Level "OK"
 }
 
@@ -1736,9 +1859,8 @@ $form.Add_Shown({
         $d = Get-Dict -Lang $script:CurrentLang
         Write-Status -Message $d.MsgPayloadLoaded -Level "OK"
     }
-    Refresh-GameLibrary
     $d = Get-Dict -Lang $script:CurrentLang
-    Write-Status -Message $d.MsgReady -Level "INFO"
+    Write-Status -Message $d.MsgLibraryEmpty -Level "INFO"
 })
 
 [void]$form.ShowDialog()
