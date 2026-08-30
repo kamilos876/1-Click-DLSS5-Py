@@ -22,8 +22,15 @@ $script:CacheRoot = Join-Path $env:LOCALAPPDATA "1ClickDLSS5"
 $script:StatusBox = $null
 $script:PayloadFolder = $null
 $script:PayloadZipPath = $null
-$script:PayloadZipHash = $null
-$script:IconPath = Join-Path $PSScriptRoot "assets\logo.ico"
+$script:AppRoot = $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($script:AppRoot)) {
+    if (-not [string]::IsNullOrWhiteSpace($MyInvocation.MyCommand.Path)) {
+        $script:AppRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+    } else {
+        $script:AppRoot = (Get-Location).Path
+    }
+}
+$script:IconPath = Join-Path $script:AppRoot "assets\logo.ico"
 $script:CurrentLang = "PT"
 $script:DiscoveredGames = @()
 $script:SelectedGameObj = $null
@@ -396,7 +403,15 @@ function Resolve-GameTarget {
 
     $installFolder = (Split-Path -Parent $targetExe)
     $dlssCandidate = Join-Path $installFolder "nvngx_dlss.dll"
-    $existingDlss = if (Test-Path -LiteralPath $dlssCandidate -PathType Leaf) { $dlssCandidate } else { $null }
+    $existingDlss = $null
+    if (Test-Path -LiteralPath $dlssCandidate -PathType Leaf) {
+        $existingDlss = $dlssCandidate
+    } else {
+        $foundDlss = @(Get-ChildItem -LiteralPath $targetRoot -Filter "nvngx_dlss*.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        if ($foundDlss.Count -gt 0) {
+            $existingDlss = $foundDlss[0].FullName
+        }
+    }
 
     $extractedIcon = $null
     try {
@@ -436,9 +451,37 @@ function Get-DriverVersions {
 }
 
 function Detect-GameUpscalerType {
-    param([Parameter(Mandatory = $true)][string]$GameFolder)
-    $allDlls = @(Get-ChildItem -LiteralPath $GameFolder -Filter "*.dll" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
-    # PRIORITY 1: Native DLSS
+    param(
+        [Parameter(Mandatory = $true)][string]$GameFolder,
+        [Parameter(Mandatory = $false)][string]$GameRoot = ""
+    )
+    $searchDirs = [System.Collections.Generic.List[string]]::new()
+    if (-not [string]::IsNullOrWhiteSpace($GameRoot) -and (Test-Path -LiteralPath $GameRoot -PathType Container)) {
+        $searchDirs.Add($GameRoot)
+    }
+    if (Test-Path -LiteralPath $GameFolder -PathType Container) {
+        if (-not $searchDirs.Contains($GameFolder)) { $searchDirs.Add($GameFolder) }
+        if ([string]::IsNullOrWhiteSpace($GameRoot)) {
+            $p = $GameFolder
+            for ($i = 0; $i -lt 4; $i++) {
+                $parent = Split-Path -Parent $p
+                if ([string]::IsNullOrWhiteSpace($parent) -or -not (Test-Path -LiteralPath $parent -PathType Container)) { break }
+                if ($parent -match '^[A-Za-z]:\\$' -or $parent.ToLower().EndsWith('\common') -or $parent.ToLower().EndsWith('\steamapps')) { break }
+                if (-not $searchDirs.Contains($parent)) { $searchDirs.Add($parent) }
+                $p = $parent
+            }
+        }
+    }
+
+    $allDlls = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
+    foreach ($sDir in $searchDirs) {
+        $found = @(Get-ChildItem -LiteralPath $sDir -Filter "*.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        foreach ($f in $found) {
+            $allDlls.Add($f)
+        }
+    }
+
+    # PRIORITY 1: Native DLSS / Streamline
     foreach ($dll in $allDlls) {
         if ($dll.Name -imatch '^(nvngx_dlss\.dll|nvngx_dlssd\.dll|nvngx_dlssg\.dll|sl\.dlss\.dll|sl\.interposer\.dll|_nvngx\.dll)$') {
             return "NATIVE_DLSS"
@@ -446,7 +489,7 @@ function Detect-GameUpscalerType {
     }
     # PRIORITY 2: FSR 2/3
     foreach ($dll in $allDlls) {
-        if ($dll.Name -imatch '^(ffx_fsr2_api.*\.dll|ffx_fsr3_api.*\.dll|amd_fidelityfx.*\.dll|FSR2\.dll)$') {
+        if ($dll.Name -imatch '^(ffx_fsr2_api.*\.dll|ffx_fsr3_api.*\.dll|amd_fidelityfx.*\.dll|FSR2\.dll|ffx_backend_dx12\.dll)$') {
             return "FSR2_BRIDGE"
         }
     }
@@ -465,7 +508,7 @@ function Prepare-Payload {
     if ([string]::IsNullOrWhiteSpace($cleanZip)) { throw "Selecione o arquivo ZIP do pacote 1 Click DLSS 5." }
     if (-not (Test-Path -LiteralPath $cleanZip -PathType Leaf)) { throw "O arquivo ZIP selecionado nao existe: $cleanZip" }
 
-    $payloadRoot = Join-Path $PSScriptRoot "payload"
+    $payloadRoot = Join-Path $script:AppRoot "payload"
     $addon = Join-Path $payloadRoot $script:AddOnName
     if (-not (Test-Path -LiteralPath $addon -PathType Leaf)) { throw "O arquivo $script:AddOnName nao foi encontrado na pasta payload." }
 
@@ -506,7 +549,7 @@ function Get-ReShadeSetup {
         [void](New-Item -ItemType Directory -Path $script:CacheRoot -Force)
     }
     $setup = Join-Path $script:CacheRoot "ReShade_Setup_6.8.0_Addon.exe"
-    $payloadSetup = Join-Path $PSScriptRoot "payload\ReShade_Setup_6.8.0_Addon.exe"
+    $payloadSetup = Join-Path $script:AppRoot "payload\ReShade_Setup_6.8.0_Addon.exe"
     if (Test-Path -LiteralPath $payloadSetup -PathType Leaf) {
         Copy-Item -LiteralPath $payloadSetup -Destination $setup -Force
         return $setup
@@ -605,7 +648,7 @@ function Install-Dlss5 {
     $d = Get-Dict -Lang $script:CurrentLang
 
     # Detect upscaler type
-    $upscalerType = Detect-GameUpscalerType -GameFolder $targetFolder
+    $upscalerType = Detect-GameUpscalerType -GameFolder $targetFolder -GameRoot $target.Root
     Write-Status -Message "Tipo de upscaler detectado: $upscalerType" -Level "INFO"
 
     if ($upscalerType -eq "UNSUPPORTED") {
@@ -648,7 +691,7 @@ function Install-Dlss5 {
     }
 
     # Apply pre-configured ReShade.ini
-    $defaultIni = Join-Path $PSScriptRoot "payload\ReShade.ini"
+    $defaultIni = Join-Path $script:AppRoot "payload\ReShade.ini"
     $targetIni = Join-Path $targetFolder "ReShade.ini"
     if (Test-Path -LiteralPath $defaultIni -PathType Leaf) {
         Copy-Item -LiteralPath $defaultIni -Destination $targetIni -Force
@@ -685,13 +728,37 @@ function Install-Dlss5 {
                 if ($state.InjectedFiles -notcontains $fname) { $state.InjectedFiles += $fname }
             }
         }
+
+        # Also update any engine plugin folders (such as Unreal Engine Plugins) with existing DLSS/Streamline dlls
+        $pluginDlssDirs = @(Get-ChildItem -LiteralPath $target.Root -Filter "nvngx_dlss.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue |
+            Where-Object { $_.Directory.FullName.ToLower() -ne $targetFolder.ToLower() } |
+            ForEach-Object { $_.Directory.FullName } | Select-Object -Unique)
+
+        foreach ($pDir in $pluginDlssDirs) {
+            Write-Status -Message "Atualizando plugin de engine em: $pDir" -Level "INFO"
+            $pBackup = Join-Path $pDir $script:BackupName
+            [void](New-Item -ItemType Directory -Path $pBackup -Force)
+            foreach ($fname in $filesToCopy) {
+                $src = Join-Path $script:PayloadFolder $fname
+                $dst = Join-Path $pDir $fname
+                if (Test-Path -LiteralPath $src -PathType Leaf) {
+                    if (Test-Path -LiteralPath $dst -PathType Leaf) {
+                        $pBackupDst = Join-Path $pBackup $fname
+                        if (-not (Test-Path -LiteralPath $pBackupDst -PathType Leaf)) {
+                            Copy-Item -LiteralPath $dst -Destination $pBackupDst -Force
+                        }
+                    }
+                    Copy-Item -LiteralPath $src -Destination $dst -Force
+                }
+            }
+        }
     } else {
         # === OPTISCALER BRIDGE MODE: OptiScaler + RenoDX ===
         $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2/FSR3" } else { "XeSS" }
         Write-Status -Message "Modo PONTE OPTISCALER: $bridgeName detectado. Redirecionando para DLSS Neural..." -Level "INFO"
 
         # Copy OptiScaler.dll as version.dll
-        $optiSrc = Join-Path $PSScriptRoot "payload\optiscaler\OptiScaler.dll"
+        $optiSrc = Join-Path $script:AppRoot "payload\optiscaler\OptiScaler.dll"
         $optiDst = Join-Path $targetFolder "version.dll"
         if (Test-Path -LiteralPath $optiSrc -PathType Leaf) {
             if (Test-Path -LiteralPath $optiDst -PathType Leaf) {
@@ -709,7 +776,7 @@ function Install-Dlss5 {
         }
 
         # Copy OptiScaler.ini
-        $optiIniSrc = Join-Path $PSScriptRoot "payload\optiscaler\OptiScaler.ini"
+        $optiIniSrc = Join-Path $script:AppRoot "payload\optiscaler\OptiScaler.ini"
         $optiIniDst = Join-Path $targetFolder "OptiScaler.ini"
         if (Test-Path -LiteralPath $optiIniSrc -PathType Leaf) {
             Copy-Item -LiteralPath $optiIniSrc -Destination $optiIniDst -Force
@@ -717,7 +784,7 @@ function Install-Dlss5 {
         }
 
         # Copy libxess.dll (if not already present)
-        $xessSrc = Join-Path $PSScriptRoot "payload\optiscaler\libxess.dll"
+        $xessSrc = Join-Path $script:AppRoot "payload\optiscaler\libxess.dll"
         $xessDst = Join-Path $targetFolder "libxess.dll"
         if (Test-Path -LiteralPath $xessSrc -PathType Leaf) {
             if (Test-Path -LiteralPath $xessDst -PathType Leaf) {
@@ -740,7 +807,7 @@ function Install-Dlss5 {
         }
 
         # Copy RenoDX addon
-        $addonSrc = Join-Path $PSScriptRoot "payload\$($script:AddOnName)"
+        $addonSrc = Join-Path $script:AppRoot "payload\$($script:AddOnName)"
         $addonDst = Join-Path $targetFolder $script:AddOnName
         if (Test-Path -LiteralPath $addonSrc -PathType Leaf) {
             Copy-Item -LiteralPath $addonSrc -Destination $addonDst -Force
@@ -799,6 +866,19 @@ function Uninstall-Dlss5 {
             Write-Status -Message "Arquivo restaurado: $($bf.Name)" -Level "OK"
         }
         Remove-Item -LiteralPath $backupFolder -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    # Also restore any sub-plugin backups (such as Unreal Engine Plugins)
+    $pluginBackups = @(Get-ChildItem -LiteralPath $target.Root -Filter $script:BackupName -Directory -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+    foreach ($pb in $pluginBackups) {
+        $parentFolder = $pb.Parent.FullName
+        $bFiles = Get-ChildItem -LiteralPath $pb.FullName -File -ErrorAction SilentlyContinue
+        foreach ($bf in $bFiles) {
+            $dst = Join-Path $parentFolder $bf.Name
+            Copy-Item -LiteralPath $bf.FullName -Destination $dst -Force
+            Write-Status -Message "Arquivo restaurado em plugin: $($bf.Name)" -Level "OK"
+        }
+        Remove-Item -LiteralPath $pb.FullName -Recurse -Force -ErrorAction SilentlyContinue
     }
 
     # Complete purge list (covers DIRECT + OPTISCALER modes)
@@ -883,24 +963,24 @@ function Scan-DriveForGames {
                     $hasDx12 = $false
                     $isUe = $false
 
-                    $dlssFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*dlss*" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+                    $dlssFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*dlss*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
                     if ($dlssFiles.Count -gt 0) { $hasDlss = $true }
 
-                    $d3d12Files = @(Get-ChildItem -LiteralPath $gamePath -Filter "*d3d12*" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+                    $d3d12Files = @(Get-ChildItem -LiteralPath $gamePath -Filter "*d3d12*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
                     if ($d3d12Files.Count -gt 0) { $hasDx12 = $true }
 
-                    $binFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*.exe" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue | Where-Object { $_.FullName.ToLower().Contains("binaries\win64") })
+                    $binFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*.exe" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue | Where-Object { $_.FullName.ToLower().Contains("binaries\win64") })
                     if ($binFiles.Count -gt 0) { $isUe = $true; $hasDx12 = $true }
 
                     $hasFsr2 = $false
                     $hasXess = $false
 
-                    $fsrFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*fidelityfx*" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
-                    $fsrFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "ffx_fsr*" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+                    $fsrFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*fidelityfx*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+                    $fsrFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "ffx_fsr*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
                     if ($fsrFiles.Count -gt 0) { $hasFsr2 = $true }
 
-                    $xessFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "libxess*" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
-                    $xessFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "xess.dll" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+                    $xessFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "libxess*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+                    $xessFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "xess.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
                     if ($xessFiles.Count -gt 0) { $hasXess = $true }
 
                     $badge = ""
@@ -1404,6 +1484,15 @@ function Select-GameInInspector {
         }
         Write-Status -Message ($d.MsgSelected -f $GameObj.Name, $resolved.ExeName) -Level "INFO"
 
+        $uType = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder -GameRoot $resolved.Root
+        if ($uType -eq "NATIVE_DLSS") {
+            $lblSelectedGameBadge.Text = $d.Badge100
+            $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
+        } elseif ($uType -eq "FSR2_BRIDGE" -or $uType -eq "XESS_BRIDGE") {
+            $lblSelectedGameBadge.Text = $d.BadgeBridge
+            $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(100, 180, 255)
+        }
+
         # Check if DLSS 5 is already installed
         $existingState = Join-Path $resolved.InstallFolder $script:StateName
         if (Test-Path -LiteralPath $existingState -PathType Leaf) {
@@ -1565,7 +1654,7 @@ $browse.Add_Click({
         $d = Get-Dict -Lang $script:CurrentLang
         try {
             $resolved = Resolve-GameTarget -TargetPath $manualPath
-            $uType = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder
+            $uType = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder -GameRoot $resolved.Root
             $manualBadge = switch ($uType) {
                 "NATIVE_DLSS" { $d.Badge100 }
                 "FSR2_BRIDGE" { $d.BadgeBridge }
@@ -1641,7 +1730,7 @@ $openFolder.Add_Click({
 $instructions.Add_Click({ Show-Instructions })
 
 $form.Add_Shown({
-    $embeddedZip = Join-Path $PSScriptRoot "payload\streamline.zip"
+    $embeddedZip = Join-Path $script:AppRoot "payload\streamline.zip"
     if (Test-Path -LiteralPath $embeddedZip -PathType Leaf) {
         $dlssZipText.Text = $embeddedZip
         $d = Get-Dict -Lang $script:CurrentLang
