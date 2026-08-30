@@ -176,6 +176,8 @@ function Get-Dict {
             ConfirmUninstallTitle = "1 Click DLSS 5 - Confirm Restoration"
             ConfirmUninstall = "Remove ALL DLSS 5 files and restore the game to factory state?\n\n{0}\n\nThis action cannot be undone."
             MsgUnsupported = "This game has no recognized upscaler (DLSS, FSR2, or XeSS). DLSS 5 cannot be installed."
+            ConfirmForceInstallTitle = "1 Click DLSS 5 - Experimental Installation"
+            ConfirmForceInstall = "No native upscaler (DLSS, FSR2, or XeSS) was detected in:\n{0}\n\nDo you want to force an EXPERIMENTAL installation via OptiScaler Universal Bridge + RenoDX?\n\nTips:\n- For DirectX 11 / Unity games, you can test launching normally or adding '-force-d3d12' in Steam launch options.\n- If any issue occurs, click [RESTORE FACTORY] to 100% revert.\n\nContinue anyway?"
             MsgInstalledAlready = "[ALREADY INSTALLED]"
             MsgModeDirect = "Mode: Direct (Native DLSS)"
             MsgModeBridge = "Mode: OptiScaler Bridge ({0})"
@@ -238,6 +240,8 @@ function Get-Dict {
             ConfirmUninstallTitle = "1 Click DLSS 5 - Confirmar Restauração"
             ConfirmUninstall = "Remover TODOS os arquivos DLSS 5 e restaurar o jogo ao estado de fábrica?\n\n{0}\n\nEsta ação não pode ser desfeita."
             MsgUnsupported = "Este jogo não possui nenhum upscaler reconhecido (DLSS, FSR2 ou XeSS). O DLSS 5 não pode ser instalado."
+            ConfirmForceInstallTitle = "1 Click DLSS 5 - Instalação Experimental"
+            ConfirmForceInstall = "Nenhum upscaler (DLSS, FSR2 ou XeSS) nativo foi detectado em:\n{0}\n\nDeseja forçar uma instalação EXPERIMENTAL via Ponte Universal OptiScaler + RenoDX?\n\nDicas:\n- Em jogos DirectX 11 / Unity, você pode testar abrindo normalmente ou adicionando o parâmetro '-force-d3d12' nas opções de inicialização da Steam.\n- Se houver qualquer instabilidade, clique em [RESTAURAR ORIGINAL] para reverter 100%.\n\nContinuar mesmo assim?"
             MsgInstalledAlready = "[JÁ INSTALADO]"
             MsgModeDirect = "Modo: Direto (DLSS Nativo)"
             MsgModeBridge = "Modo: Ponte OptiScaler ({0})"
@@ -780,22 +784,32 @@ function Install-Dlss5 {
     Write-Status -Message "Tipo de upscaler detectado: $upscalerType" -Level "INFO"
 
     if ($upscalerType -eq "UNSUPPORTED") {
-        Write-Status -Message $d.MsgUnsupported -Level "ERROR"
-        throw $d.MsgUnsupported
-    }
-
-    # Confirmation dialog
-    $confirmMsg = ""
-    if ($upscalerType -eq "NATIVE_DLSS") {
-        $confirmMsg = $d.ConfirmInstallDirect -f $target.ExeName
+        $forceChoice = [System.Windows.Forms.MessageBox]::Show(
+            ($d.ConfirmForceInstall -f $target.ExeName),
+            $d.ConfirmForceInstallTitle,
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($forceChoice -ne [System.Windows.Forms.DialogResult]::Yes) {
+            Write-Status -Message "Instalacao cancelada pelo usuario para jogo sem upscaler nativo." -Level "WARN"
+            return
+        }
+        $upscalerType = "OPTISCALER_FORCE"
+        Write-Status -Message "Modo EXPERIMENTAL ativado: Forcando Ponte Universal OptiScaler + RenoDX DLSS 5..." -Level "WARN"
     } else {
-        $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2/FSR3" } else { "XeSS" }
-        $confirmMsg = $d.ConfirmInstallBridge -f $target.ExeName, $bridgeName
-    }
-    $result = [System.Windows.Forms.MessageBox]::Show($confirmMsg, $d.ConfirmInstallTitle, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
-    if ($result -ne [System.Windows.Forms.DialogResult]::Yes) {
-        Write-Status -Message "Instalacao cancelada pelo usuario." -Level "WARN"
-        return
+        # Standard confirmation dialog
+        $confirmMsg = ""
+        if ($upscalerType -eq "NATIVE_DLSS") {
+            $confirmMsg = $d.ConfirmInstallDirect -f $target.ExeName
+        } else {
+            $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2/FSR3" } else { "XeSS" }
+            $confirmMsg = $d.ConfirmInstallBridge -f $target.ExeName, $bridgeName
+        }
+        $result = [System.Windows.Forms.MessageBox]::Show($confirmMsg, $d.ConfirmInstallTitle, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($result -ne [System.Windows.Forms.DialogResult]::Yes) {
+            Write-Status -Message "Instalacao cancelada pelo usuario." -Level "WARN"
+            return
+        }
     }
 
     $backupFolder = Join-Path $targetFolder $script:BackupName
@@ -887,8 +901,8 @@ function Install-Dlss5 {
         }
     } else {
         # === OPTISCALER BRIDGE MODE: OptiScaler + RenoDX ===
-        $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2/FSR3" } else { "XeSS" }
-        Write-Status -Message "Modo PONTE OPTISCALER: $bridgeName detectado. Redirecionando para DLSS Neural..." -Level "INFO"
+        $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2/FSR3" } elseif ($upscalerType -eq "XESS_BRIDGE") { "XeSS" } else { "Universal Bridge" }
+        Write-Status -Message "Modo PONTE OPTISCALER: $bridgeName ativo. Redirecionando para DLSS Neural..." -Level "INFO"
 
         # Copy OptiScaler.dll as version.dll
         $optiSrc = Join-Path $script:AppRoot "payload\optiscaler\OptiScaler.dll"
@@ -954,8 +968,8 @@ function Install-Dlss5 {
     if ($upscalerType -eq "NATIVE_DLSS") {
         Write-Status -Message "Modo: DIRETO | No jogo: Ative DLSS (Qualidade) -> [Home] -> Add-ons -> DLSS 5" -Level "OK"
     } else {
-        $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2" } else { "XeSS" }
-        Write-Status -Message "Modo: OPTISCALER ($bridgeName) | No jogo: Ative $bridgeName (Qualidade) -> [Home] -> Add-ons -> DLSS 5" -Level "OK"
+        $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2" } elseif ($upscalerType -eq "XESS_BRIDGE") { "XeSS" } else { "Universal Bridge" }
+        Write-Status -Message "Modo: OPTISCALER ($bridgeName) | No jogo: Pressione [Home] -> Add-ons -> DLSS 5" -Level "OK"
     }
     Write-Status -Message "==========================================================" -Level "OK"
     [System.Windows.Forms.MessageBox]::Show($d.SuccessMsg, $d.SuccessTitle, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
