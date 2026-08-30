@@ -544,10 +544,7 @@ float2 PS_ATrousPassA(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Targe
 float2 PS_ATrousPassB(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target //stride 2
 {
     float2 flow = ATrousFilter(sFlow8, uv, 4, 1);
-    //kill sub-pixel noise
-    float flowPixelMag = length(flow / BUFFER_PIXEL_SIZE);
-    float gate = saturate(1.0 - pow(1.0 - saturate(saturate(flowPixelMag) - 0.2), 10.0)); //SNAP TO REALITY
-    return flow*gate;
+    return flow;
 }
 
 float PS_Confidence(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target

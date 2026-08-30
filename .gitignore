@@ -32,3 +32,4 @@ __pycache__/
 user-payload-*/
 test_*.ps1
 test_*.py
+scratch/

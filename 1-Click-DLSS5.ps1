@@ -147,6 +147,14 @@ function Get-Dict {
             InjectFolderLabel = "Exact DLSS 5 Injection Folder:"
             TargetExeLabel = "Target 64-bit Game Executable:"
             DlssStatusLabel = "Native DLSS Detected:"
+            LblInjectionMode = "DLSS 5 Injection Mode:"
+            OptAutoRecommended = "⚡ Automatic (Recommended: {0})"
+            OptModeDirect = "🟢 Mode 1: Direct (Streamline + Native DLSS)"
+            OptModeBridge = "🔵 Mode 2: OptiScaler Bridge (FSR2/XeSS → DLSS 5)"
+            OptModeFeeder = "🟣 Mode 3: Universal Feeder (100% Native DLAA)"
+            ModeNameDirect = "Mode 1 - Direct"
+            ModeNameBridge = "Mode 2 - OptiScaler Bridge"
+            ModeNameFeeder = "Mode 3 - Universal Feeder"
             ReminderHeader = "⚡ CRITICAL DLSS PREREQUISITE:"
             ReminderText = "In-game, make sure to enable 'NVIDIA DLSS Super Resolution' (Quality/Balanced/Performance) in the graphics menu for DLSS 5 Neural Reconstruction to work!"
             PayloadTitle = "DLSS 5 Payload (Embedded Streamline 2.13):"
@@ -182,7 +190,7 @@ function Get-Dict {
             ConfirmInstallTitle = "1 Click DLSS 5 - Confirm Installation"
             ConfirmInstallDirect = "Install DLSS 5 (Direct Mode) on:`n{0}`n`nNative DLSS detected. Streamline + RenoDX will be injected.`n`nContinue?"
             ConfirmInstallBridge = "Install DLSS 5 (OptiScaler Bridge) on:`n{0}`n`n{1} detected. OptiScaler will redirect to DLSS Neural Rendering.`n`nContinue?"
-            ConfirmInstallFeeder = "Install DLSS 5 (Universal Feeder Mode) on:`n{0}`n`nNo native DLSS detected. DLSS5-Feeder + LumeniteFX will synthesize a 100% Native DLAA contract for DLSS 5 Neural Rendering.`n`nContinue?"
+            ConfirmInstallFeeder = "Install DLSS 5 (Universal Feeder Mode) on:`n{0}`n`nDLSS5-Feeder + LumeniteFX will synthesize a 100% Native DLAA contract for DLSS 5 Neural Rendering.`n`nContinue?"
             ConfirmUninstallTitle = "1 Click DLSS 5 - Confirm Restoration"
             ConfirmUninstall = "Remove ALL DLSS 5 files and restore the game to factory state?`n`n{0}`n`nThis action cannot be undone."
             MsgUnsupported = "This game cannot be injected."
@@ -213,6 +221,14 @@ function Get-Dict {
             InjectFolderLabel = "Pasta Exata de Aplicação DLSS 5:"
             TargetExeLabel = "Executável Principal 64-bit:"
             DlssStatusLabel = "DLSS Nativo Detectado:"
+            LblInjectionMode = "Modo de Injeção DLSS 5:"
+            OptAutoRecommended = "⚡ Automático (Recomendado: {0})"
+            OptModeDirect = "🟢 Modo 1: Direto (Streamline + DLSS Nativo)"
+            OptModeBridge = "🔵 Modo 2: Ponte OptiScaler (FSR2/XeSS → DLSS 5)"
+            OptModeFeeder = "🟣 Modo 3: Feeder Universal (DLAA 100% Nativo)"
+            ModeNameDirect = "Modo 1 - Direto"
+            ModeNameBridge = "Modo 2 - Ponte OptiScaler"
+            ModeNameFeeder = "Modo 3 - Feeder Universal"
             ReminderHeader = "⚡ REQUISITO OBRIGATÓRIO NO JOGO:"
             ReminderText = "Dentro do jogo, certifique-se de ATIVAR o 'NVIDIA DLSS Super Resolution' (Qualidade ou Desempenho) nas opções gráficas para que o DLSS 5 Neural funcione!"
             PayloadTitle = "Pacote DLSS 5 (Streamline 2.13 Integrado):"
@@ -220,7 +236,7 @@ function Get-Dict {
             OptReShade = "Instalar ReShade 6.8.0 (Suporte a Add-ons)"
             OptFull = "Substituição Completa de DLLs Streamline"
             BtnVerify = "🔍 VERIFICAR"
-            BtnInstall = "🚀 INSTALAR DLSS 5 EM 1-CLIQUE"
+            BtnInstall = "🚀 1-CLIQUE: INSTALAR DLSS 5"
             BtnLaunch = "▶️ INICIAR JOGO"
             BtnUninstall = "↩️ RESTAURAR ORIGINAL"
             BtnOpenFolder = "📂 ABRIR PASTA"
@@ -248,7 +264,7 @@ function Get-Dict {
             ConfirmInstallTitle = "1 Click DLSS 5 - Confirmar Instalação"
             ConfirmInstallDirect = "Instalar DLSS 5 (Modo Direto) em:`n{0}`n`nDLSS nativo detectado. Streamline + RenoDX será injetado.`n`nContinuar?"
             ConfirmInstallBridge = "Instalar DLSS 5 (Ponte OptiScaler) em:`n{0}`n`n{1} detectado. O OptiScaler redirecionará para a Renderização Neural DLSS.`n`nContinuar?"
-            ConfirmInstallFeeder = "Instalar DLSS 5 (Modo Feeder Universal) em:`n{0}`n`nNenhum DLSS nativo detectado. O DLSS5-Feeder + LumeniteFX sintetizará um contrato DLAA 100% Nativo para a Renderização Neural DLSS 5.`n`nContinuar?"
+            ConfirmInstallFeeder = "Instalar DLSS 5 (Modo Feeder Universal) em:`n{0}`n`nO DLSS5-Feeder + LumeniteFX sintetizará um contrato DLAA 100% Nativo para a Renderização Neural DLSS 5.`n`nContinuar?"
             ConfirmUninstallTitle = "1 Click DLSS 5 - Confirmar Restauração"
             ConfirmUninstall = "Remover TODOS os arquivos DLSS 5 e restaurar o jogo ao estado de fábrica?`n`n{0}`n`nEsta ação não pode ser desfeita."
             MsgUnsupported = "Este jogo não pode ser injetado."
@@ -500,7 +516,9 @@ function Detect-GameUpscalerType {
 
     $allDlls = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
     foreach ($sDir in $searchDirs) {
-        $found = @(Get-ChildItem -LiteralPath $sDir -Filter "*.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        $found = @(Get-ChildItem -LiteralPath $sDir -Filter "*.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue | Where-Object {
+            $_.FullName -notmatch '(_1Click_DLSS5|_DLSS5_|reshade-shaders|\\host64\\)'
+        })
         foreach ($f in $found) {
             $allDlls.Add($f)
         }
@@ -700,7 +718,11 @@ function Set-Dlss5ReShadeIni {
         $lines = $iniText -split "\r?\n"
         $keptLines = New-Object System.Collections.Generic.List[string]
         $currentSection = ""
-        $ignoreSections = @("RenoDX.DLSS5", "ADDON", "DLSS5", "RenoDX")
+        $ignoreSections = if ($IsFeederMode) {
+            @("RenoDX.DLSS5", "ADDON", "DLSS5", "RenoDX", "GENERAL", "OVERLAY")
+        } else {
+            @("RenoDX.DLSS5", "ADDON", "DLSS5", "RenoDX", "OVERLAY")
+        }
 
         foreach ($line in $lines) {
             $trimmed = $line.Trim()
@@ -710,10 +732,7 @@ function Set-Dlss5ReShadeIni {
             if ($ignoreSections -contains $currentSection) {
                 continue
             }
-            if ($IsFeederMode -and $currentSection -eq "GENERAL" -and $trimmed -match '^(Techniques=|TechniqueSorting=|PreprocessorDefinitions=)') {
-                continue
-            }
-            if ($trimmed -match '^(Neural|NRPreset|NRStyle|NRIntensity|NRLocalTone|NRLocalStructure|NRSkinStructure|NRAutoMask|NRUICorrection|AutoSkinMask|LocalToneStrength|StructureStrength|SkinStructure|NeuralIntensity|NeuralUplift|Preset=|Style=|Enabled=|LoadFromDllMain=renodx)') {
+            if ($trimmed -match '^(Neural|NRPreset|NRStyle|NRIntensity|NRLocalTone|NRLocalStructure|NRSkinStructure|NRAutoMask|NRUICorrection|AutoSkinMask|LocalToneStrength|StructureStrength|SkinStructure|NeuralIntensity|NeuralUplift|Preset=|Style=|Enabled=|LoadFromDllMain=renodx|TutorialProgress|ShowOverlayMessage|ShowPresetTransitionMessage|ShowScreenshotMessage)') {
                 continue
             }
             [void]$keptLines.Add($line)
@@ -727,23 +746,32 @@ function Set-Dlss5ReShadeIni {
             "LoadFromDllMain=renodx-dlss5.addon64"
         }
 
+        $overlaySection = @"
+[OVERLAY]
+TutorialProgress=4
+ShowOverlayMessage=0
+ShowPresetTransitionMessage=0
+ShowScreenshotMessage=0
+ShowFPS=0
+ShowClock=0
+"@
+
         $generalSection = if ($IsFeederMode) {
 @"
 [GENERAL]
+EffectSearchPaths=.\reshade-shaders\Shaders,.\reshade-shaders\Shaders\include,.\
+TextureSearchPaths=.\reshade-shaders\Textures,.\
 Techniques=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
 TechniqueSorting=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
-PreprocessorDefinitions=DLSS5_MV_PROVIDER=3
-EffectSearchPaths=.\,.\reshade-shaders\Shaders,.\reshade-shaders\Shaders\include
-TextureSearchPaths=.\,.\reshade-shaders\Textures
+PreprocessorDefinitions=DLSS5_MV_PROVIDER=3,IMAGE_SPACE=1
+PerformanceMode=0
+NoReloadOnInit=0
+SkipLoadingDisabledEffects=0
 
 "@
         } else { "" }
 
-        $sectionsToAdd = @"
-$generalSection
-[ADDON]
-$addonLine
-
+        $renodxSection = @"
 [RenoDX.DLSS5]
 NeuralUplift=1
 NREnableUpscaling=0
@@ -791,6 +819,16 @@ Style=1
 NRStyle=1
 "@
 
+        $sectionsToAdd = @"
+$generalSection
+$overlaySection
+
+[ADDON]
+$addonLine
+
+$renodxSection
+"@
+
         $finalContent = if ([string]::IsNullOrWhiteSpace($baseText)) { $sectionsToAdd.Trim() } else { $baseText + "`r`n" + $sectionsToAdd }
         [System.IO.File]::WriteAllText($IniPath, $finalContent, (New-Object System.Text.UTF8Encoding($false)))
     } catch {
@@ -805,7 +843,8 @@ function Install-Dlss5 {
         [Parameter(Mandatory = $true)][string]$TargetPath,
         [Parameter(Mandatory = $true)][bool]$InstallReShade,
         [Parameter(Mandatory = $true)][bool]$FullPackage,
-        [Parameter(Mandatory = $true)][string]$DlssZipPath
+        [Parameter(Mandatory = $true)][string]$DlssZipPath,
+        [string]$SelectedMode = "AUTO"
     )
     $report = Get-Compatibility -TargetPath $TargetPath -InstallReShade $InstallReShade -FullPackage $FullPackage -DlssZipPath $DlssZipPath
     foreach ($line in $report.Info) { Write-Status -Message $line -Level "INFO" }
@@ -816,9 +855,17 @@ function Install-Dlss5 {
     $targetFolder = $target.InstallFolder
     $d = Get-Dict -Lang $script:CurrentLang
 
-    # Detect upscaler type
-    $upscalerType = Detect-GameUpscalerType -GameFolder $targetFolder -GameRoot $target.Root
-    Write-Status -Message "Tipo de upscaler detectado: $upscalerType" -Level "INFO"
+    # Detect native upscaler type
+    $detectedType = Detect-GameUpscalerType -GameFolder $targetFolder -GameRoot $target.Root
+    
+    # Resolve requested mode
+    $upscalerType = switch ($SelectedMode) {
+        "DIRECT"     { "NATIVE_DLSS" }
+        "OPTISCALER" { "FSR2_BRIDGE" }
+        "FEEDER"     { "UNIVERSAL_FEEDER" }
+        default      { $detectedType }
+    }
+    Write-Status -Message "Modo de Injeção Selecionado: $upscalerType (Detectado na Engine: $detectedType)" -Level "INFO"
 
     # Confirmation dialog
     $confirmMsg = ""
@@ -879,6 +926,16 @@ function Install-Dlss5 {
     if ($upscalerType -eq "NATIVE_DLSS") {
         # === DIRECT MODE: Streamline + RenoDX ===
         Write-Status -Message "Modo DIRETO: Injetando Streamline + RenoDX (DLSS nativo detectado)..." -Level "INFO"
+
+        # Clean up any lingering Feeder or OptiScaler files
+        $conflictingFeeder = @("dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed.cfg", "dlss5-feed.log", "dlss5-feed.ini", "version.dll", "OptiScaler.ini", "OptiScaler.log")
+        foreach ($cf in $conflictingFeeder) {
+            $cfPath = Join-Path $targetFolder $cf
+            if (Test-Path -LiteralPath $cfPath -PathType Leaf) { Remove-Item -LiteralPath $cfPath -Force -ErrorAction SilentlyContinue }
+        }
+        $host64Dir = Join-Path $targetFolder "host64"
+        if (Test-Path -LiteralPath $host64Dir -PathType Container) { Remove-Item -LiteralPath $host64Dir -Recurse -Force -ErrorAction SilentlyContinue }
+
         Set-Dlss5ReShadeIni -IniPath $targetIni -IsFeederMode $false
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
 
@@ -926,6 +983,16 @@ function Install-Dlss5 {
         # === OPTISCALER BRIDGE MODE: OptiScaler + RenoDX ===
         $bridgeName = if ($upscalerType -eq "FSR2_BRIDGE") { "FSR2/FSR3" } else { "XeSS" }
         Write-Status -Message "Modo PONTE OPTISCALER: $bridgeName ativo. Redirecionando para DLSS Neural..." -Level "INFO"
+
+        # Clean up any lingering Feeder or Streamline files
+        $conflictingFeeder = @("dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed.cfg", "dlss5-feed.log", "dlss5-feed.ini", "sl.interposer.dll", "sl.common.dll", "sl.dlss_nr.dll", "sl.dlss.dll", "sl.dlss_g.dll", "sl.nis.dll", "sl.pcl.dll", "sl.reflex.dll", "sl.config.json")
+        foreach ($cf in $conflictingFeeder) {
+            $cfPath = Join-Path $targetFolder $cf
+            if (Test-Path -LiteralPath $cfPath -PathType Leaf) { Remove-Item -LiteralPath $cfPath -Force -ErrorAction SilentlyContinue }
+        }
+        $host64Dir = Join-Path $targetFolder "host64"
+        if (Test-Path -LiteralPath $host64Dir -PathType Container) { Remove-Item -LiteralPath $host64Dir -Recurse -Force -ErrorAction SilentlyContinue }
+
         Set-Dlss5ReShadeIni -IniPath $targetIni -IsFeederMode $false
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
 
@@ -989,6 +1056,15 @@ function Install-Dlss5 {
         # === UNIVERSAL FEEDER MODE: DLSS5-Feeder + LumeniteFX + RenoDX (100% Native DLAA) ===
         Write-Status -Message "Modo UNIVERSAL FEEDER: Ativando DLSS5-Feeder com Fluxo Optico LumeniteFX (DLAA 100% Nativo)..." -Level "INFO"
 
+        # Clean up any lingering Streamline or OptiScaler DLLs to prevent hook conflicts
+        $conflictingProxies = @("sl.interposer.dll", "sl.common.dll", "sl.dlss.dll", "sl.dlss_g.dll", "sl.dlss_nr.dll", "sl.pcl.dll", "sl.reflex.dll", "sl.nis.dll", "sl.config.json", "version.dll", "OptiScaler.ini", "OptiScaler.log", "d3d12.dll")
+        foreach ($cp in $conflictingProxies) {
+            $cpPath = Join-Path $targetFolder $cp
+            if (Test-Path -LiteralPath $cpPath -PathType Leaf) {
+                Remove-Item -LiteralPath $cpPath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
         $isX64 = Test-X64Pe -Path $target.Executable
         $feederPayload = Join-Path $script:AppRoot "payload\feeder"
 
@@ -1014,7 +1090,7 @@ function Install-Dlss5 {
             $hostDst = Join-Path $targetFolder "host64"
             if (Test-Path -LiteralPath $hostSrc -PathType Container) {
                 if (-not (Test-Path -LiteralPath $hostDst)) { [void](New-Item -ItemType Directory -Path $hostDst -Force) }
-                Copy-Item -LiteralPath "$hostSrc\*" -Destination $hostDst -Recurse -Force
+                Get-ChildItem -LiteralPath $hostSrc | Copy-Item -Destination $hostDst -Recurse -Force
                 Copy-Item -LiteralPath (Join-Path $script:AppRoot "payload\$($script:AddOnName)") -Destination (Join-Path $hostDst $script:AddOnName) -Force
                 Copy-Item -LiteralPath (Join-Path $script:PayloadFolder "nvngx_dlssnr.dll") -Destination (Join-Path $hostDst "nvngx_dlssnr.dll") -Force
                 if (Test-Path (Join-Path $script:PayloadFolder "nvngx_dlss.dll")) {
@@ -1055,11 +1131,11 @@ function Install-Dlss5 {
         $srcShaders = Join-Path $feederPayload "shaders"
         $srcTextures = Join-Path $feederPayload "textures"
         if (Test-Path -LiteralPath $srcShaders -PathType Container) {
-            Copy-Item -LiteralPath "$srcShaders\*" -Destination $shaderDir -Recurse -Force
+            Get-ChildItem -LiteralPath $srcShaders | Copy-Item -Destination $shaderDir -Recurse -Force
             Write-Status -Message "Shaders LumeniteFX e DLSS5_Feed.fx instalados em reshade-shaders\Shaders\." -Level "OK"
         }
         if (Test-Path -LiteralPath $srcTextures -PathType Container) {
-            Copy-Item -LiteralPath "$srcTextures\*" -Destination $textureDir -Recurse -Force
+            Get-ChildItem -LiteralPath $srcTextures | Copy-Item -Destination $textureDir -Recurse -Force
             Write-Status -Message "Texturas de ruído azul instaladas em reshade-shaders\Textures\." -Level "OK"
         }
         if ($state.InjectedFiles -notcontains "reshade-shaders") { $state.InjectedFiles += "reshade-shaders" }
@@ -1072,9 +1148,14 @@ function Install-Dlss5 {
             if ($state.InjectedFiles -notcontains "dlss5-feed.cfg") { $state.InjectedFiles += "dlss5-feed.cfg" }
         }
 
-        # Apply pre-configured ReShade.ini for Feeder Mode
+        # Apply pre-configured ReShade.ini and ReShadePreset.ini for Feeder Mode
         Set-Dlss5ReShadeIni -IniPath $targetIni -IsFeederMode $true
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
+
+        $targetPreset = Join-Path $targetFolder "ReShadePreset.ini"
+        $presetContent = "Techniques=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx`r`nTechniqueSorting=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx"
+        [System.IO.File]::WriteAllText($targetPreset, $presetContent, (New-Object System.Text.UTF8Encoding($false)))
+        if ($state.InjectedFiles -notcontains "ReShadePreset.ini") { $state.InjectedFiles += "ReShadePreset.ini" }
         Write-Status -Message "Configuracao do Feeder aplicada no ReShade.ini (LumeniteFX Kernel 2.0 -> DLSS5_Feed -> RenoDX)." -Level "OK"
     }
 
@@ -1344,11 +1425,55 @@ function Style-Button {
 
 function Show-Instructions {
     if ($script:CurrentLang -eq "PT") {
-        $msg = "GUIA DE OTIMIZACAO E USO DO 1 CLICK DLSS 5 (NEURAL RENDERING):`n`n1. CONFIGURACOES PRE-APLICADAS AUTOMATICAMENTE:`n - Todas as configuracoes ideais ja estao ativadas de fabrica no seu jogo:`n   * Neural Uplift: ATIVADO (1)`n   * Auto Skin Mask: ATIVADO (evita distorcoes/rugas em rostos humanos)`n   * Skin Structure Strength: -0.50 (suavizacao facial natural)`n   * NR Preset: Preset #2 (Cinematic / Iluminacao Coerente e Sombras de Contato)`n   * NR Style: Cinematic (1)`n   * Neural Intensity: 0.85 (equilibrio perfeito de profundidade neural)`n   * UI Correction: ATIVADO (protege interfaces e miras de distorcao de cor)`n   * EnableHooks: 2 (Modo Seguro NGX sem travamentos no boot)`n`n2. NOVO: ATALHOS RAPIDOS NO TECLADO:`n - Tecla [F6]: Liga / Desliga o DLSS 5 em tempo real para comparacao no mesmo frame!`n - Tecla [F5]: Captura screenshot em modo comparativo perfeito A/B.`n - Tecla [Home] / [Pos1]: Abre o menu completo do ReShade / RenoDX.`n`n3. NO JOGO (JOGOS COM DLSS):`n - Ative o NVIDIA DLSS Super Resolution (Qualidade, Balanceado ou Desempenho).`n - DICA CRITICA: Mantenha o HDR nativo do jogo DESATIVADO para calibracao precisa de cores.`n`n4. JOGOS COM FSR2/XeSS (PONTE OPTISCALER):`n - O OptiScaler redireciona automaticamente para o modelo neural DLSS 5.`n - Basta ativar FSR2 ou XeSS no modo Qualidade dentro do jogo.`n`n5. JOGOS SEM NENHUM UPSCALER (MODO UNIVERSAL FEEDER):`n - O DLSS 5 roda em Modo Feeder com DLAA Sintetico (resolucao 100% nativa).`n - O shader LumeniteFX gera os vetores de movimento por fluxo optico na GPU.`n - A Reconstrucao Neural atua diretamente sobre o frame nativo com maxima fidelidade e nitidez!"
-        [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Instrucoes", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        $msg = "GUIA COMPLETO: QUAL MODO ESCOLHER NO 1 CLICK DLSS 5?`n`n" +
+               "==================================================================`n" +
+               "🟢 MODO 1: DIRETO (Para jogos com suporte nativo a DLSS)`n" +
+               " - OBJETIVO: Ganho massivo de FPS (+50% a +100%) + Reconstrucao Neural.`n" +
+               " - NO MENU DO JOGO: ATIVE o 'NVIDIA DLSS Super Resolution' (modo Qualidade, Equilibrado ou Desempenho).`n" +
+               " - COMO FUNCIONA: O jogo renderiza internamente em resolucao menor e a IA do DLSS 5 reconstrói para 4K/1440p com vetores 3D do motor do jogo.`n`n" +
+               "🔵 MODO 2: PONTE OPTISCALER (Para jogos que tem FSR2 ou XeSS)`n" +
+               " - OBJETIVO: Ganho de FPS em jogos sem DLSS nativo.`n" +
+               " - NO MENU DO JOGO: ATIVE o FSR2 ou XeSS no modo QUALIDADE.`n" +
+               " - COMO FUNCIONA: A ponte intercepta a chamada de FSR2 e entrega para o modelo neural DLSS 5.`n`n" +
+               "🟣 MODO 3: FEEDER UNIVERSAL (Para QUALQUER jogo de PC / 100% Nativo)`n" +
+               " - OBJETIVO: Reconstrucao Neural de Iluminacao e Materiais em 100% Nativo.`n" +
+               " - NO MENU DO JOGO: Deixe o DLSS/Upscaling DESLIGADO (jogue em resolucao 100% nativa com TAA/DLAA).`n" +
+               " - REGRA CRITICA: No Modo 3 NAO ative DLSS Super Resolution no menu do jogo para evitar conflito de dupla IA e blur. O Feeder injeta a IA e o fluxo óptico LumeniteFX diretamente no frame limpo!`n`n" +
+               "==================================================================`n" +
+               "💡 DICA DE OURO PARA FLUIDEZ MÁXIMA (VSYNC):`n" +
+               " - Desative o 'Sincronismo Vertical' (V-Sync) dentro do menu do jogo para evitar micro-travamentos com a swapchain do DirectX/ReShade.`n" +
+               " - Use G-Sync / FreeSync ou limite a taxa de quadros no Painel NVIDIA para ter fluidez 100% lisa.`n`n" +
+               "==================================================================`n" +
+               "ATALHOS NO TECLADO DURANTE O JOGO:`n" +
+               " - [F6]: Liga / Desliga o DLSS 5 em tempo real para comparacao no mesmo frame!`n" +
+               " - [F5]: Captura screenshot de comparacao A/B.`n" +
+               " - [Home] ou [Pos1]: Abre o menu do ReShade / RenoDX para ajustes finos."
+        [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Guia de Modos e Otimizacao", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     } else {
-        $msg = "1 CLICK DLSS 5 OPTIMIZATION & USAGE GUIDE:`n`n1. PRE-APPLIED OPTIMAL SETTINGS (AUTOMATIC):`n - All optimal cinematic parameters are automatically injected into your game:`n   * Neural Uplift: ENABLED (1)`n   * Auto Skin Mask: ENABLED (prevents facial warping & uncanny valley aging)`n   * Skin Structure Strength: -0.50 (natural skin smoothing)`n   * NR Preset: Preset #2 (Cinematic / Coherent Physical Lighting & Shadows)`n   * NR Style: Cinematic (1)`n   * Neural Intensity: 0.85 (perfect neural depth balance)`n   * UI Correction: ENABLED (protects HUD & crosshairs from color shift)`n   * EnableHooks: 2 (Safe NGX mode - no crash at boot)`n`n2. NEW: IN-GAME HOTKEYS:`n - Key [F6]: Quick ON/OFF comparison of DLSS 5 on the exact same frame!`n - Key [F5]: Capture perfect A/B comparison screenshot.`n - Key [Home] / [Pos1]: Open full ReShade / RenoDX in-game overlay.`n`n3. IN-GAME GRAPHICS SETTINGS (DLSS GAMES):`n - Enable NVIDIA DLSS Super Resolution (Quality, Balanced or Performance).`n - CRITICAL TIP: Keep in-game HDR DISABLED for accurate neural color transfer.`n`n4. GAMES WITH FSR2/XeSS (OPTISCALER BRIDGE):`n - OptiScaler automatically redirects FSR2/XeSS to DLSS 5 Neural Rendering.`n - Just enable FSR2 or XeSS in Quality mode in-game.`n`n5. GAMES WITHOUT ANY UPSCALER (UNIVERSAL FEEDER MODE):`n - DLSS 5 runs in Feeder Mode with Synthetic DLAA (100% native render resolution).`n - LumeniteFX shader calculates optical flow motion vectors on the GPU.`n - Neural Reconstruction operates directly over the native frame with maximum fidelity and clarity!"
-        [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Instructions", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        $msg = "COMPLETE GUIDE: HOW TO CHOOSE THE RIGHT MODE IN 1 CLICK DLSS 5:`n`n" +
+               "==================================================================`n" +
+               "🟢 MODE 1: DIRECT (For games with native DLSS support)`n" +
+               " - PURPOSE: Massive FPS boost (+50% to +100%) + Neural Reconstruction.`n" +
+               " - IN-GAME MENU: ENABLE 'NVIDIA DLSS Super Resolution' (Quality, Balanced or Performance mode).`n" +
+               " - HOW IT WORKS: Game renders internally at lower res and DLSS 5 reconstructs to 4K/1440p with 3D engine motion vectors.`n`n" +
+               "🔵 MODE 2: OPTISCALER BRIDGE (For games with FSR2 or XeSS only)`n" +
+               " - PURPOSE: FPS boost in games without native DLSS.`n" +
+               " - IN-GAME MENU: ENABLE FSR2 or XeSS in QUALITY mode.`n" +
+               " - HOW IT WORKS: The bridge intercepts FSR2 calls and routes them to DLSS 5 Neural.`n`n" +
+               "🟣 MODE 3: UNIVERSAL FEEDER (For ANY PC Game / 100% Native DLAA)`n" +
+               " - PURPOSE: Neural Lighting & Material Reconstruction at 100% Native Resolution.`n" +
+               " - IN-GAME MENU: Keep DLSS/Upscaling DISABLED (play at 100% native resolution with standard TAA/DLAA).`n" +
+               " - CRITICAL RULE: In Mode 3 DO NOT enable in-game DLSS Super Resolution to prevent double-AI blur. Feeder injects AI & LumeniteFX optical flow over the clean frame!`n`n" +
+               "==================================================================`n" +
+               "💡 PRO-TIP FOR MAXIMUM FLUIDITY (VSYNC):`n" +
+               " - Disable in-game 'V-Sync' in the game graphics options to avoid frame pacing stalls with the DirectX/ReShade swapchain.`n" +
+               " - Use G-Sync / FreeSync or frame rate limiting in NVIDIA Control Panel for 100% smooth pacing.`n`n" +
+               "==================================================================`n" +
+               "IN-GAME HOTKEYS:`n" +
+               " - [F6]: Toggle DLSS 5 ON/OFF in real time for same-frame comparison!`n" +
+               " - [F5]: Capture A/B comparison screenshot.`n" +
+               " - [Home] / [Pos1]: Open full ReShade / RenoDX overlay menu."
+        [System.Windows.Forms.MessageBox]::Show($msg, "1 Click DLSS 5 - Mode Guide & Optimization", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     }
 }
 
@@ -1574,13 +1699,13 @@ $txtInjectFolder.ForeColor = [System.Drawing.Color]::FromArgb(130, 230, 140)
 $txtInjectFolder.BorderStyle = "FixedSingle"
 [void]$inspectorPanel.Controls.Add($txtInjectFolder)
 
-$lblExeTitle = New-Label -Text "Executável Principal 64-bit:" -X 460 -Y 158 -Width 220 -Height 18
+$lblExeTitle = New-Label -Text "Executável Principal 64-bit:" -X 460 -Y 150 -Width 220 -Height 18
 $lblExeTitle.Anchor = "Top, Right"
 $lblExeTitle.ForeColor = [System.Drawing.Color]::FromArgb(143, 200, 255)
 [void]$inspectorPanel.Controls.Add($lblExeTitle)
 
 $txtExeName = New-Object System.Windows.Forms.TextBox
-$txtExeName.Location = New-Object System.Drawing.Point(460, 178)
+$txtExeName.Location = New-Object System.Drawing.Point(460, 168)
 $txtExeName.Size = New-Object System.Drawing.Size(226, 24)
 $txtExeName.Anchor = "Top, Right"
 $txtExeName.ReadOnly = $true
@@ -1589,37 +1714,53 @@ $txtExeName.ForeColor = [System.Drawing.Color]::FromArgb(130, 215, 255)
 $txtExeName.BorderStyle = "FixedSingle"
 [void]$inspectorPanel.Controls.Add($txtExeName)
 
+# SELETOR MANUAL DO MODO DE INJEÇÃO DLSS 5
+$lblModeTitle = New-Label -Text "Modo de Injeção DLSS 5:" -X 18 -Y 196 -Width 300 -Height 18
+$lblModeTitle.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 90)
+$lblModeTitle.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 9)
+[void]$inspectorPanel.Controls.Add($lblModeTitle)
+
+$comboInjectionMode = New-Object System.Windows.Forms.ComboBox
+$comboInjectionMode.Location = New-Object System.Drawing.Point(18, 216)
+$comboInjectionMode.Size = New-Object System.Drawing.Size(668, 26)
+$comboInjectionMode.Anchor = "Top, Left, Right"
+$comboInjectionMode.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+$comboInjectionMode.BackColor = [System.Drawing.Color]::FromArgb(10, 16, 28)
+$comboInjectionMode.ForeColor = [System.Drawing.Color]::FromArgb(140, 220, 255)
+$comboInjectionMode.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
+[void]$inspectorPanel.Controls.Add($comboInjectionMode)
+
 # LEMBRETE OBRIGATORIO DE DLSS ATIVADO
 $reminderBox = New-Object System.Windows.Forms.Panel
-$reminderBox.Location = New-Object System.Drawing.Point(18, 212)
-$reminderBox.Size = New-Object System.Drawing.Size(668, 62)
+$reminderBox.Location = New-Object System.Drawing.Point(18, 248)
+$reminderBox.Size = New-Object System.Drawing.Size(668, 58)
 $reminderBox.Anchor = "Top, Left, Right"
 $reminderBox.BackColor = [System.Drawing.Color]::FromArgb(35, 30, 12)
 [void]$inspectorPanel.Controls.Add($reminderBox)
 
 $reminderAccent = New-Object System.Windows.Forms.Panel
 $reminderAccent.Location = New-Object System.Drawing.Point(0, 0)
-$reminderAccent.Size = New-Object System.Drawing.Size(4, 62)
+$reminderAccent.Size = New-Object System.Drawing.Size(4, 58)
 $reminderAccent.BackColor = [System.Drawing.Color]::FromArgb(255, 195, 0)
 [void]$reminderBox.Controls.Add($reminderAccent)
 
-$lblReminderHeader = New-Label -Text "⚡ REQUISITO OBRIGATÓRIO NO JOGO:" -X 14 -Y 8 -Width 640 -Height 18
+$lblReminderHeader = New-Label -Text "⚡ REQUISITO OBRIGATÓRIO NO JOGO:" -X 14 -Y 6 -Width 640 -Height 18
 $lblReminderHeader.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 50)
 $lblReminderHeader.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9)
 [void]$reminderBox.Controls.Add($lblReminderHeader)
 
-$lblReminderText = New-Label -Text "Dentro do jogo, certifique-se de ATIVAR o 'NVIDIA DLSS Super Resolution' (Qualidade ou Desempenho) nas opções gráficas para que o DLSS 5 Neural funcione!" -X 14 -Y 26 -Width 640 -Height 32
+$lblReminderText = New-Label -Text "Dentro do jogo, certifique-se de ATIVAR o 'NVIDIA DLSS Super Resolution' (Qualidade ou Desempenho) nas opções gráficas para que o DLSS 5 Neural funcione!" -X 14 -Y 24 -Width 640 -Height 30
 $lblReminderText.ForeColor = [System.Drawing.Color]::FromArgb(240, 230, 190)
 $lblReminderText.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)
 [void]$reminderBox.Controls.Add($lblReminderText)
 
 # Opções de Injeção & Pacote
-$lblPayloadTitle = New-Label -Text "Pacote DLSS 5 (Streamline 2.13 Integrado):" -X 18 -Y 282 -Width 300 -Height 18
+$lblPayloadTitle = New-Label -Text "Pacote DLSS 5 (Streamline 2.13 Integrado):" -X 18 -Y 312 -Width 300 -Height 18
 $lblPayloadTitle.ForeColor = [System.Drawing.Color]::FromArgb(170, 190, 215)
 [void]$inspectorPanel.Controls.Add($lblPayloadTitle)
 
 $dlssZipText = New-Object System.Windows.Forms.TextBox
-$dlssZipText.Location = New-Object System.Drawing.Point(18, 302)
+$dlssZipText.Location = New-Object System.Drawing.Point(18, 330)
 $dlssZipText.Size = New-Object System.Drawing.Size(530, 24)
 $dlssZipText.Anchor = "Top, Left, Right"
 $dlssZipText.BackColor = [System.Drawing.Color]::FromArgb(10, 16, 28)
@@ -1629,15 +1770,15 @@ $dlssZipText.BorderStyle = "FixedSingle"
 
 $dlssBrowse = New-Object System.Windows.Forms.Button
 $dlssBrowse.Text = "📦 TROCAR ZIP"
-$dlssBrowse.Location = New-Object System.Drawing.Point(558, 300)
-$dlssBrowse.Size = New-Object System.Drawing.Size(128, 28)
+$dlssBrowse.Location = New-Object System.Drawing.Point(558, 328)
+$dlssBrowse.Size = New-Object System.Drawing.Size(128, 26)
 $dlssBrowse.Anchor = "Top, Right"
 Style-Button -Button $dlssBrowse -BaseColor ([System.Drawing.Color]::FromArgb(40, 70, 115)) -HoverColor ([System.Drawing.Color]::FromArgb(55, 95, 155))
 [void]$inspectorPanel.Controls.Add($dlssBrowse)
 
 $copyReShade = New-Object System.Windows.Forms.CheckBox
 $copyReShade.Text = "Instalar ReShade 6.8.0 (Suporte a Add-ons)"
-$copyReShade.Location = New-Object System.Drawing.Point(18, 335)
+$copyReShade.Location = New-Object System.Drawing.Point(18, 358)
 $copyReShade.Size = New-Object System.Drawing.Size(300, 22)
 $copyReShade.Checked = $true
 $copyReShade.ForeColor = [System.Drawing.Color]::White
@@ -1645,7 +1786,7 @@ $copyReShade.ForeColor = [System.Drawing.Color]::White
 
 $fullPackage = New-Object System.Windows.Forms.CheckBox
 $fullPackage.Text = "Substituicao Completa de DLLs Streamline"
-$fullPackage.Location = New-Object System.Drawing.Point(330, 335)
+$fullPackage.Location = New-Object System.Drawing.Point(330, 358)
 $fullPackage.Size = New-Object System.Drawing.Size(350, 22)
 $fullPackage.Checked = $true
 $fullPackage.ForeColor = [System.Drawing.Color]::FromArgb(120, 215, 140)
@@ -1653,16 +1794,16 @@ $fullPackage.ForeColor = [System.Drawing.Color]::FromArgb(120, 215, 140)
 
 # BARRA DE ACAO PRINCIPAL COM BOTAO INICIAR JOGO
 $actionBar = New-Object System.Windows.Forms.Panel
-$actionBar.Location = New-Object System.Drawing.Point(18, 368)
-$actionBar.Size = New-Object System.Drawing.Size(668, 100)
+$actionBar.Location = New-Object System.Drawing.Point(18, 388)
+$actionBar.Size = New-Object System.Drawing.Size(668, 86)
 $actionBar.Anchor = "Top, Left, Right"
 $actionBar.BackColor = [System.Drawing.Color]::Transparent
 [void]$inspectorPanel.Controls.Add($actionBar)
 
 $install = New-Object System.Windows.Forms.Button
 $install.Text = "🚀 1-CLIQUE: INSTALAR DLSS 5"
-$install.Location = New-Object System.Drawing.Point(0, 4)
-$install.Size = New-Object System.Drawing.Size(326, 44)
+$install.Location = New-Object System.Drawing.Point(0, 2)
+$install.Size = New-Object System.Drawing.Size(326, 40)
 $install.Font = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
 Style-Button -Button $install -BaseColor ([System.Drawing.Color]::FromArgb(118, 185, 0)) -HoverColor ([System.Drawing.Color]::FromArgb(140, 220, 0))
 $install.ForeColor = [System.Drawing.Color]::Black
@@ -1670,37 +1811,37 @@ $install.ForeColor = [System.Drawing.Color]::Black
 
 $launchGame = New-Object System.Windows.Forms.Button
 $launchGame.Text = "▶️ INICIAR JOGO"
-$launchGame.Location = New-Object System.Drawing.Point(338, 4)
-$launchGame.Size = New-Object System.Drawing.Size(330, 44)
+$launchGame.Location = New-Object System.Drawing.Point(338, 2)
+$launchGame.Size = New-Object System.Drawing.Size(330, 40)
 $launchGame.Font = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
 Style-Button -Button $launchGame -BaseColor ([System.Drawing.Color]::FromArgb(0, 130, 230)) -HoverColor ([System.Drawing.Color]::FromArgb(20, 160, 255))
 [void]$actionBar.Controls.Add($launchGame)
 
 $uninstall = New-Object System.Windows.Forms.Button
 $uninstall.Text = "↩️ RESTAURAR"
-$uninstall.Location = New-Object System.Drawing.Point(0, 54)
-$uninstall.Size = New-Object System.Drawing.Size(180, 36)
+$uninstall.Location = New-Object System.Drawing.Point(0, 48)
+$uninstall.Size = New-Object System.Drawing.Size(160, 34)
 Style-Button -Button $uninstall -BaseColor ([System.Drawing.Color]::FromArgb(180, 50, 50)) -HoverColor ([System.Drawing.Color]::FromArgb(215, 60, 60))
 [void]$actionBar.Controls.Add($uninstall)
 
 $openFolder = New-Object System.Windows.Forms.Button
 $openFolder.Text = "📂 ABRIR PASTA"
-$openFolder.Location = New-Object System.Drawing.Point(190, 54)
-$openFolder.Size = New-Object System.Drawing.Size(180, 36)
+$openFolder.Location = New-Object System.Drawing.Point(170, 48)
+$openFolder.Size = New-Object System.Drawing.Size(160, 34)
 Style-Button -Button $openFolder -BaseColor ([System.Drawing.Color]::FromArgb(40, 70, 115)) -HoverColor ([System.Drawing.Color]::FromArgb(55, 95, 155))
 [void]$actionBar.Controls.Add($openFolder)
 
 $instructions = New-Object System.Windows.Forms.Button
 $instructions.Text = "📖 GUIA NO JOGO"
-$instructions.Location = New-Object System.Drawing.Point(380, 54)
-$instructions.Size = New-Object System.Drawing.Size(160, 36)
+$instructions.Location = New-Object System.Drawing.Point(340, 48)
+$instructions.Size = New-Object System.Drawing.Size(160, 34)
 Style-Button -Button $instructions -BaseColor ([System.Drawing.Color]::FromArgb(40, 70, 115)) -HoverColor ([System.Drawing.Color]::FromArgb(55, 95, 155))
 [void]$actionBar.Controls.Add($instructions)
 
 $scan = New-Object System.Windows.Forms.Button
 $scan.Text = "🔍 VERIFICAR"
-$scan.Location = New-Object System.Drawing.Point(550, 54)
-$scan.Size = New-Object System.Drawing.Size(118, 36)
+$scan.Location = New-Object System.Drawing.Point(510, 48)
+$scan.Size = New-Object System.Drawing.Size(158, 34)
 Style-Button -Button $scan -BaseColor ([System.Drawing.Color]::FromArgb(35, 75, 130)) -HoverColor ([System.Drawing.Color]::FromArgb(50, 105, 175))
 [void]$actionBar.Controls.Add($scan)
 
@@ -1744,6 +1885,45 @@ $footer.ForeColor = [System.Drawing.Color]::FromArgb(120, 140, 170)
 $footer.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)
 [void]$form.Controls.Add($footer)
 
+function Update-ReminderForSelectedMode {
+    $d = Get-Dict -Lang $script:CurrentLang
+    $modeIdx = $comboInjectionMode.SelectedIndex
+    $effectiveMode = "AUTO"
+    if ($modeIdx -le 0) {
+        $effectiveMode = if ($script:CurrentDetectedUpscaler) { $script:CurrentDetectedUpscaler } else { "NATIVE_DLSS" }
+    } elseif ($modeIdx -eq 1) {
+        $effectiveMode = "NATIVE_DLSS"
+    } elseif ($modeIdx -eq 2) {
+        $effectiveMode = "FSR2_BRIDGE"
+    } elseif ($modeIdx -eq 3) {
+        $effectiveMode = "UNIVERSAL_FEEDER"
+    }
+
+    if ($effectiveMode -eq "NATIVE_DLSS") {
+        $lblSelectedGameBadge.Text = $d.Badge100
+        $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
+        $lblReminderHeader.Text = if ($script:CurrentLang -eq "PT") { "⚡ MODO 1: DIRETO (GANHO DE FPS COM DLSS NATIVO)" } else { "⚡ MODE 1: DIRECT (MASSIVE FPS BOOST WITH NATIVE DLSS)" }
+        $lblReminderHeader.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
+        $lblReminderText.Text = if ($script:CurrentLang -eq "PT") { "No menu do jogo: ATIVE o 'NVIDIA DLSS' (no modo Qualidade ou Desempenho) para ganhar muito FPS com a Reconstrução Neural DLSS 5!" } else { "In-game menu: ENABLE 'NVIDIA DLSS' (Quality or Performance mode) to get massive FPS boost with DLSS 5 Neural Reconstruction!" }
+    } elseif ($effectiveMode -eq "FSR2_BRIDGE" -or $effectiveMode -eq "XESS_BRIDGE") {
+        $lblSelectedGameBadge.Text = $d.BadgeBridge
+        $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(100, 180, 255)
+        $lblReminderHeader.Text = if ($script:CurrentLang -eq "PT") { "⚡ MODO 2: PONTE OPTISCALER (GANHO DE FPS VIA FSR2/XeSS)" } else { "⚡ MODE 2: OPTISCALER BRIDGE (FPS BOOST VIA FSR2/XeSS)" }
+        $lblReminderHeader.ForeColor = [System.Drawing.Color]::FromArgb(100, 180, 255)
+        $lblReminderText.Text = if ($script:CurrentLang -eq "PT") { "No menu do jogo: ATIVE o FSR2 ou XeSS no modo Qualidade. A ponte OptiScaler redirecionará para o DLSS 5 com ganho de FPS!" } else { "In-game menu: ENABLE FSR2 or XeSS in Quality mode. OptiScaler bridge will redirect to DLSS 5 with FPS boost!" }
+    } else {
+        $lblSelectedGameBadge.Text = $d.BadgeFeeder
+        $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(180, 140, 255)
+        $lblReminderHeader.Text = if ($script:CurrentLang -eq "PT") { "⚡ MODO 3: FEEDER UNIVERSAL (DLAA 100% NATIVO SEM UPSCALE)" } else { "⚡ MODE 3: UNIVERSAL FEEDER (100% NATIVE DLAA WITHOUT UPSCALE)" }
+        $lblReminderHeader.ForeColor = [System.Drawing.Color]::FromArgb(180, 140, 255)
+        $lblReminderText.Text = if ($script:CurrentLang -eq "PT") { "No menu do jogo: Deixe o DLSS/Upscaling DESLIGADO (100% Nativo ou DLAA). O DLSS 5 e o fluxo óptico atuarão direto no frame limpo sem conflito de IA!" } else { "In-game menu: Keep DLSS/Upscaling DISABLED (100% Native or DLAA). DLSS 5 & optical flow will operate directly on the clean frame without AI conflict!" }
+    }
+}
+
+$comboInjectionMode.Add_SelectedIndexChanged({
+    Update-ReminderForSelectedMode
+})
+
 function Select-GameInInspector {
     param([pscustomobject]$GameObj)
     if ($null -eq $GameObj) { return }
@@ -1776,22 +1956,27 @@ function Select-GameInInspector {
         Write-Status -Message ($d.MsgSelected -f $GameObj.Name, $resolved.ExeName) -Level "INFO"
 
         $uType = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder -GameRoot $resolved.Root
-        if ($uType -eq "NATIVE_DLSS") {
-            $lblSelectedGameBadge.Text = $d.Badge100
-            $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
-            $lblReminderHeader.Text = $d.ReminderHeader
-            $lblReminderText.Text = if ($script:CurrentLang -eq "PT") { "Dentro do jogo, ative o 'NVIDIA DLSS Super Resolution' (Qualidade ou Desempenho) nas opções de vídeo." } else { "In-game, make sure to enable 'NVIDIA DLSS Super Resolution' in graphics settings." }
+        $script:CurrentDetectedUpscaler = $uType
+
+        $recName = if ($uType -eq "NATIVE_DLSS") {
+            $d.ModeNameDirect
         } elseif ($uType -eq "FSR2_BRIDGE" -or $uType -eq "XESS_BRIDGE") {
-            $lblSelectedGameBadge.Text = $d.BadgeBridge
-            $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(100, 180, 255)
-            $lblReminderHeader.Text = "⚡ REQUISITO PONTE OPTISCALER:"
-            $lblReminderText.Text = if ($script:CurrentLang -eq "PT") { "Dentro do jogo, ative FSR2 ou XeSS no modo Qualidade (o OptiScaler redirecionará para DLSS 5)." } else { "In-game, enable FSR2 or XeSS in Quality mode (OptiScaler will redirect to DLSS 5)." }
+            $d.ModeNameBridge
         } else {
-            $lblSelectedGameBadge.Text = $d.BadgeFeeder
-            $lblSelectedGameBadge.ForeColor = [System.Drawing.Color]::FromArgb(180, 140, 255)
-            $lblReminderHeader.Text = "⚡ MODO UNIVERSAL FEEDER (DLAA 100% NATIVO):"
-            $lblReminderText.Text = if ($script:CurrentLang -eq "PT") { "Jogo sem DLSS nativo: O DLSS 5 rodará com DLAA Sintético (100% resolução nativa) e fluxo óptico LumeniteFX!" } else { "Game without native DLSS: DLSS 5 will run with Synthetic DLAA (100% native resolution) and LumeniteFX optical flow!" }
+            $d.ModeNameFeeder
         }
+
+        # Atualiza o seletor com sugestao inteligente recomendada
+        $comboInjectionMode.BeginUpdate()
+        $comboInjectionMode.Items.Clear()
+        [void]$comboInjectionMode.Items.Add(($d.OptAutoRecommended -f $recName))
+        [void]$comboInjectionMode.Items.Add($d.OptModeDirect)
+        [void]$comboInjectionMode.Items.Add($d.OptModeBridge)
+        [void]$comboInjectionMode.Items.Add($d.OptModeFeeder)
+        $comboInjectionMode.SelectedIndex = 0
+        $comboInjectionMode.EndUpdate()
+
+        Update-ReminderForSelectedMode
 
         # Check if DLSS 5 is already installed
         $existingState = Join-Path $resolved.InstallFolder $script:StateName
@@ -1868,6 +2053,7 @@ function Update-Language {
     $lblRootTitle.Text = $d.RootFolderLabel
     $lblInjectTitle.Text = $d.InjectFolderLabel
     $lblExeTitle.Text = $d.TargetExeLabel
+    $lblModeTitle.Text = $d.LblInjectionMode
     $lblReminderHeader.Text = $d.ReminderHeader
     $lblReminderText.Text = $d.ReminderText
     $lblPayloadTitle.Text = $d.PayloadTitle
@@ -1912,6 +2098,10 @@ function Update-Language {
             }
         }
         $gameListView.EndUpdate()
+    }
+
+    if ($null -ne $script:SelectedGameObj) {
+        Select-GameInInspector -GameObj $script:SelectedGameObj
     }
 }
 
@@ -2095,7 +2285,13 @@ $scan.Add_Click({
 $install.Add_Click({
     $install.Enabled = $false
     try {
-        Install-Dlss5 -TargetPath $txtRootFolder.Text.Trim() -InstallReShade $copyReShade.Checked -FullPackage $fullPackage.Checked -DlssZipPath $dlssZipText.Text.Trim()
+        $chosenMode = switch ($comboInjectionMode.SelectedIndex) {
+            1 { "DIRECT" }
+            2 { "OPTISCALER" }
+            3 { "FEEDER" }
+            default { "AUTO" }
+        }
+        Install-Dlss5 -TargetPath $txtRootFolder.Text.Trim() -InstallReShade $copyReShade.Checked -FullPackage $fullPackage.Checked -DlssZipPath $dlssZipText.Text.Trim() -SelectedMode $chosenMode
     } catch { Show-ErrorDialog -Message $_.Exception.Message }
     finally { $install.Enabled = $true }
 })
