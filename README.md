@@ -5,12 +5,12 @@
 **Universal Neural Rendering Game Center & 1-Click Injector**  
 *Empowering RTX 40 & RTX 50 Series GPUs with Next-Generation DLSS 5 Neural Reconstruction*
 
-[![Version](https://img.shields.io/badge/version-1.2.0-brightgreen.svg)](https://github.com/reiluisii/1-Click-DLSS5)
+[![Version](https://img.shields.io/badge/version-1.2.1-brightgreen.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20x64-0078D6.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 [![DirectX](https://img.shields.io/badge/DirectX-12%20%7C%20DXGI-orange.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 [![NVIDIA](https://img.shields.io/badge/NVIDIA-RTX%2040%20%26%2050%20Series-76B900.svg)](https://nvidia.com)
-[![RenoDX](https://img.shields.io/badge/RenoDX-v4.1%20Addon-FF6B6B.svg)](https://github.com/reiluisii/1-Click-DLSS5)
+[![RenoDX](https://img.shields.io/badge/RenoDX-v4.x%20Addon-FF6B6B.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 [![OptiScaler](https://img.shields.io/badge/OptiScaler-v0.9.4%20Bridge-purple.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 
 [English](#english) • [Português (Brasil)](#português-brasil)
@@ -29,13 +29,19 @@
 - **Real-time icon extraction** from 64-bit game executables
 - **Intelligent heuristic detection** of the correct game binary (resolves `Retail\`, `bin\x64\`, `Binaries\Win64\`)
 - **Universal Mode** — auto-detects Native DLSS, FSR2/3, or XeSS and applies the optimal injection method
-- **1-click installation** of DLSS 5 Neural Reconstruction powered by RenoDX v4.1, NVIDIA Streamline 2.13, and OptiScaler v0.9.4
+- **1-click installation** of DLSS 5 Neural Reconstruction powered by RenoDX v4.x, NVIDIA Streamline 2.13, and OptiScaler v0.9.4
 
 ---
 
-### ⚡ What's New in v1.2.0
+### ⚡ What's New in v1.2.1 (Hotfix & Addon Upgrade)
 
-#### 🌉 Universal Mode / OptiScaler Bridge
+#### 🚀 RenoDX Addon Latest Build (560 KB)
+- Bundled the latest RenoDX DLSS 5 Addon build with updated SHA-256 integrity hash
+- Enhanced stability and compatibility for RTX 3000, 4000, and 5000 Series GPUs
+- **F5 — Screenshot A/B Mode:** Capture perfect side-by-side comparison screenshots
+- **F6 — On/Off Comparison Hotkey (WIP):** Toggle neural rendering on the same frame for instant A/B comparison
+
+#### 🌉 Universal Mode / OptiScaler Bridge (v1.2.x)
 Automatically detects the upscaler technology present in each game and applies the optimal method:
 - **Games with native DLSS** → Direct injection of Streamline 2.13 + `renodx-dlss5.addon64`
 - **Games with FSR 2/3 or XeSS only** → OptiScaler v0.9.4 Bridge (`version.dll` + `dxgi.dll`) transparently translates FSR2/XeSS calls to DLSS-NR neural reconstruction
@@ -89,7 +95,7 @@ Automatically detects the upscaler technology present in each game and applies t
 
 ### 🚀 Quick Start Guide
 
-1. **Download & Extract:** Download `1-Click-DLSS5-v1.2.0.zip` and extract to any folder.
+1. **Download & Extract:** Download `1-Click-DLSS5-v1.2.1.zip` and extract to any folder.
 2. **Launch:** Double-click **`1-Click-DLSS5.cmd`**.
 3. **Select Your Game:** Pick from the auto-populated library or click **`[📁 BROWSE GAME]`**.
 4. **Install:** Click **`[🚀 1-CLICK INSTALL DLSS 5]`** and confirm.
@@ -186,13 +192,19 @@ O **1 Click DLSS 5** é uma central completa e automatizada de injeção e geren
 - **Extração de ícones em tempo real** dos executáveis de 64-bit
 - **Detecção inteligente** do executável correto (resolve `Retail\`, `bin\x64\`, `Binaries\Win64\`)
 - **Modo Universal** — detecta automaticamente DLSS nativo, FSR2/3 ou XeSS e aplica o método ideal
-- **Instalação em 1-clique** via RenoDX v4.1, NVIDIA Streamline 2.13 e OptiScaler v0.9.4
+- **Instalação em 1-clique** via RenoDX v4.x, NVIDIA Streamline 2.13 e OptiScaler v0.9.4
 
 ---
 
-### ⚡ Novidades da Versão 1.2.0
+### ⚡ Novidades da Versão 1.2.1 (Hotfix & Atualização do Addon)
 
-#### 🌉 Modo Universal / Ponte OptiScaler
+#### 🚀 Addon RenoDX Build Mais Recente (560 KB)
+- Addon RenoDX DLSS 5 atualizado com hash de integridade SHA-256 verificado
+- Estabilidade e compatibilidade aprimoradas para GPUs Séries RTX 3000, 4000 e 5000
+- **F5 — Modo Screenshot A/B:** Capture comparações perfeitas lado a lado
+- **F6 — Tecla On/Off no Mesmo Frame (WIP):** Alterne a renderização neural instantaneamente para comparação visual
+
+#### 🌉 Modo Universal / Ponte OptiScaler (v1.2.x)
 Detecta automaticamente a tecnologia de upscaling de cada jogo:
 - **Jogos com DLSS nativo** → Injeção direta de Streamline 2.13 + `renodx-dlss5.addon64`
 - **Jogos só com FSR 2/3 ou XeSS** → Ponte OptiScaler v0.9.4 (`version.dll` + `dxgi.dll`) converte transparentemente as chamadas FSR2/XeSS para DLSS-NR
@@ -246,7 +258,7 @@ Detecta automaticamente a tecnologia de upscaling de cada jogo:
 
 ### 🚀 Guia de Uso Rápido
 
-1. **Baixar e Extrair:** Baixe `1-Click-DLSS5-v1.2.0.zip` e extraia para qualquer pasta.
+1. **Baixar e Extrair:** Baixe `1-Click-DLSS5-v1.2.1.zip` e extraia para qualquer pasta.
 2. **Executar:** Dê dois cliques em **`1-Click-DLSS5.cmd`**.
 3. **Escolha o Jogo:** Selecione na biblioteca ou clique em **`[📁 PROCURAR JOGO]`**.
 4. **Instalar:** Clique em **`[🚀 INSTALAR DLSS 5 EM 1-CLIQUE]`** e confirme.

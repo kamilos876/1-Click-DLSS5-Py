@@ -11,7 +11,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $script:ProductName = "1 Click DLSS 5"
-$script:Version = "1.2.0"
+$script:Version = "1.2.1"
 $script:AddOnName = "renodx-dlss5.addon64"
 $script:AddonHash = "E1C28FDE0922B12FC10734E58C3D24A36808E575247F4FD4F36226540D7EE023"
 $script:ReShadeUrl = "https://reshade.me/downloads/ReShade_Setup_6.8.0_Addon.exe"
@@ -144,7 +144,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 OPEN FOLDER"
             BtnInstructions = "📖 IN-GAME GUIDE"
             StatusHeading = "REAL-TIME DIAGNOSTICS & SYSTEM LOG"
-            Footer = "1 Click DLSS 5 v1.2.0 | RTX 40 & RTX 50 Series | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
+            Footer = "1 Click DLSS 5 v1.2.1 | RTX 40 & RTX 50 Series | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
             Badge100 = "✓ 100% COMPATIBLE (Native DLSS)"
             BadgeDX12 = "✓ COMPATIBLE (DirectX 12)"
             BadgeCheck = "? VERIFY DX12 SUPPORT"
@@ -202,7 +202,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 ABRIR PASTA"
             BtnInstructions = "📖 GUIA NO JOGO"
             StatusHeading = "DIAGNÓSTICO E LOG DO SISTEMA EM TEMPO REAL"
-            Footer = "1 Click DLSS 5 v1.2.0 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
+            Footer = "1 Click DLSS 5 v1.2.1 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format"
             Badge100 = "✓ 100% COMPATÍVEL (DLSS Nativo)"
             BadgeDX12 = "✓ COMPATÍVEL (DirectX 12)"
             BadgeCheck = "? VERIFICAR SUPORTE DX12"
@@ -983,7 +983,7 @@ function Show-Instructions {
 
 # --- FORMULARIO PRINCIPAL: STEAM-STYLE GAME CENTER ---
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "1 Click DLSS 5 v1.2.0 • Universal Neural Game Center"
+$form.Text = "1 Click DLSS 5 v1.2.1 • Universal Neural Game Center"
 $form.Size = New-Object System.Drawing.Size(1200, 900)
 $form.MinimumSize = New-Object System.Drawing.Size(1100, 820)
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
@@ -1367,7 +1367,7 @@ $status.ScrollBars = [System.Windows.Forms.RichTextBoxScrollBars]::Vertical
 $script:StatusBox = $status
 
 # FOOTER
-$footer = New-Label -Text "1 Click DLSS 5 v1.2.0 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format" -X 20 -Y 825 -Width 1145 -Height 22
+$footer = New-Label -Text "1 Click DLSS 5 v1.2.1 | Séries RTX 40 & RTX 50 | DirectX 12 | Streamline 2.13 | RenoDX DLSS 5 Multi-Format" -X 20 -Y 825 -Width 1145 -Height 22
 $footer.Anchor = "Bottom, Left, Right"
 $footer.ForeColor = [System.Drawing.Color]::FromArgb(120, 140, 170)
 $footer.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)
