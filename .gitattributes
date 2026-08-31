@@ -1,0 +1,9 @@
+# This fork keeps its own README. The "ours" merge driver makes a merge from
+# upstream leave it untouched instead of raising a conflict on every sync.
+#
+# The driver itself is a local setting and does not travel with a clone, so on
+# a fresh checkout run this once or the merge falls back to a normal conflict:
+#
+#     git config merge.ours.driver true
+#
+README.md merge=ours
