@@ -3,7 +3,7 @@
 <div align="center">
 
 **Universal Neural Rendering Game Center & 1-Click Injector**  
-*Empowering ANY PC Game (DX11/DX12/Vulkan/OpenGL) & All NVIDIA GeForce RTX 20, 30, 40 & 50 Series GPUs with DLSS 5 Neural Reconstruction*
+*Empowering ANY PC Game (DX11 / DX12 / Vulkan / OpenGL) & All NVIDIA GeForce RTX 20, 30, 40 & 50 Series GPUs with DLSS 5 Neural Reconstruction*
 
 [![Version](https://img.shields.io/badge/version-1.4.0-brightgreen.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -16,71 +16,114 @@
 
 <br>
 
-<img src="core/docs/ui_preview.png" alt="1 Click DLSS 5 Game Center Interface" width="850">
-
-<br>
-
-[English](#english) • [Português (Brasil)](#português-brasil)
+<img src="core/docs/ui_preview.png" alt="1 Click DLSS 5 Game Center Interface" width="900">
 
 </div>
 
 ---
 
-## English
+## 🌟 What is 1 Click DLSS 5?
 
-### 🌟 Overview
-
-**1 Click DLSS 5** is an all-in-one, automated Neural Rendering game center and injection engine for Windows. Built for the entire **NVIDIA GeForce RTX lineup (RTX 20, RTX 30, RTX 40 & RTX 50 Series)**, it introduces **Universal Feeder 2.0 Mode**, enabling DLSS 5 Neural Reconstruction in **virtually ANY PC game** (DirectX 11, DirectX 12, Vulkan, and OpenGL) with **100% Native Resolution (DLAA)** or **Dynamic Sub-Native Scaling (50%–100%)** without requiring native game upscaler integration.
+**1 Click DLSS 5** is an all-in-one, standalone Neural Rendering desktop game center and automated injection tool for Windows. Designed for the entire **NVIDIA GeForce RTX lineup (RTX 20, 30, 40, and 50 Series)**, it democratizes **DLSS 5 Neural Reconstruction** by bringing real-time AI-enhanced lighting, reflection stability, and pristine edge anti-aliasing to **virtually ANY PC game**—regardless of whether the game natively supports DLSS, FSR, XeSS, or no upscaler at all.
 
 ---
 
-### 🎮 The 3 Operating Modes
+## 🔍 How the Game Center Works (Under the Hood)
 
-| Mode | Target Games | Injection Stack | Resolution Modes | In-Game Setting |
+The application operates as a standalone Steam-style game manager with zero background telemetry:
+
+1. **Automatic Multi-Drive Game Library Discovery:**
+   * Recursively scans all connected drives (Steam, Epic Games Store, GOG Galaxy, EA App, Ubisoft Connect, Xbox App, and custom install directories).
+   * Parses executable headers via Win32 PE extraction to retrieve real high-resolution game icons and determine binary bitness (64-bit vs 32-bit).
+
+2. **Intelligent Upscaler & Engine Detection:**
+   * Scans game directories for graphic APIs and upscaling runtimes:
+     * **Native DLSS Detected:** Finds `nvngx_dlss.dll`, `nvngx_dlssd.dll`, `sl.dlss.dll`, or `_nvngx.dll`.
+     * **FSR 2 / 3 Detected:** Finds `ffx_fsr2_api*.dll`, `ffx_fsr3_api*.dll`, `amd_fidelityfx*.dll`, or `FSR2.dll`.
+     * **XeSS Detected:** Finds `libxess.dll` or `xess.dll`.
+     * **DirectX / Vulkan / OpenGL:** Detects rendering engine characteristics for games with no built-in upscalers.
+
+3. **1-Click Smart Deployment & Clean State Management:**
+   * Automatically selects the optimal injection mode, backs up original game files to a hidden safety directory, and applies pre-configured, flicker-free profiles.
+   * Provides **100% factory restoration** with a single click, cleanly removing all injected files.
+
+---
+
+## 🎮 The 3 Smart Operating Modes
+
+```
+                               ┌──► [Mode 1: Direct] ──────► Native DLSS Games (Cyberpunk, Forza, Control)
+                               │
+[1-Click DLSS 5 Auto-Detect] ──┼──► [Mode 2: Bridge] ──────► FSR2/XeSS Games (God of War, The Last of Us)
+                               │
+                               └──► [Mode 3: Feeder 2.0] ──► ALL OTHER GAMES (Green Hell, FF XII, Elden Ring, etc.)
+```
+
+| Mode | Target Games | Injection Stack | Resolution Modes | In-Game Setup |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Direct Mode** | Games with native DLSS (*Cyberpunk 2077*, *Control*, *Forza*, *Witcher 3*) | NVIDIA Streamline 2.13 + `renodx-dlss5.addon64` + `nvngx_dlssnr.dll` | DLSS Quality / Balanced / Performance | **Enable DLSS** in game menu |
-| **2. OptiScaler Bridge** | Games with FSR 2/3 or XeSS only (*God of War*, *The Last of Us*) | OptiScaler v0.9.4 (`version.dll`) + `renodx-dlss5.addon64` + `nvngx_dlssnr.dll` | FSR2/XeSS Redirected to DLSS 5 | **Enable FSR2/XeSS** in Quality mode |
-| **3. Universal Feeder 2.0** 🆕 | **ALL OTHER GAMES** (*Green Hell*, *FF XII*, *Elden Ring*, *Dark Souls*, *Skyrim*, *GTA V*, etc.) | `dlss5-feed.addon64` (Engine v0.7.0) + LumeniteFX Kernel Optical Flow + `renodx-dlss5.addon64` + `nvngx_dlssnr.dll` | **100% Native DLAA** or **Dynamic Scaling (50%–100%)** | **Keep Upscaling OFF** (100% Native + TAA) |
+| **1. Direct Mode** | Games with native DLSS (*Cyberpunk 2077*, *Control*, *Forza*, *Witcher 3*) | NVIDIA Streamline 2.13 + `renodx-dlss5.addon64` + `nvngx_dlssnr.dll` | DLSS Quality / Balanced / Performance | **Enable DLSS** in game graphics menu |
+| **2. OptiScaler Bridge** | Games with FSR 2/3 or XeSS only (*God of War*, *The Last of Us*, *Avatar*) | OptiScaler v0.9.4 (`version.dll`) + `renodx-dlss5.addon64` + `nvngx_dlssnr.dll` | FSR2/XeSS redirected to DLSS 5 | **Enable FSR2 or XeSS** in Quality mode |
+| **3. Universal Feeder 2.0** 🆕 | **ALL OTHER GAMES** (*Green Hell*, *FF XII*, *Elden Ring*, *Dark Souls*, *Skyrim*, *GTA V*, etc.) | `dlss5-feed.addon64` (Engine v0.7.0) + LumeniteFX Kernel + `renodx-dlss5.addon64` + `nvngx_dlssnr.dll` | **100% Native DLAA** or **Dynamic Scaling (50%–100%)** | **Keep in-game upscalers OFF** (Native + TAA) |
 
 ---
 
-### ⌨️ In-Game Controls & Hotkeys
+## ⚡ Dynamic Work Resolution Scaling (50% – 100% FPS Boost)
 
-* **`[F6]`**: Toggle DLSS 5 Neural Rendering **ON / OFF in real-time** for immediate same-frame comparisons!
-* **`[F5]`**: Capture uncompressed A/B comparison screenshot.
-* **`[Home]` / `[Pos1]`**: Open ReShade / RenoDX in-game overlay menu for fine-tuning.
+With the upgraded **DLSS5-Feeder v0.7.0** engine, Universal Feeder Mode now features a **Dynamic Work Resolution Scaling** slider!
 
----
+<div align="center">
 
-### 💡 Pro-Tip for Maximum Fluidity (V-Sync Recommendation)
-* **Disable In-Game V-Sync**: In games using the Unity Engine or certain DirectX pipelines, in-game V-Sync can cause frame pacing stalls when coupled with post-process neural injection. Disabling in-game V-Sync unlocks buttery smooth 80+ FPS presentations.
-* **Tear-Free Gaming**: Use **NVIDIA G-Sync / FreeSync** or set a global Max Frame Rate limit in the **NVIDIA Control Panel** for flawless frame pacing.
+<img src="core/docs/feeder_settings.png" alt="DLSS 5 Feeder v0.7.0 In-Game Overlay Settings" width="480">
 
----
+*Adjust the `Work resolution (%)` slider inside the ReShade `[Home]` overlay to balance performance and fidelity.*
 
-### ⚡ What's New in v1.4.0 (Universal Feeder 2.0 Edition)
+</div>
 
-#### 🚀 Upgraded Universal Feeder Engine (v0.7.0)
-- **Eliminated GPU Wedges / Driver TDR Crashes**: Both host and client now drain GPU queues and signal fences safely to `UINT64_MAX` upon exit or settings changes, resolving `nvlddmkm 153` driver resets.
-- **Fixed Washed-out Image & Lifted Blacks (Vulkan / D3D12)**: Replaced sRGB-converting blits with raw byte copies (`vkCmdCopyImage`), preserving original game contrast and deep blacks.
-- **Adjustable Work Resolution (50% – 100% Scaling)**: Run DLSS 5 Neural Reconstruction at a fraction of native resolution for massive performance gains on demanding titles, or keep it at 100% Native DLAA.
-- **OpenGL Support (32-bit & 64-bit)**: Extended injection support to OpenGL titles via `GL_EXT_external_objects_win32` texture and fence sharing.
-- **1:1 RenoDX Overlay Synchronization**: In-game menu now mirrors RenoDX settings directly and no longer overwrites default RenoDX configurations. Focus-stealing during host restart has been eliminated.
-
-#### 🛡️ Rock-Solid Stability & Universal Hardware
-- Retains the battle-tested RenoDX stable detour build (zero flickering, no swapchain race conditions).
-- Retains universal `nvngx_dlssnr.dll` (158 MB) with full support for **RTX 20, 30, 40, and 50 Series** GPUs.
-- **100% Clean Factory Restoration**: 1-click restore purges all injected addons, shaders, and configs, restoring original game files cleanly.
+### How It Works:
+* **100% Work Resolution (Default / Native DLAA):** Runs the full DLSS 5 Neural Reconstruction pass directly on 100% native screen resolution with zero downsampling blur, delivering maximum texture crispness and stable temporal geometry.
+* **50% – 90% Work Resolution (Performance Scaling):** Renders the internal neural pass at a fraction of the screen resolution while keeping the HUD and backbuffer native. Motion vectors scale proportionally and depth is point-sampled to preserve silhouette fidelity, yielding massive FPS boosts in demanding titles!
 
 ---
 
-### 👥 Credits & Open-Source Ecosystem Attribution
+## 🚀 Key Improvements in v1.4.0 (Universal Feeder 2.0)
 
-We would like to express our deepest gratitude to the brilliant developers, researchers, and open-source projects that make **1 Click DLSS 5** possible:
+* **🛡️ Eliminated GPU Wedges & Driver TDR Crashes (v0.6.1/v0.7.0):**
+  GPU queues and synchronization fences are now properly drained and signaled to `UINT64_MAX` upon exiting or applying settings, resolving `nvlddmkm 153` driver resets.
+* **🎨 Fixed Washed-Out Images & Lifted Blacks in Vulkan / D3D12:**
+  Switched from sRGB-converting blits to raw byte copies (`vkCmdCopyImage`), preserving accurate black levels and authentic scene contrast.
+* **🕹️ Added OpenGL Support (32-bit & 64-bit):**
+  Enables DLSS 5 injection on classic games, emulators, and OpenGL engines via cross-API memory object sharing (`GL_EXT_external_objects_win32`).
+* **🎛️ 1:1 In-Game UI Alignment with RenoDX:**
+  Feeder overlay menu mirrors RenoDX settings directly and no longer overwrites default configurations.
+* **🛑 Automatic Overlay & Tutorial Suppression:**
+  ReShade starts completely silently with no first-time banners or tutorial popups.
+* **📁 Clean Layperson Folder Hierarchy:**
+  Internal scripts, payloads, and assets are housed in `core/`, providing a single-click entry point (`1-Click-DLSS5.vbs`) with zero flashing terminal windows.
 
-| Component / Library | Authors & Maintainers | Role in 1 Click DLSS 5 | Upstream Source & License |
+---
+
+## ⌨️ In-Game Controls & Hotkeys
+
+* **`[F6]`**: Toggle DLSS 5 Neural Rendering **ON / OFF in real-time** for instant same-frame comparison.
+* **`[F5]`**: Capture uncompressed A/B screenshot comparisons.
+* **`[Home]` / `[Pos1]`**: Open the ReShade, RenoDX, and DLSS 5 Feeder in-game settings overlay.
+
+---
+
+## 💡 Pro-Tip for Maximum Fluidity (V-Sync Recommendation)
+
+* **Disable In-Game V-Sync:** In games built on the Unity Engine or certain DirectX swapchains, in-game V-Sync can cause frame pacing stalls when post-process neural compute passes execute on the command queue. Disabling in-game V-Sync unlocks smooth 80+ FPS presentations.
+* **Tear-Free Experience:** Use **NVIDIA G-Sync / FreeSync** or set a global Max Frame Rate limit inside the **NVIDIA Control Panel** for stutter-free frame pacing.
+
+---
+
+## 👥 Credits & Open-Source Attribution
+
+We express our deepest gratitude to the visionary developers and open-source projects that make **1 Click DLSS 5** possible:
+
+| Component / Library | Authors & Maintainers | Role in 1 Click DLSS 5 | Upstream Project & License |
 | :--- | :--- | :--- | :--- |
-| **NVIDIA DLSS & Streamline** | **NVIDIA Corporation** | Neural Reconstruction model (`nvngx_dlssnr.dll`), DLSS SDK, and Streamline framework. | [NVIDIA Streamline](https://github.com/NVIDIAGameWorks/Streamline) • NVIDIA SDK License |
+| **NVIDIA DLSS & Streamline** | **NVIDIA Corporation** | Neural Reconstruction runtime (`nvngx_dlssnr.dll`), DLSS SDK, and Streamline framework. | [NVIDIA Streamline](https://github.com/NVIDIAGameWorks/Streamline) • NVIDIA SDK License |
 | **RenoDX Add-on** | **ShortFuse (`clshortfuse`) & Krish** | ReShade Add-on framework for DirectX hook detouring, DLSS parameter exposure, and tone mapping. | [clshortfuse/renodx](https://github.com/clshortfuse/renodx) • MIT License |
 | **DLSS5-Feeder Engine** | **Jean-Luc Rouzies (`jlrouzies-fr`) & `@Phroster`** | Synthetic DLAA motion vector/depth feeder, cross-API texture bridging (D3D11/D3D12/Vulkan/OpenGL), and 32-bit IPC host. | [jlrouzies-fr/DLSS5-Feeder](https://github.com/jlrouzies-fr/DLSS5-Feeder) • MIT License |
 | **OptiScaler** | **Çağın Özdil (`cdozdil`)** | Universal upscaling bridge for non-DLSS games with FSR2/XeSS support (`version.dll`). | [cdozdil/OptiScaler](https://github.com/cdozdil/OptiScaler) • MIT License |
@@ -91,93 +134,24 @@ We would like to express our deepest gratitude to the brilliant developers, rese
 
 ---
 
-### 📋 System Requirements
+## 📋 System Requirements & Quick Start
 
+### Requirements:
 * **GPU:** NVIDIA GeForce RTX Series (RTX 2060+, RTX 3050+, RTX 4060+, RTX 50-Series)
-* **OS:** Windows 10 / Windows 11 (64-bit)
+* **OS:** Windows 10 or Windows 11 (64-bit)
 * **Graphics API:** DirectX 11, DirectX 12, Vulkan, or OpenGL
-* **Storage:** ~380 MB free disk space for runtime payload
+* **Disk Space:** ~430 MB free disk space
+
+### Quick Start:
+1. Download and extract **`1-Click-DLSS5-v1.4.0.zip`**.
+2. Double-click **`1-Click-DLSS5.vbs`** to open the Game Center (no terminal window will open).
+3. Select your game from the library or click **Browse Game**.
+4. Click **🚀 1-CLICK INSTALL DLSS 5** and launch your game!
 
 ---
 
-<br>
+## 🛡️ License & Disclaimer
 
-## Português (Brasil)
+Distributed under the [MIT](LICENSE) License.
 
-### 🌟 Visão Geral
-
-O **1 Click DLSS 5** é uma central completa e automatizada de injeção e gerenciamento de Renderização Neural DLSS 5 para Windows. Projetado para **toda a linha NVIDIA GeForce RTX (Séries RTX 20, RTX 30, RTX 40 e RTX 50)**, a versão 1.4.0 introduz o **Modo Feeder Universal 2.0**, permitindo rodar a Reconstrução Neural DLSS 5 em **praticamente QUALQUER jogo de PC** (DirectX 11, DirectX 12, Vulkan e OpenGL) em **Resolução 100% Nativa (DLAA)** ou com **Escalonamento Dinâmico (50%–100%)** sem precisar de suporte nativo no jogo.
-
----
-
-### 🎮 Os 3 Modos de Operação Inteligentes
-
-| Modo | Jogos Alvo | Pilha de Injeção | Modo de Resolução | Configuração no Jogo |
-| :--- | :--- | :--- | :--- | :--- |
-| **1. Modo Direto** | Jogos com DLSS nativo (*Cyberpunk 2077*, *Control*, *Forza*, *Witcher 3*) | NVIDIA Streamline 2.13 + `renodx-dlss5.addon64` + `nvngx_dlssnr.dll` | DLSS Qualidade / Balanceado / Desempenho | **Ative o DLSS** no menu do jogo |
-| **2. Ponte OptiScaler** | Jogos apenas com FSR 2/3 ou XeSS (*God of War*, *The Last of Us*) | OptiScaler v0.9.4 (`version.dll`) + `renodx-dlss5.addon64` + `nvngx_dlssnr.dll` | FSR2/XeSS Redirecionado para DLSS 5 | **Ative FSR2/XeSS** em modo Qualidade |
-| **3. Feeder Universal 2.0** 🆕 | **TODOS OS OUTROS JOGOS** (*Green Hell*, *FF XII*, *Elden Ring*, *Dark Souls*, *Skyrim*, *GTA V*, etc.) | `dlss5-feed.addon64` (Motor v0.7.0) + Fluxo Óptico LumeniteFX Kernel + `renodx-dlss5.addon64` + `nvngx_dlssnr.dll` | **DLAA 100% Nativo** ou **Escalonamento (50%–100%)** | **Deixe Upscaling DESLIGADO** (Nativo + TAA) |
-
----
-
-### ⌨️ Teclas de Atalho no Jogo
-
-* **`[F6]`**: Liga / Desliga o DLSS 5 **em tempo real** para comparar o antes e depois no mesmo frame!
-* **`[F5]`**: Captura screenshot sem compressão para comparação A/B.
-* **`[Home]` / `[Pos1]`**: Abre o menu completo do ReShade / RenoDX para ajustes finos.
-
----
-
-### 💡 Dica de Ouro para Fluidez Máxima (Recomendação de VSync)
-* **Desative o V-Sync dentro do Jogo**: Em jogos desenvolvidos na Unity Engine ou em certos pipelines DirectX, o V-Sync interno do jogo pode travar a entrega de frames (stalling da swapchain) quando combinado com pós-processamento neural. Desativar o VSync interno libera 80+ FPS fluidos e constantes.
-* **Sem cortes de tela (Tearing)**: Utilize **G-Sync / FreeSync** ou limite a taxa máxima de quadros diretamente no **Painel de Controle da NVIDIA**.
-
----
-
-### ⚡ Novidades da Versão 1.4.0 (Edição Feeder Universal 2.0)
-
-#### 🚀 Motor DLSS5-Feeder Atualizado (v0.7.0)
-- **Fim dos Travamentos de GPU (Fix TDR nvlddmkm 153)**: Drenagem segura das filas GPU e sinalização de *fences* ao fechar o jogo ou aplicar ajustes, eliminando congelamentos de tela.
-- **Correção de Cores Lavadas / Pretos Claros em Vulkan & D3D12**: Transição para cópia bruta de bytes (`vkCmdCopyImage`) sem conversão indevida de sRGB, mantendo pretos profundos e contraste perfeito.
-- **Escalonamento de Resolução Ajustável (Slider 50% – 100%)**: Permite rodar a reconstrução neural interna em resolução reduzida para mais FPS em jogos pesados, ou manter em 100% Nativo (DLAA).
-- **Suporte a OpenGL (32-bit e 64-bit)**: Compatibilidade com jogos clássicos e emuladores baseados em OpenGL.
-- **Menu In-Game Sincronizado 1:1 com RenoDX**: A interface do Feeder espelha exatamente as opções do RenoDX e não sobrescreve configurações padrão. Correção no foco da janela ao reiniciar o helper process.
-
-#### 🛡️ Estabilidade Absoluta e Suporte Universal a Hardware
-- Mantém a build estável e comprovada do RenoDX (zero piscamentos ou congelamentos).
-- Mantém o runtime neural universal `nvngx_dlssnr.dll` (158 MB) com suporte nativo a **RTX 20, 30, 40 e 50**.
-- **Restauração de Fábrica 100% Limpa**: O botão Restaurar remove com segurança todos os arquivos injetados (addons, shaders, configs) e recupera os executáveis originais.
-
----
-
-### 👥 Créditos & Reconhecimento ao Ecossistema Open-Source
-
-Expressamos nossa sincera gratidão aos desenvolvedores, pesquisadores e projetos de código aberto que tornam o **1 Click DLSS 5** possível:
-
-| Componente / Biblioteca | Autores e Mantenedores | Função no 1 Click DLSS 5 | Repositório Oficial e Licença |
-| :--- | :--- | :--- | :--- |
-| **NVIDIA DLSS & Streamline** | **NVIDIA Corporation** | Modelo Neural Reconstruction (`nvngx_dlssnr.dll`), SDK do DLSS e Streamline framework. | [NVIDIA Streamline](https://github.com/NVIDIAGameWorks/Streamline) • Licença NVIDIA SDK |
-| **RenoDX Add-on** | **ShortFuse (`clshortfuse`) & Krish** | Add-on para ReShade de hooks DirectX, exposição de parâmetros DLSS e tone mapping. | [clshortfuse/renodx](https://github.com/clshortfuse/renodx) • Licença MIT |
-| **DLSS5-Feeder Engine** | **Jean-Luc Rouzies (`jlrouzies-fr`) & `@Phroster`** | Feeder de DLAA sintético, vetores de movimento/profundidade, ponte D3D11/D3D12/Vulkan/OpenGL e IPC 32-bit. | [jlrouzies-fr/DLSS5-Feeder](https://github.com/jlrouzies-fr/DLSS5-Feeder) • Licença MIT |
-| **OptiScaler** | **Çağın Özdil (`cdozdil`)** | Ponte universal para jogos com suporte a FSR2/XeSS (`version.dll`). | [cdozdil/OptiScaler](https://github.com/cdozdil/OptiScaler) • Licença MIT |
-| **ReShade** | **Crosire (`crosire`) & Equipe ReShade** | Injetor genérico de pós-processamento e arquitetura de Add-ons. | [crosire/reshade](https://github.com/crosire/reshade) • Licença BSD 3-Clause |
-| **LumeniteFX Kernel** | **Fubax & Equipe Lumenite** | Shaders compute de fluxo óptico temporal de alta precisão. | [Fubax/LumeniteFX](https://github.com/Fubax/LumeniteFX) • Licença MIT |
-| **Intel® XeSS SDK** | **Intel Corporation** | Runtime do Intel Xe Super Sampling (`libxess.dll`) utilizado na ponte OptiScaler. | [intel/xess](https://github.com/intel/xess) • Licença Intel Community |
-| **AMD FidelityFX™** | **Advanced Micro Devices (AMD)** | Padrões e abstrações de API do FSR 2 e FSR 3. | [GPUOpen-LibrariesAndSDKs/FidelityFX-SDK](https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK) • Licença MIT |
-
----
-
-### 📋 Requisitos de Sistema
-
-* **Placa de Vídeo:** Linha NVIDIA GeForce RTX (RTX 2060+, RTX 3050+, RTX 4060+, Série RTX 50)
-* **Sistema Operacional:** Windows 10 ou Windows 11 (64 bits)
-* **API Gráfica:** DirectX 11, DirectX 12, Vulkan ou OpenGL
-* **Armazenamento:** ~380 MB de espaço em disco para o payload completo
-
----
-
-### 🛡️ License & Disclaimer / Licença & Isenção de Responsabilidade
-
-Distributed under the [MIT](LICENSE) License. / Distribuído sob a licença [MIT](LICENSE).
-
-This project is an open-source research and modding tool developed for educational, enhancement, and compatibility purposes. NVIDIA, DLSS, Streamline, GeForce, RTX, OptiScaler, ReShade, and RenoDX are trademarks or registered trademarks of their respective owners.
+*This project is an open-source research and modding tool developed for educational, enhancement, and compatibility purposes. NVIDIA, DLSS, Streamline, GeForce, RTX, OptiScaler, ReShade, and RenoDX are trademarks or registered trademarks of their respective owners.*
