@@ -536,6 +536,56 @@ function Get-DriverVersions {
     return $vers
 }
 
+function Detect-GameGraphicsApi {
+    param(
+        [Parameter(Mandatory = $true)][string]$TargetExe,
+        [string]$GameFolder = ""
+    )
+    if ([string]::IsNullOrWhiteSpace($GameFolder)) {
+        $GameFolder = Split-Path -Parent $TargetExe
+    }
+    
+    $exeLow = $TargetExe.ToLower()
+    $folderLow = $GameFolder.ToLower()
+
+    # 1. Explicit OpenGL Signatures (Project Zomboid, Minecraft, Wolfenstein, Emulators, Java/LWJGL)
+    $isOpenGL = $false
+    if ($exeLow.Contains("projectzomboid") -or $exeLow.Contains("minecraft") -or $exeLow.Contains("javaw.exe") -or $exeLow.Contains("wolfneworder") -or $exeLow.Contains("wolfoldblood") -or $exeLow.Contains("rage.exe") -or $exeLow.Contains("cemu.exe") -or $exeLow.Contains("yuzu.exe") -or $exeLow.Contains("ryujinx.exe") -or $exeLow.Contains("citra.exe")) {
+        $isOpenGL = $true
+    }
+    if (-not $isOpenGL) {
+        $glFiles = @(Get-ChildItem -LiteralPath $GameFolder -Filter "*lwjgl*" -File -Depth 2 -ErrorAction SilentlyContinue)
+        $glFiles += @(Get-ChildItem -LiteralPath $GameFolder -Filter "*glfw3*" -File -Depth 2 -ErrorAction SilentlyContinue)
+        $glFiles += @(Get-ChildItem -LiteralPath $GameFolder -Filter "*opengl*.txt" -File -Depth 2 -ErrorAction SilentlyContinue)
+        if ($glFiles.Count -gt 0) { $isOpenGL = $true }
+    }
+    if ($isOpenGL) { return "OPENGL" }
+
+    # 2. Unreal Engine 4/5 / Hitman (Requires d3d12.dll for direct injection)
+    $isUe = $exeLow.Contains("binaries\win64") -or $exeLow.Contains("htgame") -or $exeLow.Contains("hitman")
+    if ($isUe) { return "D3D12" }
+
+    # 3. DirectX 9 (Source 1 games, Skyrim LE, Fallout NV, GTA SA/IV, Mass Effect 1/2)
+    $d3d9Files = @(Get-ChildItem -LiteralPath $GameFolder -Filter "d3d9*.dll" -File -Depth 2 -ErrorAction SilentlyContinue)
+    $d3d9Files += @(Get-ChildItem -LiteralPath $GameFolder -Filter "d3dx9*.dll" -File -Depth 2 -ErrorAction SilentlyContinue)
+    $modernDxFiles = @(Get-ChildItem -LiteralPath $GameFolder -Filter "d3d11*.dll" -File -Depth 2 -ErrorAction SilentlyContinue)
+    $modernDxFiles += @(Get-ChildItem -LiteralPath $GameFolder -Filter "d3d12*.dll" -File -Depth 2 -ErrorAction SilentlyContinue)
+    $modernDxFiles += @(Get-ChildItem -LiteralPath $GameFolder -Filter "dxgi*.dll" -File -Depth 2 -ErrorAction SilentlyContinue)
+    
+    if ($d3d9Files.Count -gt 0 -and $modernDxFiles.Count -eq 0) {
+        return "D3D9"
+    }
+
+    # 4. Vulkan
+    $vkFiles = @(Get-ChildItem -LiteralPath $GameFolder -Filter "vulkan-1.dll" -File -Depth 2 -ErrorAction SilentlyContinue)
+    if ($vkFiles.Count -gt 0 -and $modernDxFiles.Count -eq 0) {
+        return "VULKAN"
+    }
+
+    # 5. Universal Default for Modern PC Games (DirectX 11 / DirectX 12)
+    return "DXGI"
+}
+
 function Detect-GameUpscalerType {
     param(
         [Parameter(Mandatory = $true)][string]$GameFolder,
@@ -665,45 +715,67 @@ function Get-ReShadeSetup {
 function Install-ReShade {
     param(
         [Parameter(Mandatory = $true)][string]$TargetExe,
-        [Parameter(Mandatory = $true)][string]$Setup
+        [Parameter(Mandatory = $true)][string]$Setup,
+        [string]$TargetApi = "DXGI"
     )
     $folder = Split-Path -Parent $TargetExe
     $dxgi = Join-Path $folder "dxgi.dll"
     $d3d12 = Join-Path $folder "d3d12.dll"
-    $isUe = $TargetExe.ToLower().Contains("binaries\win64") -or $TargetExe.ToLower().Contains("htgame") -or $TargetExe.ToLower().Contains("hitman")
+    $d3d9 = Join-Path $folder "d3d9.dll"
+    $opengl = Join-Path $folder "opengl32.dll"
 
-    # If ReShade is already installed and functional in the target folder, reuse it without failing
+    $expectedDll = switch ($TargetApi) {
+        "OPENGL" { $opengl }
+        "D3D9"   { $d3d9 }
+        "D3D12"  { $d3d12 }
+        default  { $dxgi }
+    }
+    $expectedName = Split-Path -Leaf $expectedDll
+
+    # Check if ReShade already exists with any valid proxy name
     $reshadeExists = $false
-    if (Test-Path -LiteralPath $d3d12 -PathType Leaf) {
-        $item = Get-Item -LiteralPath $d3d12
-        if ($item.Length -gt 2MB) { $reshadeExists = $true }
-    } elseif (Test-Path -LiteralPath $dxgi -PathType Leaf) {
-        $item = Get-Item -LiteralPath $dxgi
-        if ($item.Length -gt 2MB) { $reshadeExists = $true }
+    foreach ($cand in @($opengl, $d3d12, $dxgi, $d3d9)) {
+        if (Test-Path -LiteralPath $cand -PathType Leaf) {
+            $item = Get-Item -LiteralPath $cand
+            if ($item.Length -gt 2MB) {
+                $reshadeExists = $true
+                if ($cand -ne $expectedDll -and -not (Test-Path -LiteralPath $expectedDll -PathType Leaf)) {
+                    Move-Item -LiteralPath $cand -Destination $expectedDll -Force
+                    Write-Status -Message "ReShade ajustado para $expectedName para compatibilidade nativa com a API ($TargetApi)." -Level "OK"
+                }
+                break
+            }
+        }
     }
 
     if ($reshadeExists) {
-        Write-Status -Message "ReShade com Add-on Support ja esta presente no jogo. Mantendo binario integro..." -Level "OK"
-        if ($isUe -and (Test-Path -LiteralPath $dxgi -PathType Leaf) -and (-not (Test-Path -LiteralPath $d3d12 -PathType Leaf))) {
-            Move-Item -LiteralPath $dxgi -Destination $d3d12 -Force
-        }
-        return
+        Write-Status -Message "ReShade com Add-on Support ($expectedName) ativo e integro..." -Level "OK"
+        return $expectedName
     }
 
-    $arguments = "--headless --api dxgi `"$TargetExe`""
+    $apiFlag = switch ($TargetApi) {
+        "OPENGL" { "opengl" }
+        "D3D9"   { "d3d9" }
+        "D3D12"  { "d3d12" }
+        "VULKAN" { "vulkan" }
+        default  { "dxgi" }
+    }
+
+    $arguments = "--headless --api $apiFlag `"$TargetExe`""
     $process = Start-Process -FilePath $Setup -ArgumentList $arguments -Wait -PassThru
     
-    if ($isUe) {
-        if ((Test-Path -LiteralPath $dxgi -PathType Leaf) -and (-not (Test-Path -LiteralPath $d3d12 -PathType Leaf))) {
-            Move-Item -LiteralPath $dxgi -Destination $d3d12 -Force
-            Write-Status -Message "ReShade configurado como d3d12.dll para compatibilidade nativa." -Level "OK"
-        }
+    # Fallback renaming if ReShade created dxgi.dll instead of expected proxy
+    if ($expectedDll -ne $dxgi -and (Test-Path -LiteralPath $dxgi -PathType Leaf) -and (-not (Test-Path -LiteralPath $expectedDll -PathType Leaf))) {
+        Move-Item -LiteralPath $dxgi -Destination $expectedDll -Force
+        Write-Status -Message "ReShade configurado como $expectedName ($TargetApi)." -Level "OK"
     }
 
-    $hasDll = (Test-Path -LiteralPath $dxgi -PathType Leaf) -or (Test-Path -LiteralPath $d3d12 -PathType Leaf)
+    $hasDll = (Test-Path -LiteralPath $expectedDll -PathType Leaf) -or (Test-Path -LiteralPath $dxgi -PathType Leaf)
     if (-not $hasDll -and $process.ExitCode -ne 0) {
         throw "Instalador do ReShade retornou codigo de erro $($process.ExitCode)."
     }
+
+    return $expectedName
 }
 
 function Get-Compatibility {
@@ -956,12 +1028,15 @@ function Install-Dlss5 {
         InjectedFiles = @()
     }
 
+    # Detect Graphics API
+    $graphicsApi = Detect-GameGraphicsApi -TargetExe $target.Executable -GameFolder $targetFolder
+    Write-Status -Message "API Grafica Detectada: $graphicsApi (Injecao automatizada)" -Level "INFO"
+
     # Install ReShade if checked
     if ($InstallReShade) {
         $setup = Get-ReShadeSetup
-        Install-ReShade -TargetExe $target.Executable -Setup $setup
-        $state.InjectedFiles += "dxgi.dll"
-        $state.InjectedFiles += "d3d12.dll"
+        $injectedDllName = Install-ReShade -TargetExe $target.Executable -Setup $setup -TargetApi $graphicsApi
+        if ($state.InjectedFiles -notcontains $injectedDllName) { $state.InjectedFiles += $injectedDllName }
     }
 
     $targetIni = Join-Path $targetFolder "ReShade.ini"
@@ -1282,7 +1357,7 @@ function Uninstall-Dlss5 {
 
     # Complete purge list (covers DIRECT + OPTISCALER + UNIVERSAL FEEDER modes)
     $purgeList = @(
-        "d3d12.dll", "dxgi.dll",
+        "opengl32.dll", "d3d9.dll", "d3d12.dll", "dxgi.dll",
         "renodx-dlss5.addon64", "renodx-dlss5++.addon64", "renodx-dlss5-v3.addon64",
         "dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed.cfg", "dlss5-feed.log", "dlss5-feed.ini",
         "nvngx_dlssnr.dll", "sl.dlss_nr.dll",
