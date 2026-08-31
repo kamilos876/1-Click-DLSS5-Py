@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+window*.png
+
+# The repository root ignores test_*.py to keep upstream's scratch scripts out.
+# This port's tests are real source, so re-include them.
+!test_*.py
