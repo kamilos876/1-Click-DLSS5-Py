@@ -35,13 +35,39 @@ $script:CacheRoot = Join-Path $env:LOCALAPPDATA "1ClickDLSS5"
 $script:StatusBox = $null
 $script:PayloadFolder = $null
 $script:PayloadZipPath = $null
-$script:AppRoot = $PSScriptRoot
-if ([string]::IsNullOrWhiteSpace($script:AppRoot)) {
-    if (-not [string]::IsNullOrWhiteSpace($MyInvocation.MyCommand.Path)) {
-        $script:AppRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-    } else {
-        $script:AppRoot = (Get-Location).Path
+function Get-DLSS5AppRoot {
+    $candidates = @(
+        $PSScriptRoot,
+        (Split-Path -Parent $MyInvocation.MyCommand.Path),
+        (Get-Location).Path,
+        (Join-Path (Get-Location).Path "core"),
+        (Join-Path $PSScriptRoot "core")
+    )
+    foreach ($cand in $candidates) {
+        if ([string]::IsNullOrWhiteSpace($cand)) { continue }
+        if (Test-Path -LiteralPath (Join-Path $cand "payload") -PathType Container) {
+            return $cand
+        }
     }
+    return (if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path })
+}
+$script:AppRoot = Get-DLSS5AppRoot
+
+function Find-EmbeddedStreamlineZip {
+    $zipCandidates = @(
+        (Join-Path $script:AppRoot "payload\streamline.zip"),
+        (Join-Path $script:AppRoot "core\payload\streamline.zip"),
+        (Join-Path (Split-Path -Parent $script:AppRoot) "core\payload\streamline.zip"),
+        (Join-Path (Split-Path -Parent $script:AppRoot) "payload\streamline.zip"),
+        (Join-Path (Get-Location).Path "core\payload\streamline.zip"),
+        (Join-Path (Get-Location).Path "payload\streamline.zip")
+    )
+    foreach ($zc in $zipCandidates) {
+        if (Test-Path -LiteralPath $zc -PathType Leaf) {
+            return $zc
+        }
+    }
+    return $null
 }
 $script:IconPath = Join-Path $script:AppRoot "assets\logo.ico"
 $script:CurrentLang = "PT"
@@ -560,10 +586,18 @@ function Detect-GameUpscalerType {
 }
 
 function Prepare-Payload {
-    param([Parameter(Mandatory = $true)][string]$DlssZipPath)
+    param([string]$DlssZipPath = "")
     $cleanZip = Sanitize-PathString -Raw $DlssZipPath
-    if ([string]::IsNullOrWhiteSpace($cleanZip)) { throw "Selecione o arquivo ZIP do pacote 1 Click DLSS 5." }
-    if (-not (Test-Path -LiteralPath $cleanZip -PathType Leaf)) { throw "O arquivo ZIP selecionado nao existe: $cleanZip" }
+    if ([string]::IsNullOrWhiteSpace($cleanZip)) {
+        $cleanZip = Find-EmbeddedStreamlineZip
+    }
+    if ([string]::IsNullOrWhiteSpace($cleanZip)) {
+        $d = Get-Dict -Lang $script:CurrentLang
+        throw (if ($script:CurrentLang -eq "EN") { "The streamline.zip payload was not found. Please click [CHANGE ZIP] to select it." } else { "O arquivo streamline.zip do pacote DLSS 5 não foi encontrado. Clique em [TROCAR ZIP] para selecioná-lo." })
+    }
+    if (-not (Test-Path -LiteralPath $cleanZip -PathType Leaf)) {
+        throw (if ($script:CurrentLang -eq "EN") { "Selected ZIP file not found: $cleanZip" } else { "O arquivo ZIP selecionado não existe: $cleanZip" })
+    }
 
     $payloadRoot = Join-Path $script:AppRoot "payload"
     $addon = Join-Path $payloadRoot $script:AddOnName
@@ -671,7 +705,7 @@ function Get-Compatibility {
         [Parameter(Mandatory = $true)][string]$TargetPath,
         [Parameter(Mandatory = $true)][bool]$InstallReShade,
         [Parameter(Mandatory = $true)][bool]$FullPackage,
-        [Parameter(Mandatory = $true)][string]$DlssZipPath
+        [string]$DlssZipPath = ""
     )
     $fatal = New-Object System.Collections.Generic.List[string]
     $warnings = New-Object System.Collections.Generic.List[string]
@@ -856,7 +890,7 @@ function Install-Dlss5 {
         [Parameter(Mandatory = $true)][string]$TargetPath,
         [Parameter(Mandatory = $true)][bool]$InstallReShade,
         [Parameter(Mandatory = $true)][bool]$FullPackage,
-        [Parameter(Mandatory = $true)][string]$DlssZipPath,
+        [string]$DlssZipPath = "",
         [string]$SelectedMode = "AUTO"
     )
     $report = Get-Compatibility -TargetPath $TargetPath -InstallReShade $InstallReShade -FullPackage $FullPackage -DlssZipPath $DlssZipPath
@@ -2331,11 +2365,14 @@ $openFolder.Add_Click({
 $instructions.Add_Click({ Show-Instructions })
 
 $form.Add_Shown({
-    $embeddedZip = Join-Path $script:AppRoot "payload\streamline.zip"
-    if (Test-Path -LiteralPath $embeddedZip -PathType Leaf) {
+    $embeddedZip = Find-EmbeddedStreamlineZip
+    if ($embeddedZip) {
         $dlssZipText.Text = $embeddedZip
         $d = Get-Dict -Lang $script:CurrentLang
         Write-Status -Message $d.MsgPayloadLoaded -Level "OK"
+    } else {
+        $d = Get-Dict -Lang $script:CurrentLang
+        Write-Status -Message (if ($script:CurrentLang -eq "EN") { "Payload streamline.zip not found in default folder. Use [CHANGE ZIP] if required." } else { "Pacote streamline.zip não encontrado na pasta padrão. Use [TROCAR ZIP] se necessário." }) -Level "WARN"
     }
     $d = Get-Dict -Lang $script:CurrentLang
     Write-Status -Message $d.MsgLibraryEmpty -Level "INFO"
