@@ -320,10 +320,13 @@ def _install_direct(
         _copy_with_backup(payload_folder / name, folder / name, backup_folder, state, name)
 
     # Engine plugin folders (Unreal ships its own DLSS DLLs) need the same update.
+    # Our own backup folders hold a copied nvngx_dlss.dll too, so they look like
+    # plugin dirs and would be "updated" -- nesting a backup inside a backup and
+    # burying the game's real originals one level deeper on every reinstall.
     plugin_dirs = {
         dll.parent
         for dll in iter_files(target.root, "nvngx_dlss.dll", max_depth=12)
-        if dll.parent != folder
+        if dll.parent != folder and C.BACKUP_NAME not in dll.parts
     }
     for plugin_dir in sorted(plugin_dirs):
         log(msg("PluginUpdated", plugin_dir), "INFO")
@@ -512,9 +515,15 @@ def uninstall_dlss5(target_path: str, log: LogFn = _noop) -> None:
     state = InstallState.load(state_file)
     backed_up_names = set(state.backed_up_files) if state else set()
 
+    injected_names = set(state.injected_files) if state else set()
+
     for name in C.PURGE_LIST:
         # A restored original must never be deleted by the purge pass.
         if name in backed_up_names:
+            continue
+        # Nor may a file the game shipped itself: only delete one of those when
+        # this install is on record as having put it there.
+        if name in C.GAME_OWNED_FILES and name not in injected_names:
             continue
         path = folder / name
         if path.is_file():

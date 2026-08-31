@@ -192,6 +192,64 @@ def test_payload_falls_back_to_extracted_cache(tmp: Path) -> None:
         raise AssertionError("expected PayloadError with no ZIP and no cache")
 
 
+def test_backup_is_not_treated_as_a_plugin_folder(tmp: Path) -> None:
+    """A reinstall must not nest a backup inside the previous one.
+
+    Direct mode also updates engine plugin folders, found by looking for
+    nvngx_dlss.dll under the game root. Our own backup holds a copy of that DLL,
+    so it matched -- and got "updated", burying the game's real originals one
+    level deeper on every reinstall, where a restore would never find them.
+    """
+    _isolate_cache(tmp)
+    game = tmp / "PluginGame"
+    _write_exe(game / "PluginGame.exe")
+    (game / "nvngx_dlss.dll").write_bytes(b"ORIGINAL-GAME-DLL")
+    zip_path = _make_payload_zip(tmp)
+
+    for _ in range(3):
+        install_dlss5(str(game), str(zip_path), False, True, C.MODE_DIRECT)
+
+    nested = list(game.rglob(f"{C.BACKUP_NAME}/{C.BACKUP_NAME}"))
+    assert not nested, f"backup nested inside backup: {nested}"
+
+    uninstall_dlss5(str(game))
+    restored = (game / "nvngx_dlss.dll").read_bytes()
+    assert restored == b"ORIGINAL-GAME-DLL", restored
+
+
+def test_restore_removes_injected_dlls_but_spares_the_game_s_own(tmp: Path) -> None:
+    """Every injected DLL must go, and nothing the game shipped may go with it.
+
+    nvngx_dlssg.dll and friends used to survive a restore because they were not
+    on the purge list at all. Adding them there is only safe because a name a
+    game may ship itself is deleted solely when this install recorded injecting
+    it -- otherwise a full-package install over a game that shipped its own copy
+    would delete a file it never backed up.
+    """
+    _isolate_cache(tmp)
+    zip_path = _make_payload_zip(tmp)
+
+    # A game shipping its own DLL, installed over WITHOUT that file in the
+    # payload set: minimal mode never touches it, so no backup is taken.
+    minimal = tmp / "MinimalGame"
+    _write_exe(minimal / "MinimalGame.exe")
+    (minimal / "nvngx_dlss.dll").write_bytes(b"GAME-OWN-DLL")
+    install_dlss5(str(minimal), str(zip_path), False, False, C.MODE_DIRECT)
+    uninstall_dlss5(str(minimal))
+    assert (minimal / "nvngx_dlss.dll").read_bytes() == b"GAME-OWN-DLL"
+
+    # A full install does inject it, so a restore must put the original back and
+    # leave no injected leftovers behind.
+    full = tmp / "FullGame"
+    _write_exe(full / "FullGame.exe")
+    (full / "nvngx_dlss.dll").write_bytes(b"GAME-OWN-DLL")
+    install_dlss5(str(full), str(zip_path), False, True, C.MODE_DIRECT)
+    uninstall_dlss5(str(full))
+    assert (full / "nvngx_dlss.dll").read_bytes() == b"GAME-OWN-DLL"
+    for leftover in ("nvngx_dlssnr.dll", "renodx-dlss5.addon64", "ReShade.ini"):
+        assert not (full / leftover).exists(), f"{leftover} survived the restore"
+
+
 if __name__ == "__main__":
     tests = [
         test_feeder_install_and_restore,
@@ -200,6 +258,8 @@ if __name__ == "__main__":
         test_state_roundtrip,
         test_state_load_tolerates_powershell_scalar,
         test_payload_falls_back_to_extracted_cache,
+        test_backup_is_not_treated_as_a_plugin_folder,
+        test_restore_removes_injected_dlls_but_spares_the_game_s_own,
     ]
     original_cache = C.CACHE_ROOT
     for func in tests:

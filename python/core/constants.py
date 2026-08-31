@@ -137,6 +137,7 @@ PURGE_LIST = [
     "dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed.cfg",
     "dlss5-feed.log", "dlss5-feed.ini",
     "nvngx_dlssnr.dll", "sl.dlss_nr.dll",
+    "nvngx_dlss.dll", "nvngx_dlssd.dll", "nvngx_dlssg.dll", "libxess.dll",
     "version.dll", "OptiScaler.ini", "OptiScaler.log",
     "ReShade.ini", "ReShadePreset.ini", "ReShade.log",
     "sl.common.dll", "sl.interposer.dll", "sl.deepdvc.dll",
@@ -146,6 +147,17 @@ PURGE_LIST = [
     STATE_NAME,
     "_DLSS5_Easy_Installer_State.json", "dlss5_backup_manifest.json",
 ]
+
+# Names a game may legitimately ship itself. A restore only deletes one of these
+# when this install is recorded as having injected it -- otherwise a game that
+# shipped its own copy, and was installed over without a backup being taken,
+# would lose the file for good.
+GAME_OWNED_FILES = {
+    "nvngx_dlss.dll",
+    "nvngx_dlssd.dll",
+    "nvngx_dlssg.dll",
+    "libxess.dll",
+}
 
 # Files removed before a Direct-mode install so Feeder/OptiScaler hooks cannot clash.
 CONFLICTS_FOR_DIRECT = [
