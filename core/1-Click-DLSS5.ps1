@@ -35,36 +35,42 @@ $script:CacheRoot = Join-Path $env:LOCALAPPDATA "1ClickDLSS5"
 $script:StatusBox = $null
 $script:PayloadFolder = $null
 $script:PayloadZipPath = $null
-function Get-DLSS5AppRoot {
-    $candidates = @(
-        $PSScriptRoot,
-        (Split-Path -Parent $MyInvocation.MyCommand.Path),
-        (Get-Location).Path,
-        (Join-Path (Get-Location).Path "core"),
-        (Join-Path $PSScriptRoot "core")
-    )
-    foreach ($cand in $candidates) {
-        if ([string]::IsNullOrWhiteSpace($cand)) { continue }
-        if (Test-Path -LiteralPath (Join-Path $cand "payload") -PathType Container) {
-            return $cand
-        }
-    }
-    return (if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path })
+$script:AppRoot = $null
+if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+    $script:AppRoot = $PSScriptRoot
+} elseif ($MyInvocation.MyCommand -and -not [string]::IsNullOrWhiteSpace($MyInvocation.MyCommand.Path)) {
+    $script:AppRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+} else {
+    $script:AppRoot = (Get-Location).Path
 }
-$script:AppRoot = Get-DLSS5AppRoot
+
+# If payload is inside core/, adjust AppRoot accordingly
+if (-not (Test-Path -LiteralPath (Join-Path $script:AppRoot "payload") -PathType Container)) {
+    $coreCandidate = Join-Path $script:AppRoot "core"
+    if (Test-Path -LiteralPath (Join-Path $coreCandidate "payload") -PathType Container) {
+        $script:AppRoot = $coreCandidate
+    }
+}
 
 function Find-EmbeddedStreamlineZip {
-    $zipCandidates = @(
-        (Join-Path $script:AppRoot "payload\streamline.zip"),
-        (Join-Path $script:AppRoot "core\payload\streamline.zip"),
-        (Join-Path (Split-Path -Parent $script:AppRoot) "core\payload\streamline.zip"),
-        (Join-Path (Split-Path -Parent $script:AppRoot) "payload\streamline.zip"),
-        (Join-Path (Get-Location).Path "core\payload\streamline.zip"),
-        (Join-Path (Get-Location).Path "payload\streamline.zip")
-    )
-    foreach ($zc in $zipCandidates) {
-        if (Test-Path -LiteralPath $zc -PathType Leaf) {
-            return $zc
+    $candidates = @()
+    if ($script:AppRoot) {
+        $candidates += (Join-Path $script:AppRoot "payload\streamline.zip")
+        $candidates += (Join-Path $script:AppRoot "core\payload\streamline.zip")
+        $parent = Split-Path -Parent $script:AppRoot
+        if ($parent) {
+            $candidates += (Join-Path $parent "payload\streamline.zip")
+            $candidates += (Join-Path $parent "core\payload\streamline.zip")
+        }
+    }
+    $loc = (Get-Location).Path
+    if ($loc) {
+        $candidates += (Join-Path $loc "payload\streamline.zip")
+        $candidates += (Join-Path $loc "core\payload\streamline.zip")
+    }
+    foreach ($c in $candidates) {
+        if (-not [string]::IsNullOrWhiteSpace($c) -and (Test-Path -LiteralPath $c -PathType Leaf)) {
+            return (Get-Item -LiteralPath $c).FullName
         }
     }
     return $null
@@ -1807,6 +1813,8 @@ $lblPayloadTitle.ForeColor = [System.Drawing.Color]::FromArgb(170, 190, 215)
 [void]$inspectorPanel.Controls.Add($lblPayloadTitle)
 
 $dlssZipText = New-Object System.Windows.Forms.TextBox
+$initialZip = Find-EmbeddedStreamlineZip
+if ($initialZip) { $dlssZipText.Text = $initialZip }
 $dlssZipText.Location = New-Object System.Drawing.Point(18, 330)
 $dlssZipText.Size = New-Object System.Drawing.Size(530, 24)
 $dlssZipText.Anchor = "Top, Left, Right"
