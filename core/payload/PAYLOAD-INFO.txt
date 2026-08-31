@@ -1,6 +1,6 @@
 1 Click DLSS 5 - Official Payload Manifest
 =================================================
-Package Version: 1.4.0
+Package Version: 1.5.0
 Build: RenoDX DLSS 5 Add-on (Stable Detour Architecture) + NVIDIA Streamline 2.13 + Universal RTX 20/30/40/50 DLSS-NR + OptiScaler v0.9.4 Bridge + DLSS5-Feeder v0.7.0 Universal Feeder 2.0 (DX11/DX12/Vulkan/OpenGL)
 
 Included Modules in /payload:
