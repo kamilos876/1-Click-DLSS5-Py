@@ -52,6 +52,50 @@ if (-not (Test-Path -LiteralPath (Join-Path $script:AppRoot "payload") -PathType
     }
 }
 
+
+function Get-DLSS5PayloadDirectory {
+    $candidates = New-Object System.Collections.Generic.List[string]
+    if ($script:AppRoot) {
+        [void]$candidates.Add((Join-Path $script:AppRoot "payload"))
+        [void]$candidates.Add((Join-Path $script:AppRoot "core\payload"))
+        $p1 = Split-Path -Parent $script:AppRoot
+        if ($p1) {
+            [void]$candidates.Add((Join-Path $p1 "payload"))
+            [void]$candidates.Add((Join-Path $p1 "core\payload"))
+        }
+    }
+    if ($PSScriptRoot) {
+        [void]$candidates.Add((Join-Path $PSScriptRoot "payload"))
+        [void]$candidates.Add((Join-Path $PSScriptRoot "core\payload"))
+        $p2 = Split-Path -Parent $PSScriptRoot
+        if ($p2) {
+            [void]$candidates.Add((Join-Path $p2 "payload"))
+            [void]$candidates.Add((Join-Path $p2 "core\payload"))
+        }
+    }
+    $cur = (Get-Location).Path
+    if ($cur) {
+        [void]$candidates.Add((Join-Path $cur "payload"))
+        [void]$candidates.Add((Join-Path $cur "core\payload"))
+    }
+
+    foreach ($cand in $candidates) {
+        if (-not [string]::IsNullOrWhiteSpace($cand) -and (Test-Path -LiteralPath $cand -PathType Container)) {
+            if (Test-Path -LiteralPath (Join-Path $cand $script:AddOnName) -PathType Leaf) {
+                return (Get-Item -LiteralPath $cand).FullName
+            }
+        }
+    }
+
+    foreach ($cand in $candidates) {
+        if (-not [string]::IsNullOrWhiteSpace($cand) -and (Test-Path -LiteralPath $cand -PathType Container)) {
+            return (Get-Item -LiteralPath $cand).FullName
+        }
+    }
+
+    return (Join-Path $script:AppRoot "payload")
+}
+
 function Find-EmbeddedStreamlineZip {
     $searchRoots = New-Object System.Collections.Generic.List[string]
     if ($script:AppRoot) {
@@ -666,7 +710,7 @@ function Prepare-Payload {
         $cleanZip = Find-EmbeddedStreamlineZip
     }
 
-    $payloadRoot = Join-Path $script:AppRoot "payload"
+    $payloadRoot = Get-DLSS5PayloadDirectory
     $addon = Join-Path $payloadRoot $script:AddOnName
     if (-not (Test-Path -LiteralPath $addon -PathType Leaf)) { throw "O arquivo $script:AddOnName nao foi encontrado na pasta payload ($payloadRoot)." }
 
@@ -723,7 +767,7 @@ function Get-ReShadeSetup {
         [void](New-Item -ItemType Directory -Path $script:CacheRoot -Force)
     }
     $setup = Join-Path $script:CacheRoot "ReShade_Setup_6.8.0_Addon.exe"
-    $payloadSetup = Join-Path $script:AppRoot "payload\ReShade_Setup_6.8.0_Addon.exe"
+    $payloadSetup = Join-Path (Get-DLSS5PayloadDirectory) "ReShade_Setup_6.8.0_Addon.exe"
     if (Test-Path -LiteralPath $payloadSetup -PathType Leaf) {
         Copy-Item -LiteralPath $payloadSetup -Destination $setup -Force
         return $setup
@@ -857,7 +901,7 @@ function Set-Dlss5ReShadeIni {
         [Parameter(Mandatory = $false)][bool]$IsFeederMode = $false
     )
 
-    $defaultIni = Join-Path $script:AppRoot "payload\ReShade.ini"
+    $defaultIni = Join-Path (Get-DLSS5PayloadDirectory) "ReShade.ini"
     if (-not (Test-Path -LiteralPath $IniPath -PathType Leaf)) {
         if (Test-Path -LiteralPath $defaultIni -PathType Leaf) {
             Copy-Item -LiteralPath $defaultIni -Destination $IniPath -Force
@@ -1153,7 +1197,7 @@ function Install-Dlss5 {
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
 
         # Copy OptiScaler.dll as version.dll
-        $optiSrc = Join-Path $script:AppRoot "payload\optiscaler\OptiScaler.dll"
+        $optiSrc = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\OptiScaler.dll"
         $optiDst = Join-Path $targetFolder "version.dll"
         if (Test-Path -LiteralPath $optiSrc -PathType Leaf) {
             if (Test-Path -LiteralPath $optiDst -PathType Leaf) {
@@ -1171,7 +1215,7 @@ function Install-Dlss5 {
         }
 
         # Copy OptiScaler.ini
-        $optiIniSrc = Join-Path $script:AppRoot "payload\optiscaler\OptiScaler.ini"
+        $optiIniSrc = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\OptiScaler.ini"
         $optiIniDst = Join-Path $targetFolder "OptiScaler.ini"
         if (Test-Path -LiteralPath $optiIniSrc -PathType Leaf) {
             Copy-Item -LiteralPath $optiIniSrc -Destination $optiIniDst -Force
@@ -1179,7 +1223,7 @@ function Install-Dlss5 {
         }
 
         # Copy libxess.dll (if not already present)
-        $xessSrc = Join-Path $script:AppRoot "payload\optiscaler\libxess.dll"
+        $xessSrc = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\libxess.dll"
         $xessDst = Join-Path $targetFolder "libxess.dll"
         if (Test-Path -LiteralPath $xessSrc -PathType Leaf) {
             if (Test-Path -LiteralPath $xessDst -PathType Leaf) {
@@ -1202,7 +1246,7 @@ function Install-Dlss5 {
         }
 
         # Copy RenoDX addon
-        $addonSrc = Join-Path $script:AppRoot "payload\$($script:AddOnName)"
+        $addonSrc = Join-Path (Get-DLSS5PayloadDirectory) $script:AddOnName
         $addonDst = Join-Path $targetFolder $script:AddOnName
         if (Test-Path -LiteralPath $addonSrc -PathType Leaf) {
             Copy-Item -LiteralPath $addonSrc -Destination $addonDst -Force
@@ -1222,7 +1266,7 @@ function Install-Dlss5 {
         }
 
         $isX64 = Test-X64Pe -Path $target.Executable
-        $feederPayload = Join-Path $script:AppRoot "payload\feeder"
+        $feederPayload = Join-Path (Get-DLSS5PayloadDirectory) "feeder"
 
         if ($isX64) {
             # 64-bit Game: Copy dlss5-feed.addon64
@@ -1257,7 +1301,7 @@ function Install-Dlss5 {
         }
 
         # Copy RenoDX addon
-        $addonSrc = Join-Path $script:AppRoot "payload\$($script:AddOnName)"
+        $addonSrc = Join-Path (Get-DLSS5PayloadDirectory) $script:AddOnName
         $addonDst = Join-Path $targetFolder $script:AddOnName
         if (Test-Path -LiteralPath $addonSrc -PathType Leaf) {
             Copy-Item -LiteralPath $addonSrc -Destination $addonDst -Force
