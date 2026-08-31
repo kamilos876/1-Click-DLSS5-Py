@@ -182,6 +182,27 @@ $script:FeederFiles = @(
 
 $script:GameProfiles = @(
     [pscustomobject]@{
+        Id = "ffx_hd"
+        DisplayName = "Final Fantasy X / X-2 HD Remaster"
+        FolderHints = @("FINAL FANTASY X", "FFX", "FINAL FANTASY X/X-2 HD Remaster", "FINAL FANTASY X X-2 HD Remaster")
+        ExecutableNames = @("FFX.exe", "FFX-2.exe", "FFX_WILL.exe", "FFX_Will.exe")
+        PreferredRelativePaths = @("FFX.exe", "FFX-2.exe", "FFX_WILL.exe", "bin\FFX.exe")
+    },
+    [pscustomobject]@{
+        Id = "coldsteel"
+        DisplayName = "Trails of Cold Steel / Falcom Series"
+        FolderHints = @("Cold Steel", "Trails of Cold Steel", "ed8", "Sen no Kiseki", "Trails into Reverie", "Trails through Daybreak", "Kuro no Kiseki")
+        ExecutableNames = @("ed8_3_PC.exe", "ed8_3_x64.exe", "ed8_3.exe", "ed8_4_PC.exe", "ed8_4_x64.exe", "ed8_PC.exe", "ed8_2_PC.exe", "ed9_PC.exe", "ed9_2_PC.exe")
+        PreferredRelativePaths = @("ed8_3_PC.exe", "ed8_3_x64.exe", "bin\Win64\ed8_3_PC.exe", "ed8_4_PC.exe", "ed8_4_x64.exe", "ed8_PC.exe", "ed8_2_PC.exe", "ed9_PC.exe", "ed9_2_PC.exe")
+    },
+    [pscustomobject]@{
+        Id = "emulators"
+        DisplayName = "Emuladores (PCSX2, RPCS3, Ryujinx, Cemu, Dolphin)"
+        FolderHints = @("PCx2", "PCSX2", "RPCS3", "Ryujinx", "Cemu", "Dolphin", "Yuzu")
+        ExecutableNames = @("pcsx2-qt.exe", "pcsx2.exe", "rpcs3.exe", "Ryujinx.exe", "Cemu.exe", "Dolphin.exe", "yuzu.exe")
+        PreferredRelativePaths = @("pcsx2-qt.exe", "pcsx2.exe", "rpcs3.exe", "Ryujinx.exe", "Cemu.exe", "Dolphin.exe", "yuzu.exe")
+    },
+    [pscustomobject]@{
         Id = "hitmanwoa"
         DisplayName = "HITMAN World of Assassination"
         FolderHints = @("HITMAN World of Assassination", "HITMAN 3", "Hitman3")
@@ -429,23 +450,37 @@ function Get-Sha256 {
     } finally { $stream.Dispose() }
 }
 
-function Test-X64Pe {
+function Get-PeArchitecture {
     param([Parameter(Mandatory = $true)][string]$Path)
-    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return "UNKNOWN" }
     try {
         $bytes = New-Object byte[] 4096
         $stream = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
         try {
             $read = $stream.Read($bytes, 0, $bytes.Length)
-            if ($read -lt 64) { return $false }
-            if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { return $false }
+            if ($read -lt 64) { return "UNKNOWN" }
+            if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { return "UNKNOWN" }
             $e_lfanew = [System.BitConverter]::ToInt32($bytes, 60)
-            if ($e_lfanew -lt 0 -or ($e_lfanew + 24) -gt $read) { return $false }
-            if ($bytes[$e_lfanew] -ne 0x50 -or $bytes[$e_lfanew + 1] -ne 0x45 -or $bytes[$e_lfanew + 2] -ne 0x00 -or $bytes[$e_lfanew + 3] -ne 0x00) { return $false }
+            if ($e_lfanew -lt 0 -or ($e_lfanew + 24) -gt $read) { return "UNKNOWN" }
+            if ($bytes[$e_lfanew] -ne 0x50 -or $bytes[$e_lfanew + 1] -ne 0x45 -or $bytes[$e_lfanew + 2] -ne 0x00 -or $bytes[$e_lfanew + 3] -ne 0x00) { return "UNKNOWN" }
             $machine = [System.BitConverter]::ToUInt16($bytes, $e_lfanew + 4)
-            return ($machine -eq 0x8664)
+            if ($machine -eq 0x8664) { return "X64" }
+            if ($machine -eq 0x014C) { return "X86" }
+            if ($machine -eq 0xAA64) { return "ARM64" }
+            return "VALID_PE"
         } finally { $stream.Dispose() }
-    } catch { return $false }
+    } catch { return "UNKNOWN" }
+}
+
+function Test-ValidPe {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $arch = Get-PeArchitecture -Path $Path
+    return ($arch -eq "X64" -or $arch -eq "X86" -or $arch -eq "VALID_PE")
+}
+
+function Test-X64Pe {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    return ((Get-PeArchitecture -Path $Path) -eq "X64")
 }
 
 function Sanitize-PathString {
@@ -474,7 +509,7 @@ function Resolve-GameTarget {
 
     if (-not $targetItem.PSIsContainer) {
         if ($targetItem.Extension -ine ".exe") { throw "O arquivo selecionado nao e um executavel (.exe)." }
-        if (-not (Test-X64Pe -Path $targetItem.FullName)) { throw "O executavel selecionado precisa ser de 64-bit." }
+        if (-not (Test-ValidPe -Path $targetItem.FullName)) { throw "O arquivo selecionado nao e um executavel Windows (.exe) valido." }
         $targetExe = $targetItem.FullName
         $targetRoot = $targetItem.Directory.FullName
     } else {
@@ -497,7 +532,7 @@ function Resolve-GameTarget {
             if ($null -ne $targetExe) { break }
         }
 
-        # 2. Heuristica Inteligente para QUALQUER jogo
+        # 2. Heuristica Inteligente para QUALQUER jogo (32-bit e 64-bit)
         if ($null -eq $targetExe) {
             $ignoredKeywords = @(
                 "unins", "crash", "setup", "helper", "launcher", "redist", "patcher",
@@ -506,14 +541,14 @@ function Resolve-GameTarget {
                 "benchmark", "tool", "dxgi", "d3d", "server", "dedicated", "startserver"
             )
 
-            $allExes = @(Get-ChildItem -LiteralPath $targetRoot -Filter "*.exe" -File -Recurse -Depth 3 -ErrorAction SilentlyContinue |
+            $allExes = @(Get-ChildItem -LiteralPath $targetRoot -Filter "*.exe" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue |
                 Where-Object {
                     $nameLow = $_.Name.ToLower()
                     $isIgnored = $false
                     foreach ($kw in $ignoredKeywords) {
                         if ($nameLow.Contains($kw)) { $isIgnored = $true; break }
                     }
-                    (-not $isIgnored) -and (Test-X64Pe -Path $_.FullName)
+                    (-not $isIgnored) -and (Test-ValidPe -Path $_.FullName)
                 })
 
             if ($allExes.Count -gt 0) {
@@ -521,18 +556,27 @@ function Resolve-GameTarget {
                 $scored = @($allExes | ForEach-Object {
                     $p = $_.FullName.ToLower()
                     $n = $_.Name.ToLower()
+                    $is64 = Test-X64Pe -Path $_.FullName
                     $score = 10
 
                     if ($n.Replace(".exe", "").Replace(" ", "") -eq $dirClean) { $score += 100 }
                     elseif ($n.Contains($dirClean)) { $score += 60 }
+                    elseif ($dirClean.Contains($n.Replace(".exe", "").Replace(" ", ""))) { $score += 50 }
 
-                    if ($p.Contains("binaries\win64")) { $score += 80 }
-                    elseif ($p.Contains("bin\x64")) { $score += 70 }
+                    # Bonus for standard game binary subdirectories
+                    if ($p.Contains("binaries\win64") -or $p.Contains("bin\win64")) { $score += 80 }
+                    elseif ($p.Contains("bin\x64") -or $p.Contains("x64")) { $score += 70 }
+                    elseif ($p.Contains("bin\win32") -or $p.Contains("bin\x86") -or $p.Contains("bin32")) { $score += 65 }
                     elseif ($p.Contains("retail")) { $score += 60 }
                     elseif ($p.Contains("content")) { $score += 40 }
 
-                    if ($_.Length -gt 20MB) { $score += 30 }
-                    elseif ($_.Length -gt 5MB) { $score += 15 }
+                    # 64-bit preference bonus
+                    if ($is64) { $score += 25 }
+
+                    # File size bonus (games are typically larger than utility tools)
+                    if ($_.Length -gt 20MB) { $score += 40 }
+                    elseif ($_.Length -gt 5MB) { $score += 20 }
+                    elseif ($_.Length -gt 1MB) { $score += 10 }
 
                     [pscustomobject]@{
                         Score = $score
@@ -546,7 +590,7 @@ function Resolve-GameTarget {
     }
 
     if ($null -eq $targetExe) {
-        throw "Nenhum executavel principal de 64-bit foi encontrado nesta pasta de jogo."
+        throw "Nenhum executavel principal valido foi encontrado nesta pasta de jogo. Selecione o arquivo .exe diretamente."
     }
 
     $installFolder = (Split-Path -Parent $targetExe)
@@ -1291,7 +1335,7 @@ function Install-Dlss5 {
             if (Test-Path -LiteralPath $hostSrc -PathType Container) {
                 if (-not (Test-Path -LiteralPath $hostDst)) { [void](New-Item -ItemType Directory -Path $hostDst -Force) }
                 Get-ChildItem -LiteralPath $hostSrc | Copy-Item -Destination $hostDst -Recurse -Force
-                Copy-Item -LiteralPath (Join-Path $script:AppRoot "payload\$($script:AddOnName)") -Destination (Join-Path $hostDst $script:AddOnName) -Force
+                Copy-Item -LiteralPath (Join-Path (Get-DLSS5PayloadDirectory) $script:AddOnName) -Destination (Join-Path $hostDst $script:AddOnName) -Force
                 Copy-Item -LiteralPath (Join-Path $script:PayloadFolder "nvngx_dlssnr.dll") -Destination (Join-Path $hostDst "nvngx_dlssnr.dll") -Force
                 if (Test-Path (Join-Path $script:PayloadFolder "nvngx_dlss.dll")) {
                     Copy-Item -LiteralPath (Join-Path $script:PayloadFolder "nvngx_dlss.dll") -Destination (Join-Path $hostDst "nvngx_dlss.dll") -Force
