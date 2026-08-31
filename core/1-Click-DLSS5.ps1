@@ -1010,7 +1010,17 @@ NoReloadOnInit=0
 SkipLoadingDisabledEffects=0
 
 "@
-        } else { "" }
+        } else {
+@"
+[GENERAL]
+EffectSearchPaths=.\reshade-shaders\Shaders,.\reshade-shaders\Shaders\include,.\
+TextureSearchPaths=.\reshade-shaders\Textures,.\
+PerformanceMode=0
+NoReloadOnInit=0
+SkipLoadingDisabledEffects=0
+
+"@
+        }
 
         $renodxSection = @"
 [RenoDX.DLSS5]
@@ -1183,6 +1193,21 @@ function Install-Dlss5 {
         Set-Dlss5ReShadeIni -IniPath $targetIni -IsFeederMode $false
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
 
+        # Deploy reshade-shaders to avoid empty shader warnings on Home tab
+        $shaderDir = Join-Path $targetFolder "reshade-shaders\Shaders"
+        $textureDir = Join-Path $targetFolder "reshade-shaders\Textures"
+        [void](New-Item -ItemType Directory -Path $shaderDir -Force)
+        [void](New-Item -ItemType Directory -Path $textureDir -Force)
+        $feederPayload = Join-Path (Get-DLSS5PayloadDirectory) "feeder"
+        $srcShaders = Join-Path $feederPayload "shaders"
+        $srcTextures = Join-Path $feederPayload "textures"
+        if (Test-Path -LiteralPath $srcShaders -PathType Container) {
+            Get-ChildItem -LiteralPath $srcShaders | Copy-Item -Destination $shaderDir -Recurse -Force
+        }
+        if (Test-Path -LiteralPath $srcTextures -PathType Container) {
+            Get-ChildItem -LiteralPath $srcTextures | Copy-Item -Destination $textureDir -Recurse -Force
+        }
+
         $filesToCopy = if ($FullPackage) { $script:FullFiles } else { $script:MinimalFiles }
         foreach ($fname in $filesToCopy) {
             $src = Join-Path $script:PayloadFolder $fname
@@ -1239,6 +1264,21 @@ function Install-Dlss5 {
 
         Set-Dlss5ReShadeIni -IniPath $targetIni -IsFeederMode $false
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
+
+        # Deploy reshade-shaders to avoid empty shader warnings on Home tab
+        $shaderDir = Join-Path $targetFolder "reshade-shaders\Shaders"
+        $textureDir = Join-Path $targetFolder "reshade-shaders\Textures"
+        [void](New-Item -ItemType Directory -Path $shaderDir -Force)
+        [void](New-Item -ItemType Directory -Path $textureDir -Force)
+        $feederPayload = Join-Path (Get-DLSS5PayloadDirectory) "feeder"
+        $srcShaders = Join-Path $feederPayload "shaders"
+        $srcTextures = Join-Path $feederPayload "textures"
+        if (Test-Path -LiteralPath $srcShaders -PathType Container) {
+            Get-ChildItem -LiteralPath $srcShaders | Copy-Item -Destination $shaderDir -Recurse -Force
+        }
+        if (Test-Path -LiteralPath $srcTextures -PathType Container) {
+            Get-ChildItem -LiteralPath $srcTextures | Copy-Item -Destination $textureDir -Recurse -Force
+        }
 
         # Copy OptiScaler.dll as version.dll
         $optiSrc = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\OptiScaler.dll"
