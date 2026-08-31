@@ -444,7 +444,7 @@ function Resolve-GameTarget {
                 "benchmark", "tool", "dxgi", "d3d", "server", "dedicated", "startserver"
             )
 
-            $allExes = @(Get-ChildItem -LiteralPath $targetRoot -Filter "*.exe" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue |
+            $allExes = @(Get-ChildItem -LiteralPath $targetRoot -Filter "*.exe" -File -Recurse -Depth 3 -ErrorAction SilentlyContinue |
                 Where-Object {
                     $nameLow = $_.Name.ToLower()
                     $isIgnored = $false
@@ -493,7 +493,7 @@ function Resolve-GameTarget {
     if (Test-Path -LiteralPath $dlssCandidate -PathType Leaf) {
         $existingDlss = $dlssCandidate
     } else {
-        $foundDlss = @(Get-ChildItem -LiteralPath $targetRoot -Filter "nvngx_dlss*.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        $foundDlss = @(Get-ChildItem -LiteralPath $targetRoot -Filter "nvngx_dlss*.dll" -File -Recurse -Depth 3 -ErrorAction SilentlyContinue)
         if ($foundDlss.Count -gt 0) {
             $existingDlss = $foundDlss[0].FullName
         }
@@ -1448,17 +1448,23 @@ function Scan-DriveForGames {
         [void]$rootsToScan.Add((Join-Path $d "Epic Games"))
         [void]$rootsToScan.Add((Join-Path $d "XboxGames"))
     }
-    $ignored = @("steamworks shared", "_commonredist", "directx", "vcredist", "dotnet", "crashreport", "tools", "easyanticheat", "battleye")
+    $ignored = @(
+        "steamworks shared", "_commonredist", "directx", "vcredist", "dotnet",
+        "crashreport", "tools", "easyanticheat", "battleye", "launcher",
+        "gameinputredist", "directxredist", "steam controller configs", "gamesave"
+    )
     $dDict = Get-Dict -Lang $script:CurrentLang
 
-    # Collect all game directories first for accurate progress
+    # Collect all real game directories first for accurate progress
     $allGameDirs = New-Object System.Collections.Generic.List[pscustomobject]
     foreach ($root in $rootsToScan) {
         if (Test-Path -LiteralPath $root -PathType Container) {
             try {
                 $dirs = Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue
                 foreach ($dir in $dirs) {
-                    if ($ignored -contains $dir.Name.ToLower()) { continue }
+                    $dirLow = $dir.Name.ToLower()
+                    if ($ignored -contains $dirLow) { continue }
+                    if ($dirLow -match '^(ue_\d|unrealengine|launcher|gameinput|directxredist|vcredist|dotnet|crashreport)') { continue }
                     [void]$allGameDirs.Add([pscustomobject]@{ Root = $root; Dir = $dir })
                 }
             } catch {}
@@ -1474,35 +1480,32 @@ function Scan-DriveForGames {
         $gamePath = $dir.FullName
         $currentIdx++
 
-        # Report progress
+        # Report progress and pump UI events to avoid window freezing
         if ($null -ne $ProgressCallback) {
             $pct = [int](($currentIdx / $totalGames) * 100)
             try { & $ProgressCallback $pct $dir.Name } catch {}
         }
+        [System.Windows.Forms.Application]::DoEvents()
 
         $hasDlss = $false
         $hasDx12 = $false
         $isUe = $false
-
-        $dlssFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*dlss*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        if ($dlssFiles.Count -gt 0) { $hasDlss = $true }
-
-        $d3d12Files = @(Get-ChildItem -LiteralPath $gamePath -Filter "*d3d12*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        if ($d3d12Files.Count -gt 0) { $hasDx12 = $true }
-
-        $binFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*.exe" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue | Where-Object { $_.FullName.ToLower().Contains("binaries\win64") })
-        if ($binFiles.Count -gt 0) { $isUe = $true; $hasDx12 = $true }
-
         $hasFsr2 = $false
         $hasXess = $false
 
-        $fsrFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*fidelityfx*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        $fsrFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "ffx_fsr*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        if ($fsrFiles.Count -gt 0) { $hasFsr2 = $true }
-
-        $xessFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "libxess*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        $xessFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "xess.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        if ($xessFiles.Count -gt 0) { $hasXess = $true }
+        # Fast single-pass shallow scan (Depth 3) in memory
+        $gameFiles = @(Get-ChildItem -LiteralPath $gamePath -File -Recurse -Depth 3 -ErrorAction SilentlyContinue)
+        foreach ($f in $gameFiles) {
+            $n = $f.Name.ToLower()
+            if ($n -like "*dlss*") { $hasDlss = $true }
+            if ($n -like "*d3d12*") { $hasDx12 = $true }
+            if ($n -like "*fidelityfx*" -or $n -like "ffx_fsr*") { $hasFsr2 = $true }
+            if ($n -like "libxess*" -or $n -eq "xess.dll") { $hasXess = $true }
+            if ($f.Extension -eq ".exe" -and $f.FullName.ToLower().Contains("binaries\win64")) {
+                $isUe = $true
+                $hasDx12 = $true
+            }
+        }
 
         $badge = ""
         $order = 3
@@ -1534,6 +1537,7 @@ function Scan-DriveForGames {
             Icon = $icon
             ExeName = $exeName
         })
+        [System.Windows.Forms.Application]::DoEvents()
     }
     $sorted = @($results | Sort-Object -Property Order, Name)
     return $sorted
