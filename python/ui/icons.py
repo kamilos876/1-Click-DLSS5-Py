@@ -129,13 +129,60 @@ def _hicon_to_qimage(hicon, size, ctypes, wintypes, user32, gdi32) -> QImage | N
         user32.DrawIconEx(memory_dc, 0, 0, hicon, size, size, 0, None, 0x0003)  # DI_NORMAL
         gdi32.SelectObject(memory_dc, old)
 
-        buffer = ctypes.string_at(bits, size * size * 4)
+        buffer = bytearray(ctypes.string_at(bits, size * size * 4))
+        # An icon with no alpha channel -- a classic 1-bit mask, still shipped by
+        # some games -- comes back fully colored but fully transparent, which
+        # renders as nothing. Detect that and rebuild the alpha from the mask.
+        if not any(buffer[3::4]):
+            _restore_alpha_from_mask(
+                buffer, size, hicon, ctypes, wintypes, user32, gdi32, header
+            )
         # The DIB is BGRA premultiplied; copy so the QImage owns its memory.
         return QImage(
-            buffer, size, size, QImage.Format.Format_ARGB32_Premultiplied
+            bytes(buffer), size, size, QImage.Format.Format_ARGB32_Premultiplied
         ).copy()
     finally:
         if bitmap:
             gdi32.DeleteObject(bitmap)
+        gdi32.DeleteDC(memory_dc)
+        user32.ReleaseDC(0, screen_dc)
+
+
+def _restore_alpha_from_mask(
+    buffer, size, hicon, ctypes, wintypes, user32, gdi32, header
+) -> None:
+    """Fill in the alpha byte of an icon that carries a 1-bit mask instead.
+
+    DrawIconEx composites such an icon's colors but leaves alpha at zero. The
+    mask marks transparent pixels with 1, so it is drawn on its own and
+    inverted to recover the coverage the icon actually intended.
+    """
+    screen_dc = user32.GetDC(0)
+    if not screen_dc:
+        # Without a mask to read, opaque beats an invisible icon.
+        buffer[3::4] = b"\xff" * (size * size)
+        return
+
+    memory_dc = gdi32.CreateCompatibleDC(screen_dc)
+    mask_bits = ctypes.c_void_p()
+    mask_bitmap = gdi32.CreateDIBSection(
+        memory_dc, ctypes.byref(header), 0, ctypes.byref(mask_bits), None, 0
+    )
+    try:
+        if not mask_bitmap or not mask_bits:
+            buffer[3::4] = b"\xff" * (size * size)
+            return
+
+        old = gdi32.SelectObject(memory_dc, mask_bitmap)
+        # DI_MASK (0x0001) draws the AND mask: white where the icon is see-through.
+        user32.DrawIconEx(memory_dc, 0, 0, hicon, size, size, 0, None, 0x0001)
+        gdi32.SelectObject(memory_dc, old)
+
+        mask = ctypes.string_at(mask_bits, size * size * 4)
+        for index in range(size * size):
+            buffer[index * 4 + 3] = 0 if mask[index * 4] else 255
+    finally:
+        if mask_bitmap:
+            gdi32.DeleteObject(mask_bitmap)
         gdi32.DeleteDC(memory_dc)
         user32.ReleaseDC(0, screen_dc)

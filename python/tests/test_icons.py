@@ -1,8 +1,10 @@
-"""Icon extraction must survive 64-bit icon handles.
+"""Icon extraction must survive 64-bit handles and alpha-less icons.
 
-ctypes guesses a C int for HICON unless told otherwise, so a handle above 2^31
-raised "int too long to convert" inside DestroyIcon. The wrapper swallowed that
-exception and returned no icon, which is why only some games lost theirs.
+Two bugs are guarded here. ctypes guesses a C int for HICON unless told
+otherwise, so a handle above 2^31 raised "int too long to convert" inside
+DestroyIcon; the wrapper swallowed that and returned no icon. Separately, an
+icon carrying a 1-bit mask instead of an alpha channel came back fully colored
+but fully transparent -- an icon that exists, is not null, and draws as nothing.
 """
 import sys
 from pathlib import Path
@@ -27,6 +29,17 @@ SYSTEM_EXES = [
 ]
 
 
+def _opaque_pixels(icon) -> int:
+    """How many pixels would actually be painted, ignoring color."""
+    image = icon.pixmap(32, 32).toImage()
+    return sum(
+        1
+        for y in range(image.height())
+        for x in range(image.width())
+        if (image.pixel(x, y) >> 24) & 0xFF
+    )
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     app = QApplication([])  # noqa: F841 - QIcon needs a QApplication
@@ -49,6 +62,11 @@ def main() -> int:
             if icon.pixmap(32, 32).isNull():
                 problems.append(f"{exe.name}: null pixmap on attempt {attempt + 1}")
                 break
+            if _opaque_pixels(icon) == 0:
+                problems.append(
+                    f"{exe.name}: fully transparent on attempt {attempt + 1}"
+                )
+                break
 
     if checked == 0:
         print("  SKIP  no system executables available")
@@ -64,7 +82,7 @@ def main() -> int:
             print("          ", line)
         return 1
 
-    print(f"  PASS  icons: {checked} executables, 5 attempts each")
+    print(f"  PASS  icons: {checked} executables, 5 attempts each, all visible")
     return 0
 
 

@@ -34,9 +34,11 @@ def main() -> int:
     if populate:
         # Fill the library synchronously so the shot shows real rows.
         from core.i18n import get_dict
-        from core.scanner import scan_for_games
+        from core.scanner import default_library_folders, scan_folders
 
-        window.games = scan_for_games("ALL", badges=get_dict(window.lang))
+        window.games = scan_folders(
+            default_library_folders(), badges=get_dict(window.lang)
+        )
         window._apply_filter()
         if window.tree.topLevelItemCount() > 0:
             window.tree.setCurrentItem(window.tree.topLevelItem(0))
