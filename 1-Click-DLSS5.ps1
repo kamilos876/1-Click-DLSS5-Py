@@ -1,4 +1,4 @@
-﻿﻿# ==============================================================================
+﻿# ==============================================================================
 #  1 Click DLSS 5 - Universal Neural Rendering Game Center & Auto-Injector
 #  Official Repository: https://github.com/1Click-DLSS5/1-Click-DLSS5
 #  Architecture: RenoDX DLSS 5 v3 + NVIDIA Streamline 2.13 + nvngx_dlssnr.dll
@@ -9,6 +9,19 @@ Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
+
+# Auto-hide background console window
+try {
+    Add-Type -Name Win32Console -Namespace Win32Utils -MemberDefinition '
+        [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
+        [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    ' -ErrorAction SilentlyContinue
+    $cWnd = [Win32Utils.Win32Console]::GetConsoleWindow()
+    if ($cWnd -ne [IntPtr]::Zero) {
+        [void][Win32Utils.Win32Console]::ShowWindow($cWnd, 0) # 0 = SW_HIDE
+    }
+} catch {}
+
 
 $script:ProductName = "1 Click DLSS 5"
 $script:Version = "1.4.0"
