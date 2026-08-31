@@ -1,7 +1,7 @@
 1 Click DLSS 5 - Official Payload Manifest
 =================================================
 Package Version: 1.4.0
-Build: RenoDX DLSS 5 Add-on v4.1.5 (Stable Detour Architecture) + NVIDIA Streamline 2.13 + Universal RTX 20/30/40/50 DLSS-NR + OptiScaler v0.9.4 Bridge + DLSS5-Feeder & LumeniteFX v0.6.0 Universal Mode
+Build: RenoDX DLSS 5 Add-on (Stable Detour Architecture) + NVIDIA Streamline 2.13 + Universal RTX 20/30/40/50 DLSS-NR + OptiScaler v0.9.4 Bridge + DLSS5-Feeder v0.7.0 Universal Feeder 2.0 (DX11/DX12/Vulkan/OpenGL)
 
 Included Modules in /payload:
 1. renodx-dlss5.addon64 - RenoDX DLSS 5 ReShade Add-on (Rock-Solid Stable Build, F5 A/B, F6 toggle, 0 Flickering)
@@ -11,10 +11,10 @@ Included Modules in /payload:
    - OptiScaler.dll - Universal upscaler bridge runtime (installed as version.dll)
    - OptiScaler.ini - Pre-configured settings routing FSR2/XeSS to DLSS-NR
    - libxess.dll - Intel XeSS translation runtime for DLSS-NR compatibility
-5. feeder/ - DLSS5-Feeder & LumeniteFX Universal Mode Runtime (Any DX11/DX12/Vulkan game without native upscalers):
-   - dlss5-feed.addon64 - 64-bit ReShade Addon for synthetic DLAA contract generation
-   - dlss5-feed.addon32 - 32-bit ReShade Addon for legacy x86 games
-   - host64/dlss5-feed-host64.exe - 64-bit IPC helper host for 32-bit games
+5. feeder/ - DLSS5-Feeder v0.7.0 & LumeniteFX Universal Mode Runtime (Any DX11/DX12/Vulkan/OpenGL game without native upscalers):
+   - dlss5-feed.addon64 - 64-bit ReShade Addon (v0.7.0: D3D11/D3D12/Vulkan/OpenGL + Dynamic Scaling 50-100% + Freeze Fix)
+   - dlss5-feed.addon32 - 32-bit ReShade Addon for legacy x86 games (v0.7.0)
+   - host64/dlss5-feed-host64.exe - 64-bit IPC helper host for 32-bit games (v0.7.0, TDR queue drain fix)
    - shaders/DLSS5_Feed.fx & lumenite_*.fx - GPU optical flow motion vector estimators
    - textures/lumenite_bluenoise256.png - High-precision spatio-temporal blue noise texture
    - dlss5-feed.cfg - Pre-configured optimal settings (LumeniteFX Kernel 2.0, DLAA 1.0x native)

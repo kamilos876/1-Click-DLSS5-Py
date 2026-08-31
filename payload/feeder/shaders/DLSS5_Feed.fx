@@ -59,6 +59,12 @@
 
 #include "ReShade.fxh"
 
+// Expose ReShade's completed frame to the add-on as an SRV. The 64-bit D3D11 path
+// uses this only when its work-resolution control is below 100%; no extra pass or
+// copy is introduced by this declaration.
+texture DLSS5_ColorInput : COLOR;
+sampler sDLSS5_ColorInput { Texture = DLSS5_ColorInput; AddressU = Clamp; AddressV = Clamp; MipFilter = Point; MinFilter = Point; MagFilter = Point; };
+
 #ifndef DLSS5_MV_PROVIDER
     #define DLSS5_MV_PROVIDER 0
 #endif
@@ -252,8 +258,9 @@ uniform bool VALIDATE_LUMA <
     ui_label = "Luma test (mask only)";
     ui_tooltip = "The reprojected previous luma must fall inside the current 3x3 neighbourhood's luma range.\n"
                  "A failure only raises the mask (DLSS leans on the current frame); it never zeroes the vector,\n"
-                 "because a lighting change does not prove the surface did not move.";
-> = true;
+                 "because a lighting change does not prove the surface did not move. Off by default: on a\n"
+                 "flickering surface it asks DLSS to drop exactly the history that would smooth the flicker.";
+> = false;
 
 uniform float LUMA_TOLERANCE <
     ui_category = "Validation (flicker / flames / disocclusion)";
@@ -385,7 +392,7 @@ float2 ProviderMV(float2 uv)
 
 float Luma(float2 uv)
 {
-    return dot(tex2Dlod(ReShade::BackBuffer, float4(uv, 0.0, 0.0)).rgb, float3(0.299, 0.587, 0.114));
+    return dot(tex2Dlod(sDLSS5_ColorInput, float4(uv, 0.0, 0.0)).rgb, float3(0.299, 0.587, 0.114));
 }
 
 // Illumination-normalised 3x3 structure difference between the current frame at uv_cur and
@@ -673,7 +680,7 @@ void PS_MotionVectors(float4 vpos : SV_Position, float2 uv : TEXCOORD,
     {
         const float4 bad = ValidateTests(uv, flow);
         const float  zero_vector = max(bad.y, max(bad.z, bad.w));   // wrong target, or static explains it: treat as static
-        distrust = max(max(bad.x, bad.y), max(bad.z, bad.w));       // appearance changed / wrong target / static UI: favour the current frame
+        distrust = max(bad.x, max(bad.y, bad.z));                    // appearance changed / wrong target: favour the current frame
         mv = flow * (1.0 - zero_vector);
     }
 
@@ -735,14 +742,14 @@ float3 PS_Debug(float4 vpos : SV_Position, float2 uv : TEXCOORD) : SV_Target
     if (DEBUG_VIEW == 4)
     {
         const float  m   = tex2Dlod(sDLSS5_Mask, float4(uv, 0.0, 0.0)).x;
-        const float3 img = tex2Dlod(ReShade::BackBuffer, float4(uv, 0.0, 0.0)).rgb;
+        const float3 img = tex2Dlod(sDLSS5_ColorInput, float4(uv, 0.0, 0.0)).rgb;
         return lerp(img, float3(1.0, 0.2, 0.1), m * 0.75);
     }
     if (DEBUG_VIEW == 5)
     {
         // Recomputed here against the same history the feed pass used this frame.
         const float4 bad = ValidateTests(uv, ProviderMV(uv));
-        const float3 img = tex2Dlod(ReShade::BackBuffer, float4(uv, 0.0, 0.0)).rgb * 0.5;
+        const float3 img = tex2Dlod(sDLSS5_ColorInput, float4(uv, 0.0, 0.0)).rgb * 0.5;
         return saturate(img + bad.xyz * 0.9 + bad.w * float3(0.6, 0.6, 0.0));
     }
     if (DEBUG_VIEW == 6)
@@ -754,7 +761,7 @@ float3 PS_Debug(float4 vpos : SV_Position, float2 uv : TEXCOORD) : SV_Target
     }
     if (DEBUG_VIEW == 7)
     {
-        const float3 img = tex2Dlod(ReShade::BackBuffer, float4(uv, 0.0, 0.0)).rgb * 0.5;
+        const float3 img = tex2Dlod(sDLSS5_ColorInput, float4(uv, 0.0, 0.0)).rgb * 0.5;
         if (!FitIsUsable()) return img;   // no usable fit this frame: nothing to show
         const float4 g = GeometryDecide(uv, ReShade::GetLinearizedDepth(uv), ProviderMV(uv));
         const float3 tint = g.z < 0.5 ? float3(0.0, 0.5, 0.0) : g.z < 1.5 ? float3(0.9, 0.0, 0.0) : float3(0.0, 0.2, 0.9);

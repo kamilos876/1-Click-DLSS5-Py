@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+﻿﻿# ==============================================================================
 #  1 Click DLSS 5 - Universal Neural Rendering Game Center & Auto-Injector
 #  Official Repository: https://github.com/1Click-DLSS5/1-Click-DLSS5
 #  Architecture: RenoDX DLSS 5 v3 + NVIDIA Streamline 2.13 + nvngx_dlssnr.dll
@@ -168,7 +168,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 OPEN FOLDER"
             BtnInstructions = "📖 IN-GAME GUIDE"
             StatusHeading = "REAL-TIME DIAGNOSTICS & SYSTEM LOG"
-            Footer = "1 Click DLSS 5 v1.4.0 | Universal Feeder (All PC Games) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan"
+            Footer = "1 Click DLSS 5 v1.4.0 | Universal Feeder 2.0 (All PC Games) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL"
             Badge100 = "✓ 100% COMPATIBLE (Native DLSS)"
             BadgeDX12 = "✓ COMPATIBLE (DirectX 12)"
             BadgeBridge = "✓ COMPATIBLE VIA OPTISCALER (FSR2/XeSS → DLSS 5)"
@@ -242,7 +242,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 ABRIR PASTA"
             BtnInstructions = "📖 GUIA NO JOGO"
             StatusHeading = "DIAGNÓSTICO E LOG DO SISTEMA EM TEMPO REAL"
-            Footer = "1 Click DLSS 5 v1.4.0 | Feeder Universal (Qualquer Jogo de PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan"
+            Footer = "1 Click DLSS 5 v1.4.0 | Feeder Universal 2.0 (Qualquer Jogo de PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL"
             Badge100 = "✓ 100% COMPATÍVEL (DLSS Nativo)"
             BadgeDX12 = "✓ COMPATÍVEL (DirectX 12)"
             BadgeBridge = "✓ COMPATÍVEL VIA OPTISCALER (FSR2/XeSS → DLSS 5)"
@@ -1879,7 +1879,7 @@ $status.ScrollBars = [System.Windows.Forms.RichTextBoxScrollBars]::Vertical
 $script:StatusBox = $status
 
 # FOOTER
-$footer = New-Label -Text "1 Click DLSS 5 v1.4.0 | Feeder Universal (Qualquer Jogo de PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan" -X 20 -Y 825 -Width 1145 -Height 22
+$footer = New-Label -Text "1 Click DLSS 5 v1.4.0 | Feeder Universal 2.0 (Qualquer Jogo de PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL" -X 20 -Y 825 -Width 1145 -Height 22
 $footer.Anchor = "Bottom, Left, Right"
 $footer.ForeColor = [System.Drawing.Color]::FromArgb(120, 140, 170)
 $footer.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)
