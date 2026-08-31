@@ -241,7 +241,7 @@ uniform float STATIC_BIAS <
     ui_label = "Static bias";
     ui_tooltip = "How much worse (relative) the static explanation may score than the vector's and still win.\n"
                  "0 = the vector must strictly beat 'did not move'. Higher favours zero vectors.";
-> = 0.15;
+> = 0.35;
 
 uniform float STATIC_MIN_CONTRAST <
     ui_category = "Validation (flicker / flames / disocclusion)";
@@ -258,9 +258,8 @@ uniform bool VALIDATE_LUMA <
     ui_label = "Luma test (mask only)";
     ui_tooltip = "The reprojected previous luma must fall inside the current 3x3 neighbourhood's luma range.\n"
                  "A failure only raises the mask (DLSS leans on the current frame); it never zeroes the vector,\n"
-                 "because a lighting change does not prove the surface did not move. Off by default: on a\n"
-                 "flickering surface it asks DLSS to drop exactly the history that would smooth the flicker.";
-> = false;
+                 "because a lighting change does not prove the surface did not move.";
+> = true;
 
 uniform float LUMA_TOLERANCE <
     ui_category = "Validation (flicker / flames / disocclusion)";
@@ -268,7 +267,7 @@ uniform float LUMA_TOLERANCE <
     ui_label = "Luma tolerance";
     ui_tooltip = "How far outside the current 3x3 neighbourhood's luma range the reprojected previous luma\n"
                  "may fall (relative to that range's maximum). Lower = stricter.";
-> = 0.25;
+> = 0.15;
 
 uniform bool VALIDATE_DEPTH <
     ui_category = "Validation (flicker / flames / disocclusion)";

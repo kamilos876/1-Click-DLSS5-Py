@@ -1281,7 +1281,22 @@ function Install-Dlss5 {
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
 
         $targetPreset = Join-Path $targetFolder "ReShadePreset.ini"
-        $presetContent = "Techniques=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx`r`nTechniqueSorting=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx"
+        $presetContent = @"
+Techniques=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
+TechniqueSorting=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
+
+[DLSS5_Feed.fx]
+VALIDATE_LUMA=1
+LUMA_TOLERANCE=0.150000
+VALIDATE_STATIC=1
+STATIC_BIAS=0.350000
+STATIC_MIN_CONTRAST=0.005000
+MASK_STRENGTH=1.000000
+VALIDATE_DEPTH=1
+VALIDATE_MV=1
+MV_CONSISTENCY=1.000000
+GEOM_ENABLE=0
+"@
         [System.IO.File]::WriteAllText($targetPreset, $presetContent, (New-Object System.Text.UTF8Encoding($false)))
         if ($state.InjectedFiles -notcontains "ReShadePreset.ini") { $state.InjectedFiles += "ReShadePreset.ini" }
         Write-Status -Message "Configuracao do Feeder aplicada no ReShade.ini (LumeniteFX Kernel 2.0 -> DLSS5_Feed -> RenoDX)." -Level "OK"
