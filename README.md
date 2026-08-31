@@ -16,7 +16,7 @@
 
 <br>
 
-<img src="docs/ui_preview.png" alt="1 Click DLSS 5 Game Center Interface" width="850">
+<img src="core/docs/ui_preview.png" alt="1 Click DLSS 5 Game Center Interface" width="850">
 
 <br>
 
