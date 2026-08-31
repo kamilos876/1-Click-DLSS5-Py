@@ -746,7 +746,9 @@ class MainWindow(QWidget):
         if dialog is not None:
             dialog.finish()
 
-    def _on_worker_failed(self, message: str, dialog: ProgressDialog | None = None) -> None:
+    def _on_worker_failed(
+        self, message: "Message | str", dialog: ProgressDialog | None = None
+    ) -> None:
         self._close_progress(dialog)
         self.write_status(message, "ERROR")
 
@@ -1294,9 +1296,11 @@ class MainWindow(QWidget):
         if self.selected_game is not None:
             self._select_game(self.selected_game)
 
-    def _on_install_failed(self, message: str) -> None:
+    def _on_install_failed(self, message: "Message | str") -> None:
+        # The worker emits a Message key, not a sentence: render it before it
+        # reaches Qt, which only accepts str.
         self.write_status(message, "ERROR")
-        QMessageBox.critical(self, C.PRODUCT_NAME, message)
+        QMessageBox.critical(self, C.PRODUCT_NAME, render(message, self.lang))
 
     def _on_restore(self) -> None:
         path = self._require_target()

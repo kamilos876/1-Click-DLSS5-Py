@@ -17,6 +17,7 @@ import isolation  # noqa: E402,F401
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from core import constants as C
+from core.messages import msg
 from core.scanner import DiscoveredGame
 from ui import theme
 from ui.main_window import MainWindow
@@ -138,6 +139,20 @@ def main() -> int:
     window._set_language("EN")
     assert "GAME LIBRARY" in window.lbl_library.text()
     print("  language switch : OK")
+
+    # A worker reports failure as a Message key, not a sentence. Qt only accepts
+    # str, so a handler that forwards the Message raw raises TypeError at the
+    # worst possible moment -- while reporting another error.
+    seen: list[object] = []
+    QMessageBox.critical = staticmethod(
+        lambda parent, title, text, *a, **k: seen.append(text)
+        or QMessageBox.StandardButton.Ok
+    )
+    window._on_install_failed(msg("PayloadSelectZip"))
+    assert seen, "install failure should surface a dialog"
+    assert isinstance(seen[0], str), f"dialog got {type(seen[0]).__name__}, not str"
+    assert seen[0] != "PayloadSelectZip", "the key leaked instead of its translation"
+    print("  install failure : OK (Message rendered, not passed raw)")
 
     window.close()
     print("\ngui flow OK")

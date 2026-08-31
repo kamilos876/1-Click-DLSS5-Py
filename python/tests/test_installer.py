@@ -1,5 +1,6 @@
 """Install/restore round-trip tests against a synthetic game and payload."""
 import sys
+import shutil
 import tempfile
 import zipfile
 from pathlib import Path
@@ -160,6 +161,37 @@ def test_state_load_tolerates_powershell_scalar(tmp: Path) -> None:
     assert loaded.injected_files == []
 
 
+def test_payload_falls_back_to_extracted_cache(tmp: Path) -> None:
+    """A user who no longer has the ZIP can still install from an earlier run.
+
+    The ZIP is only a delivery mechanism; once extracted and verified, the
+    runtime it produced is enough to install from.
+    """
+    from core.payload import PayloadError, prepare_payload
+
+    _isolate_cache(tmp)
+    zip_path = _make_payload_zip(tmp)
+
+    # First run extracts and caches the payload.
+    first = prepare_payload(str(zip_path))
+    assert (first.folder / "nvngx_dlssnr.dll").is_file()
+
+    # The ZIP is gone, but the extracted cache remains.
+    zip_path.unlink()
+    second = prepare_payload("")
+    assert second.folder == first.folder, second.folder
+    assert (second.folder / "nvngx_dlssnr.dll").is_file()
+
+    # With neither a ZIP nor a cache, it must still refuse rather than proceed.
+    shutil.rmtree(C.CACHE_ROOT, ignore_errors=True)
+    try:
+        prepare_payload("")
+    except PayloadError:
+        pass
+    else:
+        raise AssertionError("expected PayloadError with no ZIP and no cache")
+
+
 if __name__ == "__main__":
     tests = [
         test_feeder_install_and_restore,
@@ -167,6 +199,7 @@ if __name__ == "__main__":
         test_reinstall_keeps_first_backup,
         test_state_roundtrip,
         test_state_load_tolerates_powershell_scalar,
+        test_payload_falls_back_to_extracted_cache,
     ]
     original_cache = C.CACHE_ROOT
     for func in tests:

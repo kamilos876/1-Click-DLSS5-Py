@@ -63,6 +63,27 @@ def find_embedded_streamline_zip() -> Path | None:
     return None
 
 
+def find_cached_payload() -> Path | None:
+    """Return a previously extracted payload folder, newest first.
+
+    The ZIP is only ever a delivery mechanism: once it has been extracted and
+    verified, the runtime it produced is enough. A user who installed before and
+    no longer has the ZIP on disk should not be blocked by that.
+    """
+    if not C.CACHE_ROOT.is_dir():
+        return None
+    candidates = [
+        entry
+        for entry in C.CACHE_ROOT.glob("user-payload-*")
+        if entry.is_dir()
+    ]
+    for cache in sorted(candidates, key=lambda e: e.stat().st_mtime, reverse=True):
+        runtime = _find_runtime(cache)
+        if runtime is not None:
+            return runtime.parent
+    return None
+
+
 def prepare_payload(zip_path: str = "", log: LogFn = _noop) -> Payload:
     """Extract the Streamline ZIP into a hash-keyed cache and stage the addon.
 
@@ -74,17 +95,24 @@ def prepare_payload(zip_path: str = "", log: LogFn = _noop) -> Payload:
         # The ZIP argument is optional: fall back to the bundled payload so a
         # default install needs no file picker at all.
         found = find_embedded_streamline_zip()
-        if found is None:
-            raise PayloadError(msg("PayloadSelectZip"))
-        clean = str(found)
-
-    zip_file = Path(clean)
-    if not zip_file.is_file():
-        raise PayloadError(msg("PayloadZipMissing", clean))
+        clean = str(found) if found else ""
 
     addon = C.PAYLOAD_ROOT / C.ADDON_NAME
     if not addon.is_file():
         raise PayloadError(msg("PayloadAddonMissing", C.ADDON_NAME))
+
+    if not clean:
+        # No ZIP anywhere, but an earlier run may have left a usable runtime.
+        cached = find_cached_payload()
+        if cached is None:
+            raise PayloadError(msg("PayloadSelectZip"))
+        log(msg("PayloadFromCache"), "OK")
+        shutil.copy2(addon, cached / C.ADDON_NAME)
+        return Payload(folder=cached, zip_path=Path(), zip_hash="")
+
+    zip_file = Path(clean)
+    if not zip_file.is_file():
+        raise PayloadError(msg("PayloadZipMissing", clean))
 
     zip_hash = sha256_of(zip_file)
     C.CACHE_ROOT.mkdir(parents=True, exist_ok=True)
