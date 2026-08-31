@@ -53,24 +53,42 @@ if (-not (Test-Path -LiteralPath (Join-Path $script:AppRoot "payload") -PathType
 }
 
 function Find-EmbeddedStreamlineZip {
-    $candidates = @()
+    $searchRoots = New-Object System.Collections.Generic.List[string]
     if ($script:AppRoot) {
-        $candidates += (Join-Path $script:AppRoot "payload\streamline.zip")
-        $candidates += (Join-Path $script:AppRoot "core\payload\streamline.zip")
-        $parent = Split-Path -Parent $script:AppRoot
-        if ($parent) {
-            $candidates += (Join-Path $parent "payload\streamline.zip")
-            $candidates += (Join-Path $parent "core\payload\streamline.zip")
+        [void]$searchRoots.Add($script:AppRoot)
+        $p1 = Split-Path -Parent $script:AppRoot
+        if ($p1) { [void]$searchRoots.Add($p1) }
+    }
+    if ($PSScriptRoot) {
+        [void]$searchRoots.Add($PSScriptRoot)
+        $p2 = Split-Path -Parent $PSScriptRoot
+        if ($p2) { [void]$searchRoots.Add($p2) }
+    }
+    $curLoc = (Get-Location).Path
+    if ($curLoc) { [void]$searchRoots.Add($curLoc) }
+
+    $candidates = New-Object System.Collections.Generic.List[string]
+    foreach ($root in $searchRoots) {
+        if (-not [string]::IsNullOrWhiteSpace($root) -and (Test-Path -LiteralPath $root -PathType Container)) {
+            [void]$candidates.Add((Join-Path $root "payload\streamline.zip"))
+            [void]$candidates.Add((Join-Path $root "core\payload\streamline.zip"))
+            [void]$candidates.Add((Join-Path $root "streamline.zip"))
         }
     }
-    $loc = (Get-Location).Path
-    if ($loc) {
-        $candidates += (Join-Path $loc "payload\streamline.zip")
-        $candidates += (Join-Path $loc "core\payload\streamline.zip")
-    }
+
     foreach ($c in $candidates) {
         if (-not [string]::IsNullOrWhiteSpace($c) -and (Test-Path -LiteralPath $c -PathType Leaf)) {
             return (Get-Item -LiteralPath $c).FullName
+        }
+    }
+
+    # Recursive fallback search up to Depth 4
+    foreach ($root in $searchRoots) {
+        if (-not [string]::IsNullOrWhiteSpace($root) -and (Test-Path -LiteralPath $root -PathType Container)) {
+            $found = @(Get-ChildItem -LiteralPath $root -Filter "streamline.zip" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+            if ($found.Count -gt 0) {
+                return $found[0].FullName
+            }
         }
     }
     return $null
@@ -642,22 +660,31 @@ function Detect-GameUpscalerType {
 }
 
 function Prepare-Payload {
-    param([string]$DlssZipPath = "")
+    param([string]$DlssZipPath = "", [string]$SelectedMode = "AUTO")
     $cleanZip = Sanitize-PathString -Raw $DlssZipPath
     if ([string]::IsNullOrWhiteSpace($cleanZip)) {
         $cleanZip = Find-EmbeddedStreamlineZip
     }
-    if ([string]::IsNullOrWhiteSpace($cleanZip)) {
-        $d = Get-Dict -Lang $script:CurrentLang
-        throw (if ($script:CurrentLang -eq "EN") { "The streamline.zip payload was not found. Please click [CHANGE ZIP] to select it." } else { "O arquivo streamline.zip do pacote DLSS 5 não foi encontrado. Clique em [TROCAR ZIP] para selecioná-lo." })
-    }
-    if (-not (Test-Path -LiteralPath $cleanZip -PathType Leaf)) {
-        throw (if ($script:CurrentLang -eq "EN") { "Selected ZIP file not found: $cleanZip" } else { "O arquivo ZIP selecionado não existe: $cleanZip" })
-    }
 
     $payloadRoot = Join-Path $script:AppRoot "payload"
     $addon = Join-Path $payloadRoot $script:AddOnName
-    if (-not (Test-Path -LiteralPath $addon -PathType Leaf)) { throw "O arquivo $script:AddOnName nao foi encontrado na pasta payload." }
+    if (-not (Test-Path -LiteralPath $addon -PathType Leaf)) { throw "O arquivo $script:AddOnName nao foi encontrado na pasta payload ($payloadRoot)." }
+
+    # If mode is Feeder or OptiScaler, streamline.zip is optional if other payload files exist
+    if ([string]::IsNullOrWhiteSpace($cleanZip) -or -not (Test-Path -LiteralPath $cleanZip -PathType Leaf)) {
+        if ($SelectedMode -eq "FEEDER" -or $SelectedMode -eq "OPTISCALER") {
+            $script:PayloadFolder = $payloadRoot
+            $script:PayloadZipPath = ""
+            return $payloadRoot
+        } else {
+            $errText = if ($script:CurrentLang -eq "EN") {
+                "The streamline.zip payload was not found. Please click [CHANGE ZIP] to select it."
+            } else {
+                "O arquivo streamline.zip do pacote DLSS 5 nao foi encontrado. Clique em [TROCAR ZIP] para seleciona-lo."
+            }
+            throw $errText
+        }
+    }
 
     $zipItem = Get-Item -LiteralPath $cleanZip -ErrorAction Stop
     $zipHash = Get-Sha256 -Path $zipItem.FullName
@@ -783,7 +810,8 @@ function Get-Compatibility {
         [Parameter(Mandatory = $true)][string]$TargetPath,
         [Parameter(Mandatory = $true)][bool]$InstallReShade,
         [Parameter(Mandatory = $true)][bool]$FullPackage,
-        [string]$DlssZipPath = ""
+        [string]$DlssZipPath = "",
+        [string]$SelectedMode = "AUTO"
     )
     $fatal = New-Object System.Collections.Generic.List[string]
     $warnings = New-Object System.Collections.Generic.List[string]
@@ -810,7 +838,7 @@ function Get-Compatibility {
     $drivers = @(Get-DriverVersions)
     if ($drivers.Count -gt 0) { [void]$info.Add("Driver NVIDIA: " + ($drivers -join ", ")) }
     try {
-        $payloadFolder = Prepare-Payload -DlssZipPath $DlssZipPath
+        $payloadFolder = Prepare-Payload -DlssZipPath $DlssZipPath -SelectedMode $SelectedMode
         [void]$info.Add("Pacote 1 Click DLSS 5 validado com sucesso!")
     } catch { [void]$fatal.Add($_.Exception.Message) }
 
@@ -971,7 +999,7 @@ function Install-Dlss5 {
         [string]$DlssZipPath = "",
         [string]$SelectedMode = "AUTO"
     )
-    $report = Get-Compatibility -TargetPath $TargetPath -InstallReShade $InstallReShade -FullPackage $FullPackage -DlssZipPath $DlssZipPath
+    $report = Get-Compatibility -TargetPath $TargetPath -InstallReShade $InstallReShade -FullPackage $FullPackage -DlssZipPath $DlssZipPath -SelectedMode $SelectedMode
     foreach ($line in $report.Info) { Write-Status -Message $line -Level "INFO" }
     foreach ($line in $report.Warnings) { Write-Status -Message $line -Level "WARN" }
     foreach ($line in $report.Fatal) { Write-Status -Message $line -Level "ERROR" }
@@ -2421,7 +2449,13 @@ $dlssBrowse.Add_Click({
 $scan.Add_Click({
     try {
         $status.Clear()
-        $report = Get-Compatibility -TargetPath $txtRootFolder.Text.Trim() -InstallReShade $copyReShade.Checked -FullPackage $fullPackage.Checked -DlssZipPath $dlssZipText.Text.Trim()
+        $chosenMode = switch ($comboInjectionMode.SelectedIndex) {
+            1 { "DIRECT" }
+            2 { "OPTISCALER" }
+            3 { "FEEDER" }
+            default { "AUTO" }
+        }
+        $report = Get-Compatibility -TargetPath $txtRootFolder.Text.Trim() -InstallReShade $copyReShade.Checked -FullPackage $fullPackage.Checked -DlssZipPath $dlssZipText.Text.Trim() -SelectedMode $chosenMode
         foreach ($line in $report.Info) { Write-Status -Message $line -Level "INFO" }
         foreach ($line in $report.Warnings) { Write-Status -Message $line -Level "WARN" }
         foreach ($line in $report.Fatal) { Write-Status -Message $line -Level "ERROR" }
