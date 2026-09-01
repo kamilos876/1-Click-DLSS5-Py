@@ -21,9 +21,15 @@ from core.scanner import scan_folders
 
 
 class ScanWorker(QObject):
-    """Scans the user's nominated folders for games."""
+    """Scans the user's nominated folders for games.
 
-    progress = Signal(int, str)
+    Progress is published into ``self.progress_state`` rather than emitted.
+    Repainting a dialog from a queued cross-thread signal crashes Qt 6.11 on
+    Windows (reproducible in ~30 lines of plain Qt), so the UI polls this with a
+    timer it owns and does its drawing on its own thread. Assigning a tuple is
+    atomic under the GIL, so no lock is needed.
+    """
+
     finished = Signal(list)
     failed = Signal(object)
 
@@ -32,6 +38,7 @@ class ScanWorker(QObject):
         self._folders = folders
         self._badges = badges
         self._cancelled = False
+        self.progress_state: tuple[int, str] = (0, "")
 
     def cancel(self) -> None:
         self._cancelled = True
@@ -48,14 +55,17 @@ class ScanWorker(QObject):
             self.failed.emit(msg("ScanFailed", err))
 
     def _on_progress(self, percent: int, name: str) -> bool:
-        self.progress.emit(percent, name)
+        self.progress_state = (percent, name)
         return not self._cancelled
 
 
 class RefreshWorker(QObject):
-    """Re-checks the saved library against what is on disk now."""
+    """Re-checks the saved library against what is on disk now.
 
-    progress = Signal(int, str)
+    Progress is polled from ``progress_state``, for the reason given on
+    ScanWorker.
+    """
+
     finished = Signal(object)
     failed = Signal(object)
 
@@ -63,6 +73,7 @@ class RefreshWorker(QObject):
         super().__init__()
         self._library = library
         self._cancelled = False
+        self.progress_state: tuple[int, str] = (0, "")
 
     def cancel(self) -> None:
         self._cancelled = True
@@ -75,7 +86,7 @@ class RefreshWorker(QObject):
             self.failed.emit(msg("RefreshFailed", err))
 
     def _on_progress(self, percent: int, name: str) -> bool:
-        self.progress.emit(percent, name)
+        self.progress_state = (percent, name)
         return not self._cancelled
 
 

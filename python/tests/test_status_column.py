@@ -18,6 +18,7 @@ from ui import theme
 from ui.main_window import MainWindow
 
 STATE_COLUMN = 2
+BADGE_COLUMN = 1
 
 
 def _entry(**kwargs) -> LibraryEntry:
@@ -100,6 +101,23 @@ def main() -> int:
                 problems.append(f"{label}: row not listed")
             elif got != expected:
                 problems.append(f"{label}: {got!r} != {expected!r}")
+
+        # The compatibility column must not repeat what Status already says.
+        # It used to be prefixed with "[INSTALLED]", which pushed the actual
+        # compatibility verdict out of the visible width on installed rows.
+        for label, entry, _expected in cases:
+            if not entry.installed_mode:
+                continue
+            key = entry.name + "|" + entry.path
+            for index in range(window.tree.topLevelItemCount()):
+                item = window.tree.topLevelItem(index)
+                if item.text(0) + "|" + item.text(3) != key:
+                    continue
+                badge = item.text(BADGE_COLUMN)
+                if d["InstalledTag"] in badge:
+                    problems.append(
+                        f"{label}: badge repeats the install state: {badge!r}"
+                    )
 
         headers = [
             window.tree.headerItem().text(column)

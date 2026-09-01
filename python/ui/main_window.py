@@ -3,8 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, QThread, Signal
+from PySide6.QtCore import QSize, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QBrush, QColor, QIcon
+from shiboken6 import isValid
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -18,6 +19,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPlainTextEdit,
+    QProgressBar,
     QPushButton,
     QSplitter,
     QTreeWidget,
@@ -46,7 +48,6 @@ from core.utils import open_in_explorer
 
 from . import theme
 from .icons import extract_exe_icon
-from .progress_dialog import ProgressDialog
 from .workers import InstallWorker, RefreshWorker, ScanWorker
 
 
@@ -64,6 +65,16 @@ class MainWindow(QWidget):
         # Workers must be held on the instance: a local reference is garbage
         # collected as soon as the starting method returns, which leaves the
         # thread running an empty event loop and the progress dialog stuck.
+        # Workers and threads awaiting Qt's own destruction; see _retire.
+        self._retired: list[object] = []
+        # Drives the inline progress bar; owned by the window, so it ticks on
+        # the GUI thread. See _start_progress.
+        self._progress_worker: object | None = None
+        self._progress_template = "{0}"
+        self._progress_last: tuple[int, str] = (-1, "")
+        self._progress_timer = QTimer(self)
+        self._progress_timer.setInterval(100)
+        self._progress_timer.timeout.connect(self._poll_progress)
         self._scan_thread: QThread | None = None
         self._scan_worker: ScanWorker | None = None
         self._refresh_thread: QThread | None = None
@@ -502,6 +513,15 @@ class MainWindow(QWidget):
         self.log.setReadOnly(True)
         layout.addWidget(self.log, 1)
 
+        # Progress lives in the main window rather than a dialog of its own.
+        # Showing any new top-level widget while a worker thread runs crashes
+        # Qt 6.11.1 on Windows with an access violation -- see _start_progress.
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.hide()
+        layout.addWidget(self.progress_bar)
+
         return panel
 
     def _build_footer(self) -> QWidget:
@@ -708,63 +728,102 @@ class MainWindow(QWidget):
         self.btn_refresh.setEnabled(False)
         self.btn_browse.setEnabled(False)
 
-        dialog = self._make_progress_dialog(d["MsgScanProgressTitle"])
-
         self._scan_worker = ScanWorker(list(self.library.folders), get_dict(self.lang))
         self._scan_thread = QThread(self)
         self._scan_worker.moveToThread(self._scan_thread)
 
-        self._scan_worker.progress.connect(
-            lambda pct, name: self._update_progress(dialog, pct, d["MsgScanFolder"].format(name))
+        self._start_progress(self._scan_worker, d["MsgScanFolder"])
+        self._scan_worker.finished.connect(
+            self._on_scan_done, Qt.ConnectionType.QueuedConnection
         )
-        self._scan_worker.finished.connect(lambda games: self._on_scan_done(games, dialog))
-        self._scan_worker.failed.connect(lambda msg: self._on_worker_failed(msg, dialog))
+        self._scan_worker.failed.connect(
+            self._on_worker_failed, Qt.ConnectionType.QueuedConnection
+        )
         self._scan_worker.finished.connect(self._scan_thread.quit)
         self._scan_worker.failed.connect(self._scan_thread.quit)
         self._scan_thread.started.connect(self._scan_worker.run)
         self._scan_thread.finished.connect(self._on_scan_thread_finished)
         self._scan_thread.start()
 
-    def _make_progress_dialog(self, title: str) -> ProgressDialog:
-        """A plain modal dialog with a bar.
+    def _start_progress(self, worker: object, template: str) -> None:
+        """Show progress inside the main window and poll the worker for it.
 
-        QProgressDialog is deliberately avoided: reaching its maximum spins a
-        nested event loop inside setValue, which deadlocks when the value is
-        driven from a worker thread's signal.
+        There is deliberately no progress dialog. On Qt 6.11.1 (Windows),
+        showing any new widget while a worker thread is running ends the process
+        with an access violation -- first announced as
+        "QBackingStore::endPaint() called with active painter". It reproduces in
+        a few dozen lines of plain Qt with none of this application's code, and
+        it does not depend on modality, parenting, or how the widget is drawn:
+        only on a widget appearing while the thread runs. Reusing widgets that
+        already exist avoids it entirely.
+
+        Progress is polled rather than signalled for the same reason: repainting
+        from a worker's queued signal is the other half of the same crash.
         """
-        dialog = ProgressDialog(title, self)
-        dialog.show()
-        QApplication.processEvents()
-        return dialog
+        self._progress_worker = worker
+        self._progress_template = template
+        self._progress_last = (-1, "")
+        self.progress_bar.setValue(0)
+        self.progress_bar.setFormat("%p%")
+        self.progress_bar.show()
+        self._progress_timer.start()
 
-    @staticmethod
-    def _update_progress(dialog: ProgressDialog, percent: int, label: str) -> None:
-        dialog.update_progress(percent, label)
+    def _stop_progress(self) -> None:
+        """Hide the bar and stop polling."""
+        self._progress_timer.stop()
+        self._progress_worker = None
+        self.progress_bar.hide()
 
-    @staticmethod
-    def _close_progress(dialog: ProgressDialog | None) -> None:
-        if dialog is not None:
-            dialog.finish()
+    def _poll_progress(self) -> None:
+        """Copy the worker's latest progress onto the bar, on the GUI thread."""
+        worker = self._progress_worker
+        if worker is None:
+            return
+        state = getattr(worker, "progress_state", None)
+        if not state:
+            return
+        percent, name = state
+        if (percent, name) == self._progress_last:
+            return
+        self._progress_last = (percent, name)
+        self.progress_bar.setValue(max(0, min(int(percent), 100)))
+        if name:
+            self.progress_bar.setFormat(f"%p%  -  {self._progress_template.format(name)}")
 
-    def _on_worker_failed(
-        self, message: "Message | str", dialog: ProgressDialog | None = None
-    ) -> None:
-        self._close_progress(dialog)
+    def _on_worker_failed(self, message: "Message | str") -> None:
+        self._stop_progress()
         self.write_status(message, "ERROR")
 
+    def _retire(self, *objects: object) -> None:
+        """Keep a worker and its thread alive until Qt has finished with them.
+
+        deleteLater() only schedules destruction. Dropping the last Python
+        reference in the same breath frees the wrapper while Qt still holds
+        queued events for the object, and the event loop then walks into freed
+        memory -- an access violation with no traceback. Holding the reference
+        until Qt emits destroyed() closes that window.
+        """
+        for obj in objects:
+            if obj is None or not isValid(obj):
+                continue
+            self._retired.append(obj)
+            obj.destroyed.connect(
+                lambda _=None, ref=obj: self._retired.remove(ref)
+                if ref in self._retired
+                else None
+            )
+            obj.deleteLater()
+
     def _on_scan_thread_finished(self) -> None:
-        if self._scan_thread is not None:
-            self._scan_thread.deleteLater()
-        if self._scan_worker is not None:
-            self._scan_worker.deleteLater()
+        self._retire(self._scan_worker, self._scan_thread)
         self._scan_thread = None
         self._scan_worker = None
         self.btn_scan.setEnabled(bool(self.library.folders))
         self.btn_refresh.setEnabled(True)
         self.btn_browse.setEnabled(True)
 
-    def _on_scan_done(self, games: list[DiscoveredGame], dialog: ProgressDialog) -> None:
-        self._close_progress(dialog)
+    def _on_scan_done(self, games: list[DiscoveredGame]) -> None:
+        self._stop_progress()
 
         found_paths = {str(game.path).lower() for game in games}
         scanned_folders = {str(Path(f)).lower() for f in self.library.folders}
@@ -818,19 +877,19 @@ class MainWindow(QWidget):
         self.btn_refresh.setEnabled(False)
         self.btn_scan.setEnabled(False)
 
-        dialog = self._make_progress_dialog(d["MsgRefreshTitle"])
+
 
         self._refresh_worker = RefreshWorker(self.library)
         self._refresh_thread = QThread(self)
         self._refresh_worker.moveToThread(self._refresh_thread)
 
-        self._refresh_worker.progress.connect(
-            lambda pct, name: self._update_progress(dialog, pct, d["MsgScanFolder"].format(name))
-        )
+        self._start_progress(self._refresh_worker, d["MsgScanFolder"])
         self._refresh_worker.finished.connect(
-            lambda result: self._on_refresh_done(result, dialog)
+            self._on_refresh_done, Qt.ConnectionType.QueuedConnection
         )
-        self._refresh_worker.failed.connect(lambda msg: self._on_worker_failed(msg, dialog))
+        self._refresh_worker.failed.connect(
+            self._on_worker_failed, Qt.ConnectionType.QueuedConnection
+        )
         self._refresh_worker.finished.connect(self._refresh_thread.quit)
         self._refresh_worker.failed.connect(self._refresh_thread.quit)
         self._refresh_thread.started.connect(self._refresh_worker.run)
@@ -838,17 +897,14 @@ class MainWindow(QWidget):
         self._refresh_thread.start()
 
     def _on_refresh_thread_finished(self) -> None:
-        if self._refresh_thread is not None:
-            self._refresh_thread.deleteLater()
-        if self._refresh_worker is not None:
-            self._refresh_worker.deleteLater()
+        self._retire(self._refresh_worker, self._refresh_thread)
         self._refresh_thread = None
         self._refresh_worker = None
         self.btn_refresh.setEnabled(True)
         self.btn_scan.setEnabled(bool(self.library.folders))
 
-    def _on_refresh_done(self, result, dialog: ProgressDialog) -> None:
-        self._close_progress(dialog)
+    def _on_refresh_done(self, result) -> None:
+        self._stop_progress()
 
         d = get_dict(self.lang)
         self.library.save()
@@ -887,8 +943,9 @@ class MainWindow(QWidget):
                 continue
 
             badge = d["BadgeMissing"] if entry.missing else d.get(entry.badge_key, entry.badge_key)
-            if entry.installed_mode and not entry.missing:
-                badge = f"{d['InstalledTag']} {badge}"
+            # No installed tag here: the Status column already names the mode,
+            # and prefixing the badge only pushed the compatibility text out of
+            # view on the one row where it mattered most.
             if not entry.is_game:
                 badge = f"{d['TagUncertain']} {badge}"
 
@@ -1282,10 +1339,7 @@ class MainWindow(QWidget):
         QMessageBox.critical(self, C.PRODUCT_NAME, render(message, self.lang))
 
     def _on_install_thread_finished(self) -> None:
-        if self._install_thread is not None:
-            self._install_thread.deleteLater()
-        if self._install_worker is not None:
-            self._install_worker.deleteLater()
+        self._retire(self._install_worker, self._install_thread)
         self._install_thread = None
         self._install_worker = None
         self.btn_install.setEnabled(True)
