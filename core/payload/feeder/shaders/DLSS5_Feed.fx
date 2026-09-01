@@ -679,7 +679,7 @@ void PS_MotionVectors(float4 vpos : SV_Position, float2 uv : TEXCOORD,
     {
         const float4 bad = ValidateTests(uv, flow);
         const float  zero_vector = max(bad.y, max(bad.z, bad.w));   // wrong target, or static explains it: treat as static
-        distrust = max(bad.x, max(bad.y, bad.z));                    // appearance changed / wrong target: favour the current frame
+        distrust = max(bad.x, max(bad.y, max(bad.z, bad.w)));       // appearance changed / wrong target / static UI: favour the current frame
         mv = flow * (1.0 - zero_vector);
     }
 
