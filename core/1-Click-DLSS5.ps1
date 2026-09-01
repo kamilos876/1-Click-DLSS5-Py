@@ -24,7 +24,7 @@ try {
 
 
 $script:ProductName = "1 Click DLSS 5"
-$script:Version = "1.5.0"
+$script:Version = "1.5.1"
 $script:AddOnName = "renodx-dlss5.addon64"
 $script:AddonHash = "E1C28FDE0922B12FC10734E58C3D24A36808E575247F4FD4F36226540D7EE023"
 $script:ReShadeUrl = "https://reshade.me/downloads/ReShade_Setup_6.8.0_Addon.exe"
@@ -52,25 +52,87 @@ if (-not (Test-Path -LiteralPath (Join-Path $script:AppRoot "payload") -PathType
     }
 }
 
-function Find-EmbeddedStreamlineZip {
-    $candidates = @()
+
+function Get-DLSS5PayloadDirectory {
+    $candidates = New-Object System.Collections.Generic.List[string]
     if ($script:AppRoot) {
-        $candidates += (Join-Path $script:AppRoot "payload\streamline.zip")
-        $candidates += (Join-Path $script:AppRoot "core\payload\streamline.zip")
-        $parent = Split-Path -Parent $script:AppRoot
-        if ($parent) {
-            $candidates += (Join-Path $parent "payload\streamline.zip")
-            $candidates += (Join-Path $parent "core\payload\streamline.zip")
+        [void]$candidates.Add((Join-Path $script:AppRoot "payload"))
+        [void]$candidates.Add((Join-Path $script:AppRoot "core\payload"))
+        $p1 = Split-Path -Parent $script:AppRoot
+        if ($p1) {
+            [void]$candidates.Add((Join-Path $p1 "payload"))
+            [void]$candidates.Add((Join-Path $p1 "core\payload"))
         }
     }
-    $loc = (Get-Location).Path
-    if ($loc) {
-        $candidates += (Join-Path $loc "payload\streamline.zip")
-        $candidates += (Join-Path $loc "core\payload\streamline.zip")
+    if ($PSScriptRoot) {
+        [void]$candidates.Add((Join-Path $PSScriptRoot "payload"))
+        [void]$candidates.Add((Join-Path $PSScriptRoot "core\payload"))
+        $p2 = Split-Path -Parent $PSScriptRoot
+        if ($p2) {
+            [void]$candidates.Add((Join-Path $p2 "payload"))
+            [void]$candidates.Add((Join-Path $p2 "core\payload"))
+        }
     }
+    $cur = (Get-Location).Path
+    if ($cur) {
+        [void]$candidates.Add((Join-Path $cur "payload"))
+        [void]$candidates.Add((Join-Path $cur "core\payload"))
+    }
+
+    foreach ($cand in $candidates) {
+        if (-not [string]::IsNullOrWhiteSpace($cand) -and (Test-Path -LiteralPath $cand -PathType Container)) {
+            if (Test-Path -LiteralPath (Join-Path $cand $script:AddOnName) -PathType Leaf) {
+                return (Get-Item -LiteralPath $cand).FullName
+            }
+        }
+    }
+
+    foreach ($cand in $candidates) {
+        if (-not [string]::IsNullOrWhiteSpace($cand) -and (Test-Path -LiteralPath $cand -PathType Container)) {
+            return (Get-Item -LiteralPath $cand).FullName
+        }
+    }
+
+    return (Join-Path $script:AppRoot "payload")
+}
+
+function Find-EmbeddedStreamlineZip {
+    $searchRoots = New-Object System.Collections.Generic.List[string]
+    if ($script:AppRoot) {
+        [void]$searchRoots.Add($script:AppRoot)
+        $p1 = Split-Path -Parent $script:AppRoot
+        if ($p1) { [void]$searchRoots.Add($p1) }
+    }
+    if ($PSScriptRoot) {
+        [void]$searchRoots.Add($PSScriptRoot)
+        $p2 = Split-Path -Parent $PSScriptRoot
+        if ($p2) { [void]$searchRoots.Add($p2) }
+    }
+    $curLoc = (Get-Location).Path
+    if ($curLoc) { [void]$searchRoots.Add($curLoc) }
+
+    $candidates = New-Object System.Collections.Generic.List[string]
+    foreach ($root in $searchRoots) {
+        if (-not [string]::IsNullOrWhiteSpace($root) -and (Test-Path -LiteralPath $root -PathType Container)) {
+            [void]$candidates.Add((Join-Path $root "payload\streamline.zip"))
+            [void]$candidates.Add((Join-Path $root "core\payload\streamline.zip"))
+            [void]$candidates.Add((Join-Path $root "streamline.zip"))
+        }
+    }
+
     foreach ($c in $candidates) {
         if (-not [string]::IsNullOrWhiteSpace($c) -and (Test-Path -LiteralPath $c -PathType Leaf)) {
             return (Get-Item -LiteralPath $c).FullName
+        }
+    }
+
+    # Recursive fallback search up to Depth 4
+    foreach ($root in $searchRoots) {
+        if (-not [string]::IsNullOrWhiteSpace($root) -and (Test-Path -LiteralPath $root -PathType Container)) {
+            $found = @(Get-ChildItem -LiteralPath $root -Filter "streamline.zip" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+            if ($found.Count -gt 0) {
+                return $found[0].FullName
+            }
         }
     }
     return $null
@@ -119,6 +181,27 @@ $script:FeederFiles = @(
 )
 
 $script:GameProfiles = @(
+    [pscustomobject]@{
+        Id = "ffx_hd"
+        DisplayName = "Final Fantasy X / X-2 HD Remaster"
+        FolderHints = @("FINAL FANTASY X", "FFX", "FINAL FANTASY X/X-2 HD Remaster", "FINAL FANTASY X X-2 HD Remaster")
+        ExecutableNames = @("FFX.exe", "FFX-2.exe", "FFX_WILL.exe", "FFX_Will.exe")
+        PreferredRelativePaths = @("FFX.exe", "FFX-2.exe", "FFX_WILL.exe", "bin\FFX.exe")
+    },
+    [pscustomobject]@{
+        Id = "coldsteel"
+        DisplayName = "Trails of Cold Steel / Falcom Series"
+        FolderHints = @("Cold Steel", "Trails of Cold Steel", "ed8", "Sen no Kiseki", "Trails into Reverie", "Trails through Daybreak", "Kuro no Kiseki")
+        ExecutableNames = @("ed8_3_PC.exe", "ed8_3_x64.exe", "ed8_3.exe", "ed8_4_PC.exe", "ed8_4_x64.exe", "ed8_PC.exe", "ed8_2_PC.exe", "ed9_PC.exe", "ed9_2_PC.exe")
+        PreferredRelativePaths = @("ed8_3_PC.exe", "ed8_3_x64.exe", "bin\Win64\ed8_3_PC.exe", "ed8_4_PC.exe", "ed8_4_x64.exe", "ed8_PC.exe", "ed8_2_PC.exe", "ed9_PC.exe", "ed9_2_PC.exe")
+    },
+    [pscustomobject]@{
+        Id = "emulators"
+        DisplayName = "Emuladores (PCSX2, RPCS3, Ryujinx, Cemu, Dolphin)"
+        FolderHints = @("PCx2", "PCSX2", "RPCS3", "Ryujinx", "Cemu", "Dolphin", "Yuzu")
+        ExecutableNames = @("pcsx2-qt.exe", "pcsx2.exe", "rpcs3.exe", "Ryujinx.exe", "Cemu.exe", "Dolphin.exe", "yuzu.exe")
+        PreferredRelativePaths = @("pcsx2-qt.exe", "pcsx2.exe", "rpcs3.exe", "Ryujinx.exe", "Cemu.exe", "Dolphin.exe", "yuzu.exe")
+    },
     [pscustomobject]@{
         Id = "hitmanwoa"
         DisplayName = "HITMAN World of Assassination"
@@ -213,7 +296,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 OPEN FOLDER"
             BtnInstructions = "📖 IN-GAME GUIDE"
             StatusHeading = "REAL-TIME DIAGNOSTICS & SYSTEM LOG"
-            Footer = "1 Click DLSS 5 v1.5.0 | Universal Feeder 2.0 (All PC Games) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL"
+            Footer = "1 Click DLSS 5 v1.5.1 | Universal Feeder 2.0 (All PC Games) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL"
             Badge100 = "✓ 100% COMPATIBLE (Native DLSS)"
             BadgeDX12 = "✓ COMPATIBLE (DirectX 12)"
             BadgeBridge = "✓ COMPATIBLE VIA OPTISCALER (FSR2/XeSS → DLSS 5)"
@@ -287,7 +370,7 @@ function Get-Dict {
             BtnOpenFolder = "📂 ABRIR PASTA"
             BtnInstructions = "📖 GUIA NO JOGO"
             StatusHeading = "DIAGNÓSTICO E LOG DO SISTEMA EM TEMPO REAL"
-            Footer = "1 Click DLSS 5 v1.5.0 | Feeder Universal 2.0 (Qualquer Jogo de PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL"
+            Footer = "1 Click DLSS 5 v1.5.1 | Feeder Universal 2.0 (Qualquer Jogo de PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL"
             Badge100 = "✓ 100% COMPATÍVEL (DLSS Nativo)"
             BadgeDX12 = "✓ COMPATÍVEL (DirectX 12)"
             BadgeBridge = "✓ COMPATÍVEL VIA OPTISCALER (FSR2/XeSS → DLSS 5)"
@@ -367,23 +450,37 @@ function Get-Sha256 {
     } finally { $stream.Dispose() }
 }
 
-function Test-X64Pe {
+function Get-PeArchitecture {
     param([Parameter(Mandatory = $true)][string]$Path)
-    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return "UNKNOWN" }
     try {
         $bytes = New-Object byte[] 4096
         $stream = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
         try {
             $read = $stream.Read($bytes, 0, $bytes.Length)
-            if ($read -lt 64) { return $false }
-            if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { return $false }
+            if ($read -lt 64) { return "UNKNOWN" }
+            if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { return "UNKNOWN" }
             $e_lfanew = [System.BitConverter]::ToInt32($bytes, 60)
-            if ($e_lfanew -lt 0 -or ($e_lfanew + 24) -gt $read) { return $false }
-            if ($bytes[$e_lfanew] -ne 0x50 -or $bytes[$e_lfanew + 1] -ne 0x45 -or $bytes[$e_lfanew + 2] -ne 0x00 -or $bytes[$e_lfanew + 3] -ne 0x00) { return $false }
+            if ($e_lfanew -lt 0 -or ($e_lfanew + 24) -gt $read) { return "UNKNOWN" }
+            if ($bytes[$e_lfanew] -ne 0x50 -or $bytes[$e_lfanew + 1] -ne 0x45 -or $bytes[$e_lfanew + 2] -ne 0x00 -or $bytes[$e_lfanew + 3] -ne 0x00) { return "UNKNOWN" }
             $machine = [System.BitConverter]::ToUInt16($bytes, $e_lfanew + 4)
-            return ($machine -eq 0x8664)
+            if ($machine -eq 0x8664) { return "X64" }
+            if ($machine -eq 0x014C) { return "X86" }
+            if ($machine -eq 0xAA64) { return "ARM64" }
+            return "VALID_PE"
         } finally { $stream.Dispose() }
-    } catch { return $false }
+    } catch { return "UNKNOWN" }
+}
+
+function Test-ValidPe {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $arch = Get-PeArchitecture -Path $Path
+    return ($arch -eq "X64" -or $arch -eq "X86" -or $arch -eq "VALID_PE")
+}
+
+function Test-X64Pe {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    return ((Get-PeArchitecture -Path $Path) -eq "X64")
 }
 
 function Sanitize-PathString {
@@ -412,7 +509,7 @@ function Resolve-GameTarget {
 
     if (-not $targetItem.PSIsContainer) {
         if ($targetItem.Extension -ine ".exe") { throw "O arquivo selecionado nao e um executavel (.exe)." }
-        if (-not (Test-X64Pe -Path $targetItem.FullName)) { throw "O executavel selecionado precisa ser de 64-bit." }
+        if (-not (Test-ValidPe -Path $targetItem.FullName)) { throw "O arquivo selecionado nao e um executavel Windows (.exe) valido." }
         $targetExe = $targetItem.FullName
         $targetRoot = $targetItem.Directory.FullName
     } else {
@@ -435,7 +532,7 @@ function Resolve-GameTarget {
             if ($null -ne $targetExe) { break }
         }
 
-        # 2. Heuristica Inteligente para QUALQUER jogo
+        # 2. Heuristica Inteligente para QUALQUER jogo (32-bit e 64-bit)
         if ($null -eq $targetExe) {
             $ignoredKeywords = @(
                 "unins", "crash", "setup", "helper", "launcher", "redist", "patcher",
@@ -451,7 +548,7 @@ function Resolve-GameTarget {
                     foreach ($kw in $ignoredKeywords) {
                         if ($nameLow.Contains($kw)) { $isIgnored = $true; break }
                     }
-                    (-not $isIgnored) -and (Test-X64Pe -Path $_.FullName)
+                    (-not $isIgnored) -and (Test-ValidPe -Path $_.FullName)
                 })
 
             if ($allExes.Count -gt 0) {
@@ -459,18 +556,27 @@ function Resolve-GameTarget {
                 $scored = @($allExes | ForEach-Object {
                     $p = $_.FullName.ToLower()
                     $n = $_.Name.ToLower()
+                    $is64 = Test-X64Pe -Path $_.FullName
                     $score = 10
 
                     if ($n.Replace(".exe", "").Replace(" ", "") -eq $dirClean) { $score += 100 }
                     elseif ($n.Contains($dirClean)) { $score += 60 }
+                    elseif ($dirClean.Contains($n.Replace(".exe", "").Replace(" ", ""))) { $score += 50 }
 
-                    if ($p.Contains("binaries\win64")) { $score += 80 }
-                    elseif ($p.Contains("bin\x64")) { $score += 70 }
+                    # Bonus for standard game binary subdirectories
+                    if ($p.Contains("binaries\win64") -or $p.Contains("bin\win64")) { $score += 80 }
+                    elseif ($p.Contains("bin\x64") -or $p.Contains("x64")) { $score += 70 }
+                    elseif ($p.Contains("bin\win32") -or $p.Contains("bin\x86") -or $p.Contains("bin32")) { $score += 65 }
                     elseif ($p.Contains("retail")) { $score += 60 }
                     elseif ($p.Contains("content")) { $score += 40 }
 
-                    if ($_.Length -gt 20MB) { $score += 30 }
-                    elseif ($_.Length -gt 5MB) { $score += 15 }
+                    # 64-bit preference bonus
+                    if ($is64) { $score += 25 }
+
+                    # File size bonus (games are typically larger than utility tools)
+                    if ($_.Length -gt 20MB) { $score += 40 }
+                    elseif ($_.Length -gt 5MB) { $score += 20 }
+                    elseif ($_.Length -gt 1MB) { $score += 10 }
 
                     [pscustomobject]@{
                         Score = $score
@@ -484,7 +590,7 @@ function Resolve-GameTarget {
     }
 
     if ($null -eq $targetExe) {
-        throw "Nenhum executavel principal de 64-bit foi encontrado nesta pasta de jogo."
+        throw "Nenhum executavel principal valido foi encontrado nesta pasta de jogo. Selecione o arquivo .exe diretamente."
     }
 
     $installFolder = (Split-Path -Parent $targetExe)
@@ -493,7 +599,7 @@ function Resolve-GameTarget {
     if (Test-Path -LiteralPath $dlssCandidate -PathType Leaf) {
         $existingDlss = $dlssCandidate
     } else {
-        $foundDlss = @(Get-ChildItem -LiteralPath $targetRoot -Filter "nvngx_dlss*.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
+        $foundDlss = @(Get-ChildItem -LiteralPath $targetRoot -Filter "nvngx_dlss*.dll" -File -Recurse -Depth 3 -ErrorAction SilentlyContinue)
         if ($foundDlss.Count -gt 0) {
             $existingDlss = $foundDlss[0].FullName
         }
@@ -642,22 +748,31 @@ function Detect-GameUpscalerType {
 }
 
 function Prepare-Payload {
-    param([string]$DlssZipPath = "")
+    param([string]$DlssZipPath = "", [string]$SelectedMode = "AUTO")
     $cleanZip = Sanitize-PathString -Raw $DlssZipPath
     if ([string]::IsNullOrWhiteSpace($cleanZip)) {
         $cleanZip = Find-EmbeddedStreamlineZip
     }
-    if ([string]::IsNullOrWhiteSpace($cleanZip)) {
-        $d = Get-Dict -Lang $script:CurrentLang
-        throw (if ($script:CurrentLang -eq "EN") { "The streamline.zip payload was not found. Please click [CHANGE ZIP] to select it." } else { "O arquivo streamline.zip do pacote DLSS 5 não foi encontrado. Clique em [TROCAR ZIP] para selecioná-lo." })
-    }
-    if (-not (Test-Path -LiteralPath $cleanZip -PathType Leaf)) {
-        throw (if ($script:CurrentLang -eq "EN") { "Selected ZIP file not found: $cleanZip" } else { "O arquivo ZIP selecionado não existe: $cleanZip" })
-    }
 
-    $payloadRoot = Join-Path $script:AppRoot "payload"
+    $payloadRoot = Get-DLSS5PayloadDirectory
     $addon = Join-Path $payloadRoot $script:AddOnName
-    if (-not (Test-Path -LiteralPath $addon -PathType Leaf)) { throw "O arquivo $script:AddOnName nao foi encontrado na pasta payload." }
+    if (-not (Test-Path -LiteralPath $addon -PathType Leaf)) { throw "O arquivo $script:AddOnName nao foi encontrado na pasta payload ($payloadRoot)." }
+
+    # If mode is Feeder or OptiScaler, streamline.zip is optional if other payload files exist
+    if ([string]::IsNullOrWhiteSpace($cleanZip) -or -not (Test-Path -LiteralPath $cleanZip -PathType Leaf)) {
+        if ($SelectedMode -eq "FEEDER" -or $SelectedMode -eq "OPTISCALER") {
+            $script:PayloadFolder = $payloadRoot
+            $script:PayloadZipPath = ""
+            return $payloadRoot
+        } else {
+            $errText = if ($script:CurrentLang -eq "EN") {
+                "The streamline.zip payload was not found. Please click [CHANGE ZIP] to select it."
+            } else {
+                "O arquivo streamline.zip do pacote DLSS 5 nao foi encontrado. Clique em [TROCAR ZIP] para seleciona-lo."
+            }
+            throw $errText
+        }
+    }
 
     $zipItem = Get-Item -LiteralPath $cleanZip -ErrorAction Stop
     $zipHash = Get-Sha256 -Path $zipItem.FullName
@@ -696,7 +811,7 @@ function Get-ReShadeSetup {
         [void](New-Item -ItemType Directory -Path $script:CacheRoot -Force)
     }
     $setup = Join-Path $script:CacheRoot "ReShade_Setup_6.8.0_Addon.exe"
-    $payloadSetup = Join-Path $script:AppRoot "payload\ReShade_Setup_6.8.0_Addon.exe"
+    $payloadSetup = Join-Path (Get-DLSS5PayloadDirectory) "ReShade_Setup_6.8.0_Addon.exe"
     if (Test-Path -LiteralPath $payloadSetup -PathType Leaf) {
         Copy-Item -LiteralPath $payloadSetup -Destination $setup -Force
         return $setup
@@ -783,7 +898,8 @@ function Get-Compatibility {
         [Parameter(Mandatory = $true)][string]$TargetPath,
         [Parameter(Mandatory = $true)][bool]$InstallReShade,
         [Parameter(Mandatory = $true)][bool]$FullPackage,
-        [string]$DlssZipPath = ""
+        [string]$DlssZipPath = "",
+        [string]$SelectedMode = "AUTO"
     )
     $fatal = New-Object System.Collections.Generic.List[string]
     $warnings = New-Object System.Collections.Generic.List[string]
@@ -810,7 +926,7 @@ function Get-Compatibility {
     $drivers = @(Get-DriverVersions)
     if ($drivers.Count -gt 0) { [void]$info.Add("Driver NVIDIA: " + ($drivers -join ", ")) }
     try {
-        $payloadFolder = Prepare-Payload -DlssZipPath $DlssZipPath
+        $payloadFolder = Prepare-Payload -DlssZipPath $DlssZipPath -SelectedMode $SelectedMode
         [void]$info.Add("Pacote 1 Click DLSS 5 validado com sucesso!")
     } catch { [void]$fatal.Add($_.Exception.Message) }
 
@@ -829,7 +945,7 @@ function Set-Dlss5ReShadeIni {
         [Parameter(Mandatory = $false)][bool]$IsFeederMode = $false
     )
 
-    $defaultIni = Join-Path $script:AppRoot "payload\ReShade.ini"
+    $defaultIni = Join-Path (Get-DLSS5PayloadDirectory) "ReShade.ini"
     if (-not (Test-Path -LiteralPath $IniPath -PathType Leaf)) {
         if (Test-Path -LiteralPath $defaultIni -PathType Leaf) {
             Copy-Item -LiteralPath $defaultIni -Destination $IniPath -Force
@@ -971,7 +1087,7 @@ function Install-Dlss5 {
         [string]$DlssZipPath = "",
         [string]$SelectedMode = "AUTO"
     )
-    $report = Get-Compatibility -TargetPath $TargetPath -InstallReShade $InstallReShade -FullPackage $FullPackage -DlssZipPath $DlssZipPath
+    $report = Get-Compatibility -TargetPath $TargetPath -InstallReShade $InstallReShade -FullPackage $FullPackage -DlssZipPath $DlssZipPath -SelectedMode $SelectedMode
     foreach ($line in $report.Info) { Write-Status -Message $line -Level "INFO" }
     foreach ($line in $report.Warnings) { Write-Status -Message $line -Level "WARN" }
     foreach ($line in $report.Fatal) { Write-Status -Message $line -Level "ERROR" }
@@ -1125,7 +1241,7 @@ function Install-Dlss5 {
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
 
         # Copy OptiScaler.dll as version.dll
-        $optiSrc = Join-Path $script:AppRoot "payload\optiscaler\OptiScaler.dll"
+        $optiSrc = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\OptiScaler.dll"
         $optiDst = Join-Path $targetFolder "version.dll"
         if (Test-Path -LiteralPath $optiSrc -PathType Leaf) {
             if (Test-Path -LiteralPath $optiDst -PathType Leaf) {
@@ -1143,7 +1259,7 @@ function Install-Dlss5 {
         }
 
         # Copy OptiScaler.ini
-        $optiIniSrc = Join-Path $script:AppRoot "payload\optiscaler\OptiScaler.ini"
+        $optiIniSrc = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\OptiScaler.ini"
         $optiIniDst = Join-Path $targetFolder "OptiScaler.ini"
         if (Test-Path -LiteralPath $optiIniSrc -PathType Leaf) {
             Copy-Item -LiteralPath $optiIniSrc -Destination $optiIniDst -Force
@@ -1151,7 +1267,7 @@ function Install-Dlss5 {
         }
 
         # Copy libxess.dll (if not already present)
-        $xessSrc = Join-Path $script:AppRoot "payload\optiscaler\libxess.dll"
+        $xessSrc = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\libxess.dll"
         $xessDst = Join-Path $targetFolder "libxess.dll"
         if (Test-Path -LiteralPath $xessSrc -PathType Leaf) {
             if (Test-Path -LiteralPath $xessDst -PathType Leaf) {
@@ -1174,7 +1290,7 @@ function Install-Dlss5 {
         }
 
         # Copy RenoDX addon
-        $addonSrc = Join-Path $script:AppRoot "payload\$($script:AddOnName)"
+        $addonSrc = Join-Path (Get-DLSS5PayloadDirectory) $script:AddOnName
         $addonDst = Join-Path $targetFolder $script:AddOnName
         if (Test-Path -LiteralPath $addonSrc -PathType Leaf) {
             Copy-Item -LiteralPath $addonSrc -Destination $addonDst -Force
@@ -1194,7 +1310,7 @@ function Install-Dlss5 {
         }
 
         $isX64 = Test-X64Pe -Path $target.Executable
-        $feederPayload = Join-Path $script:AppRoot "payload\feeder"
+        $feederPayload = Join-Path (Get-DLSS5PayloadDirectory) "feeder"
 
         if ($isX64) {
             # 64-bit Game: Copy dlss5-feed.addon64
@@ -1219,7 +1335,7 @@ function Install-Dlss5 {
             if (Test-Path -LiteralPath $hostSrc -PathType Container) {
                 if (-not (Test-Path -LiteralPath $hostDst)) { [void](New-Item -ItemType Directory -Path $hostDst -Force) }
                 Get-ChildItem -LiteralPath $hostSrc | Copy-Item -Destination $hostDst -Recurse -Force
-                Copy-Item -LiteralPath (Join-Path $script:AppRoot "payload\$($script:AddOnName)") -Destination (Join-Path $hostDst $script:AddOnName) -Force
+                Copy-Item -LiteralPath (Join-Path (Get-DLSS5PayloadDirectory) $script:AddOnName) -Destination (Join-Path $hostDst $script:AddOnName) -Force
                 Copy-Item -LiteralPath (Join-Path $script:PayloadFolder "nvngx_dlssnr.dll") -Destination (Join-Path $hostDst "nvngx_dlssnr.dll") -Force
                 if (Test-Path (Join-Path $script:PayloadFolder "nvngx_dlss.dll")) {
                     Copy-Item -LiteralPath (Join-Path $script:PayloadFolder "nvngx_dlss.dll") -Destination (Join-Path $hostDst "nvngx_dlss.dll") -Force
@@ -1229,7 +1345,7 @@ function Install-Dlss5 {
         }
 
         # Copy RenoDX addon
-        $addonSrc = Join-Path $script:AppRoot "payload\$($script:AddOnName)"
+        $addonSrc = Join-Path (Get-DLSS5PayloadDirectory) $script:AddOnName
         $addonDst = Join-Path $targetFolder $script:AddOnName
         if (Test-Path -LiteralPath $addonSrc -PathType Leaf) {
             Copy-Item -LiteralPath $addonSrc -Destination $addonDst -Force
@@ -1448,17 +1564,23 @@ function Scan-DriveForGames {
         [void]$rootsToScan.Add((Join-Path $d "Epic Games"))
         [void]$rootsToScan.Add((Join-Path $d "XboxGames"))
     }
-    $ignored = @("steamworks shared", "_commonredist", "directx", "vcredist", "dotnet", "crashreport", "tools", "easyanticheat", "battleye")
+    $ignored = @(
+        "steamworks shared", "_commonredist", "directx", "vcredist", "dotnet",
+        "crashreport", "tools", "easyanticheat", "battleye", "launcher",
+        "gameinputredist", "directxredist", "steam controller configs", "gamesave"
+    )
     $dDict = Get-Dict -Lang $script:CurrentLang
 
-    # Collect all game directories first for accurate progress
+    # Collect all real game directories first for accurate progress
     $allGameDirs = New-Object System.Collections.Generic.List[pscustomobject]
     foreach ($root in $rootsToScan) {
         if (Test-Path -LiteralPath $root -PathType Container) {
             try {
                 $dirs = Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue
                 foreach ($dir in $dirs) {
-                    if ($ignored -contains $dir.Name.ToLower()) { continue }
+                    $dirLow = $dir.Name.ToLower()
+                    if ($ignored -contains $dirLow) { continue }
+                    if ($dirLow -match '^(ue_\d|unrealengine|launcher|gameinput|directxredist|vcredist|dotnet|crashreport)') { continue }
                     [void]$allGameDirs.Add([pscustomobject]@{ Root = $root; Dir = $dir })
                 }
             } catch {}
@@ -1474,35 +1596,32 @@ function Scan-DriveForGames {
         $gamePath = $dir.FullName
         $currentIdx++
 
-        # Report progress
+        # Report progress and pump UI events to avoid window freezing
         if ($null -ne $ProgressCallback) {
             $pct = [int](($currentIdx / $totalGames) * 100)
             try { & $ProgressCallback $pct $dir.Name } catch {}
         }
+        [System.Windows.Forms.Application]::DoEvents()
 
         $hasDlss = $false
         $hasDx12 = $false
         $isUe = $false
-
-        $dlssFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*dlss*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        if ($dlssFiles.Count -gt 0) { $hasDlss = $true }
-
-        $d3d12Files = @(Get-ChildItem -LiteralPath $gamePath -Filter "*d3d12*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        if ($d3d12Files.Count -gt 0) { $hasDx12 = $true }
-
-        $binFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*.exe" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue | Where-Object { $_.FullName.ToLower().Contains("binaries\win64") })
-        if ($binFiles.Count -gt 0) { $isUe = $true; $hasDx12 = $true }
-
         $hasFsr2 = $false
         $hasXess = $false
 
-        $fsrFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "*fidelityfx*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        $fsrFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "ffx_fsr*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        if ($fsrFiles.Count -gt 0) { $hasFsr2 = $true }
-
-        $xessFiles = @(Get-ChildItem -LiteralPath $gamePath -Filter "libxess*" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        $xessFiles += @(Get-ChildItem -LiteralPath $gamePath -Filter "xess.dll" -File -Recurse -Depth 12 -ErrorAction SilentlyContinue)
-        if ($xessFiles.Count -gt 0) { $hasXess = $true }
+        # Fast single-pass shallow scan (Depth 3) in memory
+        $gameFiles = @(Get-ChildItem -LiteralPath $gamePath -File -Recurse -Depth 3 -ErrorAction SilentlyContinue)
+        foreach ($f in $gameFiles) {
+            $n = $f.Name.ToLower()
+            if ($n -like "*dlss*") { $hasDlss = $true }
+            if ($n -like "*d3d12*") { $hasDx12 = $true }
+            if ($n -like "*fidelityfx*" -or $n -like "ffx_fsr*") { $hasFsr2 = $true }
+            if ($n -like "libxess*" -or $n -eq "xess.dll") { $hasXess = $true }
+            if ($f.Extension -eq ".exe" -and $f.FullName.ToLower().Contains("binaries\win64")) {
+                $isUe = $true
+                $hasDx12 = $true
+            }
+        }
 
         $badge = ""
         $order = 3
@@ -1534,6 +1653,7 @@ function Scan-DriveForGames {
             Icon = $icon
             ExeName = $exeName
         })
+        [System.Windows.Forms.Application]::DoEvents()
     }
     $sorted = @($results | Sort-Object -Property Order, Name)
     return $sorted
@@ -1622,7 +1742,7 @@ function Show-Instructions {
 
 # --- FORMULARIO PRINCIPAL: STEAM-STYLE GAME CENTER ---
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "1 Click DLSS 5 v1.5.0 • Universal Neural Game Center (Todos os Jogos de PC • RTX 20/30/40/50)"
+$form.Text = "1 Click DLSS 5 v1.5.1 • Universal Neural Game Center (Todos os Jogos de PC • RTX 20/30/40/50)"
 $form.Size = New-Object System.Drawing.Size(1200, 900)
 $form.MinimumSize = New-Object System.Drawing.Size(1100, 820)
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
@@ -2024,7 +2144,7 @@ $status.ScrollBars = [System.Windows.Forms.RichTextBoxScrollBars]::Vertical
 $script:StatusBox = $status
 
 # FOOTER
-$footer = New-Label -Text "1 Click DLSS 5 v1.5.0 | Feeder Universal 2.0 (Qualquer Jogo de PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL" -X 20 -Y 825 -Width 1145 -Height 22
+$footer = New-Label -Text "1 Click DLSS 5 v1.5.1 | Feeder Universal 2.0 (Qualquer Jogo de PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL" -X 20 -Y 825 -Width 1145 -Height 22
 $footer.Anchor = "Bottom, Left, Right"
 $footer.ForeColor = [System.Drawing.Color]::FromArgb(120, 140, 170)
 $footer.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)
@@ -2417,7 +2537,13 @@ $dlssBrowse.Add_Click({
 $scan.Add_Click({
     try {
         $status.Clear()
-        $report = Get-Compatibility -TargetPath $txtRootFolder.Text.Trim() -InstallReShade $copyReShade.Checked -FullPackage $fullPackage.Checked -DlssZipPath $dlssZipText.Text.Trim()
+        $chosenMode = switch ($comboInjectionMode.SelectedIndex) {
+            1 { "DIRECT" }
+            2 { "OPTISCALER" }
+            3 { "FEEDER" }
+            default { "AUTO" }
+        }
+        $report = Get-Compatibility -TargetPath $txtRootFolder.Text.Trim() -InstallReShade $copyReShade.Checked -FullPackage $fullPackage.Checked -DlssZipPath $dlssZipText.Text.Trim() -SelectedMode $chosenMode
         foreach ($line in $report.Info) { Write-Status -Message $line -Level "INFO" }
         foreach ($line in $report.Warnings) { Write-Status -Message $line -Level "WARN" }
         foreach ($line in $report.Fatal) { Write-Status -Message $line -Level "ERROR" }
