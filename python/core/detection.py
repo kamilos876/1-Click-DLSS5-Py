@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import constants as C
 from .messages import Message, msg
-from .utils import is_x64_pe, iter_files, sanitize_path
+from .utils import is_valid_pe, is_x64_pe, iter_files, sanitize_path
 
 
 class DetectionError(Exception):
@@ -73,8 +73,10 @@ def resolve_game_target(target_path: str) -> GameTarget:
     if item.is_file():
         if item.suffix.lower() != ".exe":
             raise DetectionError(msg("NotAnExe"))
-        if not is_x64_pe(item):
-            raise DetectionError(msg("Not64Bit"))
+        # A 32-bit game is injectable too: the Feeder ships an addon32 and an
+        # out-of-process 64-bit host for exactly that case.
+        if not is_valid_pe(item):
+            raise DetectionError(msg("NotAWindowsExe"))
         target_root = item.parent
         target_exe: Path | None = item
     else:
@@ -107,10 +109,12 @@ def _match_profile(target_root: Path) -> Path | None:
 
 
 def _best_scored_exe(target_root: Path) -> Path | None:
-    """Score every plausible 64-bit .exe and return the strongest candidate.
+    """Score every plausible .exe and return the strongest candidate.
 
     Points favour a name matching the folder, engine-standard binary
     directories, and large files — launchers and crash handlers are excluded.
+    A 64-bit binary outranks a 32-bit one of equal standing, since a game
+    shipping both usually keeps the 32-bit copy for legacy hardware.
     """
     folder_key = target_root.name.lower().replace(" ", "")
     best: tuple[int, Path] | None = None
@@ -123,7 +127,7 @@ def _best_scored_exe(target_root: Path) -> Path | None:
         name_lower = exe.name.lower()
         if any(keyword in name_lower for keyword in C.IGNORED_EXE_KEYWORDS):
             continue
-        if not is_x64_pe(exe):
+        if not is_valid_pe(exe):
             continue
 
         path_lower = str(exe).lower()

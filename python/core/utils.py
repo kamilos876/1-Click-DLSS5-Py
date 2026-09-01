@@ -11,6 +11,15 @@ from pathlib import Path
 from typing import Iterator
 
 IMAGE_FILE_MACHINE_AMD64 = 0x8664
+IMAGE_FILE_MACHINE_I386 = 0x014C
+IMAGE_FILE_MACHINE_ARM64 = 0xAA64
+
+# Architectures pe_architecture() can report.
+ARCH_X64 = "X64"
+ARCH_X86 = "X86"
+ARCH_ARM64 = "ARM64"
+ARCH_PE = "VALID_PE"     # a real PE image of some other machine type
+ARCH_UNKNOWN = "UNKNOWN"  # unreadable, or not a PE image at all
 
 
 def sha256_of(path: str | Path) -> str:
@@ -22,25 +31,47 @@ def sha256_of(path: str | Path) -> str:
     return hasher.hexdigest().upper()
 
 
-def is_x64_pe(path: str | Path) -> bool:
-    """True when the file is a PE image whose machine type is x86-64."""
+def pe_architecture(path: str | Path) -> str:
+    """Report a PE image's machine type, or UNKNOWN when it is not one.
+
+    A game that ships a 32-bit binary is still injectable -- the Feeder has an
+    addon32 and an out-of-process host for exactly that -- so callers that only
+    need "is this a real executable" should use is_valid_pe rather than
+    demanding x86-64.
+    """
     try:
         with open(path, "rb") as handle:
             header = handle.read(4096)
     except OSError:
-        return False
+        return ARCH_UNKNOWN
 
     if len(header) < 64 or header[:2] != b"MZ":
-        return False
+        return ARCH_UNKNOWN
 
     e_lfanew = struct.unpack_from("<i", header, 60)[0]
     if e_lfanew < 0 or e_lfanew + 24 > len(header):
-        return False
+        return ARCH_UNKNOWN
     if header[e_lfanew:e_lfanew + 4] != b"PE\0\0":
-        return False
+        return ARCH_UNKNOWN
 
     machine = struct.unpack_from("<H", header, e_lfanew + 4)[0]
-    return machine == IMAGE_FILE_MACHINE_AMD64
+    if machine == IMAGE_FILE_MACHINE_AMD64:
+        return ARCH_X64
+    if machine == IMAGE_FILE_MACHINE_I386:
+        return ARCH_X86
+    if machine == IMAGE_FILE_MACHINE_ARM64:
+        return ARCH_ARM64
+    return ARCH_PE
+
+
+def is_valid_pe(path: str | Path) -> bool:
+    """True for any Windows executable image, whatever its architecture."""
+    return pe_architecture(path) in (ARCH_X64, ARCH_X86, ARCH_PE)
+
+
+def is_x64_pe(path: str | Path) -> bool:
+    """True when the file is a PE image whose machine type is x86-64."""
+    return pe_architecture(path) == ARCH_X64
 
 
 _TRAILING_PATH_IN_PARENS = re.compile(r"-\s*\(([A-Za-z]:\\[^()]+)\)\s*$")

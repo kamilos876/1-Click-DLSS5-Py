@@ -44,7 +44,7 @@ PL = {
     "BtnOpenFolder": "\U0001f4c2 OTWÓRZ FOLDER",
     "BtnInstructions": "\U0001f4d6 PORADNIK",
     "StatusHeading": "DIAGNOSTYKA I DZIENNIK SYSTEMU NA ŻYWO",
-    "Footer": "1 Click DLSS 5 v1.5.0 | Uniwersalny Feeder 2.0 (wszystkie gry PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL",
+    "Footer": "1 Click DLSS 5 v1.5.1 | Uniwersalny Feeder 2.0 (wszystkie gry PC) | RTX 20/30/40/50 | DX11 / DX12 / Vulkan / OpenGL",
     "Badge100": "✓ W 100% ZGODNA (natywny DLSS)",
     "BadgeDX12": "✓ ZGODNA (DirectX 12)",
     "BadgeBridge": "✓ ZGODNA PRZEZ OPTISCALER (FSR2/XeSS → DLSS 5)",

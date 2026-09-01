@@ -13,6 +13,7 @@ from core.detection import (
     resolve_game_target,
 )
 from core.messages import render
+from core.utils import is_x64_pe
 from core.scanner import candidate_dirs, classify
 
 # Minimal 64-bit PE: MZ header, e_lfanew at 0x40, PE signature, AMD64 machine.
@@ -56,17 +57,34 @@ def test_unreal_binaries_win64_preferred(tmp: Path) -> None:
     assert "Win64" in str(target.install_folder), target.install_folder
 
 
-def test_32bit_exe_rejected_when_selected_directly(tmp: Path) -> None:
+def test_32bit_exe_is_accepted(tmp: Path) -> None:
+    """A 32-bit game is injectable: the Feeder ships an addon32 and a host."""
     exe = tmp / "old32.exe"
     _write_exe(exe, x64=False)
+    target = resolve_game_target(str(exe))
+    assert target.executable == exe
+    assert not is_x64_pe(exe)
+
+
+def test_non_executable_is_rejected(tmp: Path) -> None:
+    """Accepting 32-bit must not mean accepting anything that ends in .exe."""
+    fake = tmp / "notreally.exe"
+    fake.write_bytes(b"this is not a PE image at all")
     try:
-        resolve_game_target(str(exe))
+        resolve_game_target(str(fake))
     except DetectionError as err:
-        # The exception now carries a message key, rendered by the UI.
-        assert err.message.key == "Not64Bit", err.message.key
-        assert "64-bit" in render(err.message, "EN")
+        assert err.message.key == "NotAWindowsExe", err.message.key
     else:
-        raise AssertionError("expected DetectionError for a 32-bit exe")
+        raise AssertionError("expected DetectionError for a non-PE file")
+
+
+def test_64bit_outranks_32bit_when_both_ship(tmp: Path) -> None:
+    """A game shipping both keeps the 32-bit copy for legacy hardware."""
+    game = tmp / "DualArch"
+    _write_exe(game / "bin" / "win32" / "DualArch.exe", x64=False)
+    _write_exe(game / "bin" / "win64" / "DualArch.exe", x64=True)
+    target = resolve_game_target(str(game))
+    assert "win64" in str(target.executable).lower(), target.executable
 
 
 def test_missing_path_raises(tmp: Path) -> None:
@@ -255,7 +273,9 @@ def _run_synthetic() -> None:
         test_folder_name_match_wins,
         test_launcher_is_ignored,
         test_unreal_binaries_win64_preferred,
-        test_32bit_exe_rejected_when_selected_directly,
+        test_32bit_exe_is_accepted,
+        test_non_executable_is_rejected,
+        test_64bit_outranks_32bit_when_both_ship,
         test_missing_path_raises,
         test_upscaler_priority,
         test_own_injected_files_are_not_counted,

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 PRODUCT_NAME = "1 Click DLSS 5"
-VERSION = "1.5.0"
+VERSION = "1.5.1"
 
 ADDON_NAME = "renodx-dlss5.addon64"
 ADDON_HASH = "E1C28FDE0922B12FC10734E58C3D24A36808E575247F4FD4F36226540D7EE023"
@@ -75,6 +75,8 @@ OPENGL_EXE_HINTS = [
     "projectzomboid", "minecraft", "javaw.exe", "wolfneworder",
     "wolfoldblood", "rage.exe", "cemu.exe", "yuzu.exe", "ryujinx.exe",
     "citra.exe",
+    # Emulators that default to an OpenGL renderer.
+    "pcsx2", "rpcs3.exe", "dolphin.exe",
 ]
 
 # Path fragments that mark an engine needing d3d12.dll for direct injection.
@@ -197,6 +199,7 @@ IGNORED_EXE_KEYWORDS = [
 IGNORED_GAME_DIRS = [
     "steamworks shared", "_commonredist", "directx", "vcredist", "dotnet",
     "crashreport", "tools", "easyanticheat", "battleye",
+    "launcher", "gameinputredist", "steam controller configs",
     # Store-managed folders that sit beside real installs.
     "gamesave", "gamesaves", "savegames", "minecraft launcher",
     ".egstore", "epic online services", "directxredist", "_redist",
@@ -232,6 +235,51 @@ class GameProfile:
 
 
 GAME_PROFILES = [
+    GameProfile(
+        id="ffx_hd",
+        display_name="Final Fantasy X / X-2 HD Remaster",
+        folder_hints=[
+            "FINAL FANTASY X", "FFX",
+            "FINAL FANTASY X/X-2 HD Remaster", "FINAL FANTASY X X-2 HD Remaster",
+        ],
+        executable_names=["FFX.exe", "FFX-2.exe", "FFX_WILL.exe"],
+        preferred_relative_paths=[
+            "FFX.exe", "FFX-2.exe", "FFX_WILL.exe", r"bin\FFX.exe",
+        ],
+    ),
+    GameProfile(
+        id="coldsteel",
+        display_name="Trails of Cold Steel / Falcom Series",
+        folder_hints=[
+            "Cold Steel", "Trails of Cold Steel", "ed8", "Sen no Kiseki",
+            "Trails into Reverie", "Trails through Daybreak", "Kuro no Kiseki",
+        ],
+        executable_names=[
+            "ed8_3_PC.exe", "ed8_3_x64.exe", "ed8_3.exe", "ed8_4_PC.exe",
+            "ed8_4_x64.exe", "ed8_PC.exe", "ed8_2_PC.exe", "ed9_PC.exe",
+            "ed9_2_PC.exe",
+        ],
+        preferred_relative_paths=[
+            "ed8_3_PC.exe", "ed8_3_x64.exe", r"bin\Win64\ed8_3_PC.exe",
+            "ed8_4_PC.exe", "ed8_4_x64.exe", "ed8_PC.exe", "ed8_2_PC.exe",
+            "ed9_PC.exe", "ed9_2_PC.exe",
+        ],
+    ),
+    GameProfile(
+        id="emulators",
+        display_name="Emulators (PCSX2, RPCS3, Ryujinx, Cemu, Dolphin)",
+        folder_hints=[
+            "PCSX2", "PCx2", "RPCS3", "Ryujinx", "Cemu", "Dolphin", "Yuzu",
+        ],
+        executable_names=[
+            "pcsx2-qt.exe", "pcsx2.exe", "rpcs3.exe", "Ryujinx.exe",
+            "Cemu.exe", "Dolphin.exe", "yuzu.exe",
+        ],
+        preferred_relative_paths=[
+            "pcsx2-qt.exe", "pcsx2.exe", "rpcs3.exe", "Ryujinx.exe",
+            "Cemu.exe", "Dolphin.exe", "yuzu.exe",
+        ],
+    ),
     GameProfile(
         id="hitmanwoa",
         display_name="HITMAN World of Assassination",

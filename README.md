@@ -5,7 +5,7 @@
 **A PySide6 rewrite of the 1 Click DLSS 5 injector**
 *Same injection behaviour, rebuilt as a testable Python core with a Qt interface*
 
-[![Version](https://img.shields.io/badge/version-1.5.0-brightgreen.svg)](https://github.com/kamilos876/1-Click-DLSS5-Py)
+[![Version](https://img.shields.io/badge/version-1.5.1-brightgreen.svg)](https://github.com/kamilos876/1-Click-DLSS5-Py)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20x64-0078D6.svg)](https://github.com/kamilos876/1-Click-DLSS5-Py)
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](https://www.python.org/)
@@ -69,6 +69,7 @@ PySide6 installed.
 | Python | 3.10 or newer |
 | Dependency | PySide6 ≥ 6.5 (the only one) |
 | GPU | NVIDIA RTX 20 / 30 / 40 / 50 series |
+| Games | 64-bit and 32-bit titles |
 
 ---
 
@@ -108,7 +109,7 @@ python tests/run_all.py
 
 13 modules covering executable and graphics-API detection, install/restore round
 trips against synthetic game folders, `ReShade.ini` rewriting, translation-table
-integrity (59 log keys × 3 languages), and Qt layout at several window sizes.
+integrity (60 log keys × 3 languages), and Qt layout at several window sizes.
 
 ---
 
@@ -157,6 +158,12 @@ nothing at all.
 **Automatic elevation.** The app detects when a target folder needs
 administrator rights and relaunches itself elevated, rather than failing midway
 through an install.
+
+**A single-pass library scan.** Every compatibility signal — DLSS, FSR, XeSS,
+DirectX 12, Unreal layout — is collected in one walk of each game folder rather
+than one walk per family, so the full depth stays affordable: an Unreal title
+keeps its DLSS DLL under `Engine/Plugins/.../Binaries/ThirdParty/`, well past
+the depth a shallow scan would reach.
 
 ### One deliberate behaviour change
 
