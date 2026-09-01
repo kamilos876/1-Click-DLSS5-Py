@@ -1002,9 +1002,9 @@ ShowClock=0
 [GENERAL]
 EffectSearchPaths=.\reshade-shaders\Shaders,.\reshade-shaders\Shaders\include,.\
 TextureSearchPaths=.\reshade-shaders\Textures,.\
-Techniques=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
-TechniqueSorting=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
-PreprocessorDefinitions=DLSS5_MV_PROVIDER=3,IMAGE_SPACE=1
+Techniques=DLSS5_Feed@DLSS5_Feed.fx
+TechniqueSorting=DLSS5_Feed@DLSS5_Feed.fx
+PreprocessorDefinitions=DLSS5_MV_PROVIDER=0,IMAGE_SPACE=1
 PerformanceMode=0
 NoReloadOnInit=0
 SkipLoadingDisabledEffects=0
@@ -1026,12 +1026,12 @@ SkipLoadingDisabledEffects=0
 [RenoDX.DLSS5]
 NeuralUplift=1
 NREnableUpscaling=0
-NRPreset=0
-NRStyle=0
-NRIntensity=0.750000
-NRLocalTone=0.000000
-NRLocalStructure=0.000000
-NRSkinStructure=0.000000
+NRPreset=2
+NRStyle=1
+NRIntensity=0.850000
+NRLocalTone=1.000000
+NRLocalStructure=1.000000
+NRSkinStructure=-0.500000
 NRAutoMask=1
 NRUICorrection=1
 NRPaperWhiteScale=1.000000
@@ -1048,26 +1048,26 @@ NRScreenshotKey=116
 Enabled=1
 AutoSkinMask=1
 NRAutoMask=1
-Preset=0
-NRPreset=0
-Style=0
-NRStyle=0
-NeuralIntensity=0.750000
-NRIntensity=0.750000
-LocalToneStrength=0.000000
-StructureStrength=0.000000
-SkinStructure=0.000000
+Preset=2
+NRPreset=2
+Style=1
+NRStyle=1
+NeuralIntensity=0.850000
+NRIntensity=0.850000
+LocalToneStrength=1.000000
+StructureStrength=1.000000
+SkinStructure=-0.500000
 
 [RenoDX]
 NeuralUplift=1
 AutoSkinMask=1
 NRAutoMask=1
-NeuralIntensity=0.750000
-NRIntensity=0.750000
-Preset=0
-NRPreset=0
-Style=0
-NRStyle=0
+NeuralIntensity=0.850000
+NRIntensity=0.850000
+Preset=2
+NRPreset=2
+Style=1
+NRStyle=1
 "@
 
         $sectionsToAdd = @"
@@ -1438,17 +1438,17 @@ function Install-Dlss5 {
 
         $targetPreset = Join-Path $targetFolder "ReShadePreset.ini"
         $presetContent = @"
-Techniques=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
-TechniqueSorting=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
+Techniques=DLSS5_Feed@DLSS5_Feed.fx
+TechniqueSorting=DLSS5_Feed@DLSS5_Feed.fx
 
 [DLSS5_Feed.fx]
 VALIDATE_LUMA=1
-LUMA_TOLERANCE=0.150000
+LUMA_TOLERANCE=0.200000
 VALIDATE_STATIC=1
-STATIC_BIAS=0.350000
+STATIC_BIAS=0.500000
 STATIC_MIN_CONTRAST=0.005000
 MASK_STRENGTH=1.000000
-VALIDATE_DEPTH=1
+VALIDATE_DEPTH=0
 VALIDATE_MV=1
 MV_CONSISTENCY=1.000000
 GEOM_ENABLE=0
