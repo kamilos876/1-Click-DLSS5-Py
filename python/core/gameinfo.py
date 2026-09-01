@@ -448,8 +448,22 @@ def identify_game(
                 identity.display_name = _normalize_case(product)
                 identity.source = "exe"
 
+    # 4. Nothing above proves a game is still installed. Steam leaves
+    # steam_appid.txt behind when a title is uninstalled, and engine markers can
+    # outlive the binaries too, so a folder holding no executable at all is
+    # demoted no matter how convincing its metadata looked.
+    if identity.confidence in (CONFIRMED, LIKELY) and not _holds_executable(folder):
+        identity.confidence = UNCERTAIN
+        identity.reasons.append("no executable in folder (uninstalled?)")
 
     return identity
+
+
+def _holds_executable(folder: Path, max_depth: int = 5) -> bool:
+    """True when the folder tree contains at least one .exe."""
+    for _ in iter_files(folder, "*.exe", max_depth=max_depth):
+        return True
+    return False
 
 
 def _looks_like_filename(value: str) -> bool:

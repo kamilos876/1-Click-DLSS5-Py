@@ -24,7 +24,7 @@ PT = {
     "NoGameSelected": "Selecione um jogo na biblioteca ao lado ou procure uma pasta manualmente.",
     "RootFolderLabel": "Pasta Raiz do Jogo:",
     "InjectFolderLabel": "Pasta Exata de Aplicação DLSS 5:",
-    "TargetExeLabel": "Executável Principal 64-bit:",
+    "TargetExeLabel": "Executável Principal do Jogo:",
     "DlssStatusLabel": "DLSS Nativo Detectado:",
     "LblInjectionMode": "Modo de Injeção DLSS 5:",
     "OptAutoRecommended": "⚡ Automático (Recomendado: {0})",
@@ -132,7 +132,7 @@ PT = {
     "StateInstalledFeeder": "DLSS 5 instalado (Feeder)",
     "StateUnrecognised": "Nao reconhecido como jogo",
     "StateMissing": "Pasta ausente",
-    "StateNoExe": "Sem executavel 64-bit",
+    "StateNoExe": "Sem executavel",
     "InstalledTag": "[INSTALADO]",
 }
 
@@ -153,7 +153,7 @@ EN = {
     "NoGameSelected": "Select a game from the library on the left or browse a game folder.",
     "RootFolderLabel": "Game Root Directory:",
     "InjectFolderLabel": "Exact DLSS 5 Injection Folder:",
-    "TargetExeLabel": "Target 64-bit Game Executable:",
+    "TargetExeLabel": "Target Game Executable:",
     "DlssStatusLabel": "Native DLSS Detected:",
     "LblInjectionMode": "DLSS 5 Injection Mode:",
     "OptAutoRecommended": "⚡ Automatic (Recommended: {0})",
@@ -260,7 +260,7 @@ EN = {
     "StateInstalledFeeder": "DLSS 5 installed (Feeder)",
     "StateUnrecognised": "Not recognised as a game",
     "StateMissing": "Folder missing",
-    "StateNoExe": "No 64-bit executable",
+    "StateNoExe": "No executable found",
     "InstalledTag": "[INSTALLED]",
 }
 

@@ -125,7 +125,16 @@ def _best_scored_exe(target_root: Path) -> Path | None:
     # nothing here — those games cannot be injected at all.
     for exe in iter_files(target_root, "*.exe", max_depth=5):
         name_lower = exe.name.lower()
-        if any(keyword in name_lower for keyword in C.IGNORED_EXE_KEYWORDS):
+        stem_key = name_lower.replace(".exe", "").replace(" ", "")
+        # The keyword list is substring-matched, so a game whose own title
+        # contains one of them ("Tools Up.exe", "Server of Thrones.exe") would
+        # be filtered out. A binary named after its folder is the game itself.
+        names_the_folder = bool(folder_key) and (
+            stem_key == folder_key or stem_key.rstrip("!") == folder_key.rstrip("!")
+        )
+        if not names_the_folder and any(
+            keyword in name_lower for keyword in C.IGNORED_EXE_KEYWORDS
+        ):
             continue
         if not is_valid_pe(exe):
             continue

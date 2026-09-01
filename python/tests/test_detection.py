@@ -266,6 +266,19 @@ def test_api_defaults_to_dxgi(tmp: Path) -> None:
     assert detect_graphics_api(game / "ModernGame.exe") == C.API_DXGI
 
 
+def test_game_named_after_an_ignored_keyword_survives(tmp: Path) -> None:
+    """The keyword list is substring-matched, so a title may collide with it.
+
+    "Tools Up!" ships Tools Up.exe, which contains "tool" -- one of the keywords
+    meant to skip utilities. A binary named after its own folder is the game.
+    """
+    game = tmp / "Tools Up!"
+    _write_exe(game / "Tools Up.exe")
+    _write_exe(game / "UnityCrashHandler64.exe", pad=40 * 1024 * 1024)
+    target = resolve_game_target(str(game))
+    assert target.exe_name == "Tools Up.exe", target.exe_name
+
+
 def _run_synthetic() -> None:
     import tempfile
 
@@ -276,6 +289,7 @@ def _run_synthetic() -> None:
         test_32bit_exe_is_accepted,
         test_non_executable_is_rejected,
         test_64bit_outranks_32bit_when_both_ship,
+        test_game_named_after_an_ignored_keyword_survives,
         test_missing_path_raises,
         test_upscaler_priority,
         test_own_injected_files_are_not_counted,

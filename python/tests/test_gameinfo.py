@@ -165,6 +165,26 @@ def test_fuller_title_beats_folder() -> None:
     assert _is_better_title("Aliens: Fireteam Elite", "Aliens. Fireteam Elite") is True
 
 
+def test_store_metadata_alone_does_not_confirm_an_empty_folder(tmp: Path) -> None:
+    """Steam leaves steam_appid.txt behind when a game is uninstalled.
+
+    That marker used to be enough for a CONFIRMED verdict, so an empty leftover
+    folder listed as a fully recognised game that could never be installed to.
+    """
+    gone = tmp / "Uninstalled Game"
+    gone.mkdir(parents=True)
+    (gone / "steam_appid.txt").write_text("123456", encoding="utf-8")
+    identity = identify_game(gone, None)
+    assert not identity.is_game, identity.confidence
+
+    # The same folder with a real binary stays a game.
+    still_here = tmp / "Installed Game"
+    still_here.mkdir(parents=True)
+    (still_here / "steam_appid.txt").write_text("123456", encoding="utf-8")
+    (still_here / "Installed Game.exe").write_bytes(b"MZ" + b"\0" * 200)
+    assert identify_game(still_here, None).is_game
+
+
 if __name__ == "__main__":
     tests = [
         test_clean_scene_names,
@@ -178,6 +198,7 @@ if __name__ == "__main__":
         test_launcher_folder_rejected,
         test_tool_folder_rejected,
         test_plain_folder_stays_uncertain,
+        test_store_metadata_alone_does_not_confirm_an_empty_folder,
         test_xbox_resource_token_is_not_used_as_name,
         test_filename_in_version_resource_rejected,
         test_short_codename_loses_to_folder,

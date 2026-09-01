@@ -21,7 +21,7 @@ PL = {
     "NoGameSelected": "Wybierz grę z biblioteki powyżej lub wskaż folder gry ręcznie.",
     "RootFolderLabel": "Folder główny gry:",
     "InjectFolderLabel": "Docelowy folder instalacji DLSS 5:",
-    "TargetExeLabel": "Główny plik wykonywalny 64-bit:",
+    "TargetExeLabel": "Główny plik wykonywalny gry:",
     "DlssStatusLabel": "Wykryto natywny DLSS:",
     "LblInjectionMode": "Tryb instalacji DLSS 5:",
     "OptAutoRecommended": "⚡ Automatycznie (zalecane: {0})",
@@ -128,7 +128,7 @@ PL = {
     "StateInstalledFeeder": "DLSS 5 zainstalowany (Feeder)",
     "StateUnrecognised": "Nierozpoznana jako gra",
     "StateMissing": "Brak folderu",
-    "StateNoExe": "Brak pliku 64-bit",
+    "StateNoExe": "Brak pliku wykonywalnego",
     "InstalledTag": "[ZAINSTALOWANO]",
 }
 
