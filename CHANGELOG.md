@@ -1,64 +1,76 @@
 # Changelog — 1 Click DLSS 5
 
-All notable changes to this project will be documented in this file.
-
-## [v2.5.0-beta] - 2026-09-02
-
-### 🚀 Novidades e Destaques (Major Features)
-- **✨ Redesign Completo da Interface Gráfica (HUD v2):**
-  - Layout moderno, limpo e intuitivo projetado para usuários leigos e entusiastas.
-  - Guia visual passo a passo em 3 etapas claras: `[1] Escolha o Jogo` ➔ `[2] Clique em Instalar` ➔ `[3] Inicie e Aproveite!`.
-  - Remoção de botões redundantes e duplicados para eliminar poluição visual.
-  - Seleção de modos em cards modernos interativos com cores distintas e instruções contextuais dinâmicas.
-  - Banner do jogo selecionado com extração automática do ícone do executável, status de instalação em tempo real e badge colorido de API.
-
-- **⚡ Motor de Resolução de Problemas em 1 Clique (Auto-Fix):**
-  - Assistente inteligente de diagnóstico de erros com análise tripla: O que aconteceu, Causa provável e Como resolver.
-  - Botão `[⚡] RESOLVER PROBLEMA EM 1 CLIQUE` capaz de finalizar processos travados em segundo plano, corrigir permissões e reaplicar a injeção automaticamente sem intervenção manual.
-  - Painel de diagnóstico do sistema (`🩺 DIAGNÓSTICO`) para validar GPU RTX, permissões de gravação, processos em execução e integridade dos runtimes neurais.
-
-- **🌍 Suporte Multi-Idioma Nativo Expandido (10 Idiomas):**
-  - Suporte completo com troca dinâmica instantânea para 10 idiomas: Português (PT-BR), English (EN-US), Español (ES), Deutsch (DE), Français (FR), Italiano (IT), 日本語 (JA), 简体中文 (ZH), Русский (RU), 한국어 (KO).
-  - Centralização de todas as strings no arquivo `core/assets/translations.json`.
-
-- **🎮 Auto-Descoberta Instantânea e Scanner Multi-Plataforma:**
-  - Varredura automática e inteligente de jogos instalados nas plataformas **Steam** (via parsing multi-drive de `libraryfolders.vdf`), **Epic Games** (via manifests `.item`), **GOG**, **Xbox App / XboxGames**, **EA App** e pastas padrão de jogos.
-  - Barra de pesquisa instantânea para filtrar jogos por nome ou API gráfica.
-
-- **⚙️ Suporte Universal a Todas as APIs e Arquiteturas:**
-  - Suporte nativo completo a **DirectX 12, DirectX 11, DirectX 9, Vulkan e OpenGL**.
-  - Suporte total a jogos **32-bit (x86)** e **64-bit (x64)** com ponte de comunicação IPC via `host64`.
-
-- **🎯 Estabilidade e Nitidez Máxima no Feeder Universal (Modo 3 - DLAA 100% Nativo):**
-  - Resolução definitiva de crashes na inicialização e perda de nitidez em jogos DirectX 11 (ex: *Mafia Definitive Edition*).
-  - Integração da suíte Lumenite Kernel (`Lumenite_Kernel.fx`) no cabeçalho da cadeia de técnicas do ReShade para cálculo preciso de vetores de movimento ópticos (*Motion Vectors*).
-  - Configuração de `preset=6` no `dlss5-feed.cfg` para estabilidade máxima e resolução 100% nativa.
-  - Caminhos de busca recursivos no ReShade (`.eshade-shaders\Shaders\**` e `.eshade-shaders\Textures\**`).
-  - Calibração de nitidez e tonalidade neural no RenoDX (`NRGlobalTone=0.9`, `NRLocalStructure=0.44`, `NRLocalTone=1.22`, `NRSkinStructure=1.16`).
-
-- **🛡️ Restauração de Fábrica e Desinstalação 100% Limpa:**
-  - Desinstalador inteligente que restaura os arquivos originais salvos no backup e remove com precisão cirúrgica todas as DLLs, Add-ons, shaders e arquivos temporários.
+All notable changes, architectural overhauls, and bug fixes for the **1 Click DLSS 5** project are documented in this file.
 
 ---
 
-## [v1.5.1] - Hotfix Release
-- Correção de resolver de caminhos multi-drive.
-- Suporte inicial a detecção de binários 32-bit PE.
-- Perfis para Final Fantasy X HD Remaster e série Falcom / Cold Steel.
-- Otimização do scanner de discos com profundidade controlada.
+## [v2.5.0-beta] - 2026-09-02
 
-## [v1.5.0] - Universal API Detection
-- Detector determinístico de APIs gráficas (D3D12, D3D11, D3D9, Vulkan, OpenGL).
-- Integração da suíte de shaders e calibração de máscaras de luma.
+### 🚀 Major Features & Architectural Redesign (HUD v2)
+- **✨ Complete UI Overhaul (HUD v2):**
+  - Modern, minimalist, high-contrast dark theme built from the ground up for both beginner and advanced users.
+  - Streamlined 3-step visual workflow: `[1] Select Game` ➔ `[2] Click Install` ➔ `[3] Launch & Enjoy!`.
+  - Removed all duplicate buttons and legacy cluttered options.
+  - Interactive mode selection cards with distinct accent colors and contextual in-game requirement instructions.
+  - Selected Game Banner displays the extracted high-resolution application icon, real-time injection status, and API badge.
 
-## [v1.4.0] - Dual Engine & OptiScaler Integration
-- Introdução do Modo 2: Ponte OptiScaler para jogos com suporte apenas a FSR2/XeSS.
+- **⚡ 1-Click Auto-Fix Engine & Smart Diagnosis:**
+  - Automated issue resolution assistant: analyzes *What Happened*, *Probable Cause*, and *How to Fix*.
+  - `[⚡] 1-CLICK AUTO-FIX` button automatically terminates stuck game processes, clears read-only permission locks (`attrib -r`), and reapplies injection cleanly.
+  - Interactive `🩺 SYSTEM DIAGNOSTICS` checklist validating RTX GPU tensor support, directory write access, active game processes, and neural runtime file integrity.
 
-## [v1.3.0] - Streamline & Direct Injection
-- Suporte completo ao Modo 1: Injeção direta de Streamline + RenoDX para jogos com DLSS nativo.
+- **🌍 Native 10-Language Support:**
+  - Full dynamic real-time language switching without restart for:
+    - 🇺🇸 English (EN-US)
+    - 🇧🇷 Portuguese (PT-BR)
+    - 🇪🇸 Spanish (ES)
+    - 🇩🇪 German (DE)
+    - 🇫🇷 French (FR)
+    - 🇮🇹 Italian (IT)
+    - 🇯🇵 Japanese (JA)
+    - 🇨🇳 Simplified Chinese (ZH)
+    - 🇷🇺 Russian (RU)
+    - 🇰🇷 Korean (KO)
+  - All localization dictionaries unified in `core/assets/translations.json`.
+
+- **🎮 Instant Game Auto-Discovery & Multi-Platform Scanner:**
+  - Fast, non-blocking multi-drive scanner detecting games across **Steam** (`libraryfolders.vdf`), **Epic Games** (`.item` manifests), **GOG**, **Xbox Games**, and **EA App**.
+  - Real-time search bar for filtering titles by name or graphics API.
+
+- **⚙️ Universal Graphics API & Architecture Support:**
+  - Full native support for **DirectX 12, DirectX 11, DirectX 9, Vulkan, and OpenGL**.
+  - Complete support for **32-bit (x86)** and **64-bit (x64)** games via `host64` IPC texture transport.
+
+- **🎯 Critical Fix for Universal Feeder (Mode 3 - 100% Native DLAA):**
+  - Resolved DX11 startup crashes and texture blurring (e.g., in *Mafia Definitive Edition*).
+  - Integrated **Lumenite Kernel** (`Lumenite_Kernel.fx`) at the head of ReShade's technique chain for accurate optical flow motion vector calculation.
+  - Configured `preset=6` in `dlss5-feed.cfg` for maximum frame stability.
+  - Added recursive search paths (`\**`) in `ReShade.ini` (`EffectSearchPaths=.eshade-shaders\Shaders\**`).
+  - Calibrated RenoDX neural tone & structure parameters (`NRGlobalTone=0.9`, `NRLocalStructure=0.44`, `NRLocalTone=1.22`, `NRSkinStructure=1.16`).
+
+- **↩️ 100% Clean Factory Restoration:**
+  - Smart uninstaller restores original backed-up executables/DLLs and surgically purges all injected files, shaders, and logs.
+
+---
+
+## [v1.5.1] - Hotfix & Multi-Drive Resolver
+- Fixed multi-drive Steam library resolution when installed across secondary volumes.
+- Added 32-bit PE machine type header detection.
+- Added profiles for Final Fantasy X HD Remaster and Falcom / Cold Steel titles.
+- Optimized drive scanner with depth-controlled traversal.
+
+## [v1.5.0] - Universal API Detection Engine
+- Implemented deterministic graphics API detector for D3D12, D3D11, D3D9, Vulkan, and OpenGL.
+- Initial integration of shader suite and luma mask calibration.
+
+## [v1.4.0] - OptiScaler Bridge Mode (Mode 2)
+- Added Mode 2 for games with FSR 2/3 or XeSS support, redirecting calls to DLSS-NR via OptiScaler.
+
+## [v1.3.0] - Direct Injection Mode (Mode 1)
+- Implemented Mode 1 for native DLSS games using Streamline interposer and RenoDX DLSS-NR addon.
 
 ## [v1.2.0] - Multi-Language & Confirmation System
-- Sistema bilíngue PT-BR e EN-US com caixas de confirmação de segurança.
+- Introduced bilingual English/Portuguese UI and confirmation dialogs.
 
 ## [v1.1.0] - Initial Public Release
-- Lançamento inicial com injeção de ReShade + RenoDX DLSS 5.
+- Initial release featuring ReShade + RenoDX DLSS 5 injection.
