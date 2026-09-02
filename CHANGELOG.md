@@ -4,6 +4,21 @@ All notable changes, architectural overhauls, and bug fixes for the **1 Click DL
 
 ---
 
+## [v2.5.1] - 2026-09-02
+
+### 🛡️ Critical Engine Fixes & Game Compatibility
+- **Witcher 3 Next-Gen Streamline Protection (Mode 1):**
+  - Resolved `Entry Point Not Found: slGetFeatureSettings` crash on startup in *The Witcher 3: Complete Edition*.
+  - Mode 1 strictly preserves native game `sl.interposer.dll` and `sl.common.dll` binaries, avoiding DLL version conflicts.
+- **Red Dead Redemption 2 & NGX Direct Games (Mode 1):**
+  - Fixed `0xBAD00007 / HOOKS ARMED - NO DLSS CREATE SEEN` issue in non-Streamline games like *Red Dead Redemption 2*.
+  - Automatically configures `EnableHooks=1` for pure NGX titles.
+  - Added smart guidance: RDR2 requires setting the in-game Graphics API to **DirectX 12** (*Settings > Graphics > Advanced > Graphics API = DirectX 12*).
+- **Bulletproof 1-Click Factory Restoration:**
+  - Guaranteed unconditional removal of proxy DLLs (`dxgi.dll`, `d3d12.dll`, `d3d9.dll`, `opengl32.dll`), add-ons, and shader caches on factory reset.
+- **UI & Documentation Sync:**
+  - Integrated 3 dedicated individual interface previews for Modes 1, 2, and 3 in the documentation.
+
 ## [v2.5.0-beta] - 2026-09-02
 
 ### 🚀 Major Features & Architectural Redesign (HUD v2)

