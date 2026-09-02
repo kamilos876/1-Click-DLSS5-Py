@@ -16,8 +16,17 @@ All notable changes, architectural overhauls, and bug fixes for the **1 Click DL
   - Added smart guidance: RDR2 requires setting the in-game Graphics API to **DirectX 12** (*Settings > Graphics > Advanced > Graphics API = DirectX 12*).
 - **Bulletproof 1-Click Factory Restoration:**
   - Guaranteed unconditional removal of proxy DLLs (`dxgi.dll`, `d3d12.dll`, `d3d9.dll`, `opengl32.dll`), add-ons, and shader caches on factory reset.
+- **DLSS 5 Feeder Core Updated to v0.12.0 (Mode 3):**
+  - Updated bundled Feeder binaries (`dlss5-feed.addon64`, `dlss5-feed.addon32`, `dlss5-feed-host64.exe`, and `DLSS5_Feed.fx`) to the official v0.12.0 release.
+  - Preserved 100% native DLAA image clarity (`preset=6` and `work_resolution=100`) with zero text or texture blur.
+  - Maintained full LumeniteFX Kernel motion vector estimation (`DLSS5_MV_PROVIDER=3` and `Lumenite_Kernel.fx` execution priority).
+  - Integrated GPU drain before teardown to eliminate device-removal crashes during texture rebuilds.
+  - Added FSR 1 (EASU + RCAS) expand-back upscaling and sharpness filter for lower work resolutions.
+  - Integrated live in-game settings panel mirroring for 32-bit games without needing Alt-Tab.
+  - Added dedicated non-intrusive Vulkan layer packages (`layer-x64` / `layer-x86`) and updated uninstaller purge list to ensure 100% clean factory restoration.
 - **UI & Documentation Sync:**
   - Integrated 3 dedicated individual interface previews for Modes 1, 2, and 3 in the documentation.
+
 
 ## [v2.5.0-beta] - 2026-09-02
 

@@ -184,7 +184,7 @@ If you encounter an issue (e.g., game opened in background, Windows read-only lo
 - **Proxy Interception:** ReShade 6.x (Add-on Edition) by **crosire**.
 - **Neural Uplift & Tone Mapping:** RenoDX Framework by **clshortfuse**.
 - **Motion Estimation Kernel:** LumeniteFX Suite by **umar-afzaal**.
-- **Synthetic DLAA Feeder:** DLSS5-Feeder by **jlrouzies-fr** & **NIGos**.
+- **Synthetic DLAA Feeder:** DLSS5-Feeder (v0.12.0) by **jlrouzies-fr** & **NIGos**.
 - **Upscaler Bridge:** OptiScaler by **cdozdil** & **Dagherbou**.
 - **Neural Model:** NVIDIA NGX DLSS-NR SDK (`nvngx_dlssnr.dll`).
 

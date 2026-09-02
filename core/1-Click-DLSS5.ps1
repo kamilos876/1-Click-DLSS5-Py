@@ -858,7 +858,6 @@ NoDebugInfo=1
 NoEffectCache=0
 NoReloadOnInit=0
 PerformanceMode=0
-PreprocessorDefinitions=DLSS5_MV_PROVIDER=3
 PresetPath=.\ReShadePreset.ini
 PresetShortcutKeys=
 PresetShortcutPaths=
@@ -970,6 +969,10 @@ function Set-Dlss5PresetIni {
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     $presetContent = @"
 Techniques=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
+TechniqueSorting=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
+PreprocessorDefinitions=DLSS5_MV_PROVIDER=3
+
+[DLSS5_Feed.fx]
 PreprocessorDefinitions=DLSS5_MV_PROVIDER=3
 "@
     [System.IO.File]::WriteAllText($PresetPath, $presetContent, $utf8NoBom)
@@ -1049,20 +1052,22 @@ function Install-Dlss5 {
         }
     }
 
-    # 2. RenoDX Addon
-    $renoSrc = Join-Path (Get-DLSS5PayloadDirectory) $script:AddOnName
-    if (Test-Path -LiteralPath $renoSrc) {
-        Safe-Copy -Src $renoSrc -DstName $script:AddOnName
-    }
-
-    # 3. Modelos Neurais NVIDIA
-    $nrSrc = Join-Path (Get-DLSS5PayloadDirectory) "nvngx_dlssnr.dll"
-    if (Test-Path -LiteralPath $nrSrc) {
-        Safe-Copy -Src $nrSrc -DstName "nvngx_dlssnr.dll"
-    }
-    $dlssSrc = Join-Path (Get-DLSS5PayloadDirectory) "nvngx_dlss.dll"
-    if (Test-Path -LiteralPath $dlssSrc) {
-        Safe-Copy -Src $dlssSrc -DstName "nvngx_dlss.dll"
+    # 2. RenoDX Addon e Modelos Neurais NVIDIA
+    # Em jogos 64-bit (ou modos DIRECT/OPTISCALER), eles ficam na raiz do jogo.
+    # Em jogos 32-bit no MODO FEEDER, eles vão EXCLUSIVAMENTE para a pasta host64\ onde o helper 64-bit os executa.
+    if ($isX64 -or ($effectiveMode -ne "FEEDER")) {
+        $renoSrc = Join-Path (Get-DLSS5PayloadDirectory) $script:AddOnName
+        if (Test-Path -LiteralPath $renoSrc) {
+            Safe-Copy -Src $renoSrc -DstName $script:AddOnName
+        }
+        $nrSrc = Join-Path (Get-DLSS5PayloadDirectory) "nvngx_dlssnr.dll"
+        if (Test-Path -LiteralPath $nrSrc) {
+            Safe-Copy -Src $nrSrc -DstName "nvngx_dlssnr.dll"
+        }
+        $dlssSrc = Join-Path (Get-DLSS5PayloadDirectory) "nvngx_dlss.dll"
+        if (Test-Path -LiteralPath $dlssSrc) {
+            Safe-Copy -Src $dlssSrc -DstName "nvngx_dlss.dll"
+        }
     }
 
     # 4. Injeção Específica por Modo
@@ -1126,6 +1131,17 @@ function Install-Dlss5 {
         $cfgSrc = Join-Path $feederPayload "dlss5-feed.cfg"
         if (Test-Path -LiteralPath $cfgSrc) { Safe-Copy -Src $cfgSrc -DstName "dlss5-feed.cfg" }
 
+        # Injeção de camada Vulkan se o jogo for baseado em Vulkan
+        if ($api -eq "VULKAN") {
+            $layerFolderName = if ($isX64) { "layer-x64" } else { "layer-x86" }
+            $layerSrcDir = Join-Path $feederPayload $layerFolderName
+            if (Test-Path -LiteralPath $layerSrcDir -PathType Container) {
+                Get-ChildItem -LiteralPath $layerSrcDir -File | ForEach-Object {
+                    Safe-Copy -Src $_.FullName -DstName $_.Name
+                }
+            }
+        }
+
         Set-Dlss5PresetIni -PresetPath (Join-Path $targetFolder "ReShadePreset.ini")
         if ($state.InjectedFiles -notcontains "ReShadePreset.ini") { $state.InjectedFiles += "ReShadePreset.ini" }
 
@@ -1188,6 +1204,9 @@ function Uninstall-Dlss5 {
         "dxgi.dll", "d3d12.dll", "d3d9.dll", "opengl32.dll",
         "renodx-dlss5.addon64", "renodx-dlss5++.addon64", "renodx-dlss5-v3.addon64",
         "dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed.cfg", "dlss5-feed.log", "dlss5-feed.ini",
+        "dlss5-feed-host.log", "dlss5-feed-crash.dmp",
+        "VkLayer_feed_vk.dll", "VkLayer_feed_vk.json", "run-with-feed-layer.bat",
+        "VkLayer_feed_vk32.dll", "VkLayer_feed_vk32.json", "run-with-feed-layer32.bat",
         "nvngx_dlssnr.dll", "sl.dlss_nr.dll",
         "version.dll", "OptiScaler.ini", "OptiScaler.log", "libxess.dll",
         "ReShade.ini", "ReShadePreset.ini", "ReShade.log",
@@ -1218,6 +1237,12 @@ function Uninstall-Dlss5 {
     $hostDir = Join-Path $targetFolder "host64"
     if (Test-Path -LiteralPath $hostDir -PathType Container) {
         Remove-Item -LiteralPath $hostDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    foreach ($ld in @("layer-x64", "layer-x86")) {
+        $lp = Join-Path $targetFolder $ld
+        if (Test-Path -LiteralPath $lp -PathType Container) {
+            Remove-Item -LiteralPath $lp -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
     foreach ($sf in @($script:StateName, "_1Click_DLSS5_State.json", "_DLSS5_Easy_Installer_State.json")) {
         $sp = Join-Path $targetFolder $sf
