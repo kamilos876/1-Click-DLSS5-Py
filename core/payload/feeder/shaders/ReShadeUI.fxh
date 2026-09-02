@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef RESHADEUI_FXH_GUARD
-#define RESHADEUI_FXH_GUARD
-
 #if !defined(__RESHADE__) || __RESHADE__ < 30000
 #error "ReShade 3.0+ is required to use this header file"
 #endif
@@ -215,5 +212,3 @@
 
 // For compatible with 'combo'
 #define __UNIFORM_LIST_BOOL1  __UNIFORM_COMBO_ANY
-
-#endif // RESHADEUI_FXH_GUARD

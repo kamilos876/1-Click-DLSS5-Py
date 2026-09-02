@@ -4,9 +4,6 @@
 
 #pragma once
 
-#ifndef RESHADE_FXH_GUARD
-#define RESHADE_FXH_GUARD
-
 #if !defined(__RESHADE__) || __RESHADE__ < 30000
 	#error "ReShade 3.0+ is required to use this header file"
 #endif
@@ -125,5 +122,3 @@ void PostProcessVS(in uint id : SV_VertexID, out float4 position : SV_Position, 
 	texcoord.y = (id == 1) ? 2.0 : 0.0;
 	position = float4(texcoord * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
 }
-
-#endif // RESHADE_FXH_GUARD
