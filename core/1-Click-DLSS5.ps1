@@ -187,26 +187,55 @@ function Resolve-GameTarget {
     $root = $folder
     $exePath = $null
 
-    if (-not $targetItem.PSIsContainer -and $targetItem.Extension -ieq ".exe") {
-        $exePath = $targetItem.FullName
-    } else {
-        $allExes = @(Get-ChildItem -LiteralPath $folder -Filter "*.exe" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
-        $ignoredPattern = '^(crashreport|crashhandler|unitycrashhandler|unins.*|setup|config|launcher|easyanticheat|battleye|epicgameslauncher|redist|vcredist|dxsetup|quickstart|webinstaller)$'
-        $filtered = @($allExes | Where-Object {
-            $baseName = $_.BaseName.ToLower()
-            -not ($baseName -match $ignoredPattern)
-        })
+    $allExes = @(Get-ChildItem -LiteralPath $folder -Filter "*.exe" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
+    $ignoredPattern = '^(crashreport|crashhandler|unitycrashhandler|unins.*|setup|config|launcher|easyanticheat|battleye|epicgameslauncher|redist|vcredist|dxsetup|quickstart|webinstaller|support|console.*|banana.*)$'
+    $filtered = @($allExes | Where-Object {
+        $baseName = $_.BaseName.ToLower()
+        -not ($baseName -match $ignoredPattern)
+    })
 
-        $foundWin64 = $filtered | Where-Object { $_.FullName -imatch '\\binaries\\win64\\' -and (Test-ValidPe -Path $_.FullName) } | Select-Object -First 1
-        if ($foundWin64) {
-            $exePath = $foundWin64.FullName
+    # Se o usuário apontou diretamente para um executável específico
+    if (-not $targetItem.PSIsContainer -and $targetItem.Extension -ieq ".exe") {
+        $directArch = Get-PeArchitecture -Path $targetItem.FullName
+        # Se apontou para um executável 64-bit ou se está em subpasta profunda, respeitar a escolha
+        if ($directArch -eq "X64" -or ($targetItem.Directory.FullName -ne $folder)) {
+            $exePath = $targetItem.FullName
+        }
+    }
+
+    if (-not $exePath) {
+        # 1. Prioridade Máxima: Executáveis em subpastas de engine 64-bit conhecidas
+        # (Bin64 [BeamNG, CryEngine], bin\x64 [Cyberpunk, Witcher], binaries\win64 [Unreal], x64, bin\win64)
+        $known64Subfolders = '\\(binaries\\win64|bin64|bin\\x64|bin\\x64_dx12|bin\\win64|x64)\\'
+        $found64Subdir = @($filtered | Where-Object {
+            $_.FullName -imatch $known64Subfolders -and (Test-ValidPe -Path $_.FullName) -and ((Get-PeArchitecture -Path $_.FullName) -eq "X64")
+        } | Sort-Object -Property Length -Descending)
+
+        if ($found64Subdir.Count -gt 0) {
+            $exePath = $found64Subdir[0].FullName
         } else {
-            $rootExes = @($filtered | Where-Object { $_.Directory.FullName -ieq $folder -and (Test-ValidPe -Path $_.FullName) } | Sort-Object -Property Length -Descending)
-            if ($rootExes.Count -gt 0) {
-                $exePath = $rootExes[0].FullName
-            } elseif ($filtered.Count -gt 0) {
-                $largest = $filtered | Sort-Object -Property Length -Descending | Select-Object -First 1
-                $exePath = $largest.FullName
+            # 2. Executáveis com sufixo x64 (ex: *.x64.exe, *64.exe)
+            $foundX64Named = @($filtered | Where-Object {
+                $_.Name -imatch '(\.x64\.exe|_x64\.exe|win64.*\.exe)$' -and (Test-ValidPe -Path $_.FullName) -and ((Get-PeArchitecture -Path $_.FullName) -eq "X64")
+            } | Sort-Object -Property Length -Descending)
+
+            if ($foundX64Named.Count -gt 0) {
+                $exePath = $foundX64Named[0].FullName
+            } else {
+                # 3. Executáveis na raiz vs subpastas: se o da raiz for 32-bit (X86), mas existir um 64-bit em subpasta, preferir o 64-bit
+                $rootExes = @($filtered | Where-Object { $_.Directory.FullName -ieq $folder -and (Test-ValidPe -Path $_.FullName) } | Sort-Object -Property Length -Descending)
+                $allX64 = @($filtered | Where-Object { (Test-ValidPe -Path $_.FullName) -and ((Get-PeArchitecture -Path $_.FullName) -eq "X64") } | Sort-Object -Property Length -Descending)
+
+                if ($rootExes.Count -gt 0 -and ((Get-PeArchitecture -Path $rootExes[0].FullName) -eq "X64")) {
+                    $exePath = $rootExes[0].FullName
+                } elseif ($allX64.Count -gt 0) {
+                    $exePath = $allX64[0].FullName
+                } elseif ($rootExes.Count -gt 0) {
+                    $exePath = $rootExes[0].FullName
+                } elseif ($filtered.Count -gt 0) {
+                    $largest = $filtered | Sort-Object -Property Length -Descending | Select-Object -First 1
+                    $exePath = $largest.FullName
+                }
             }
         }
     }
