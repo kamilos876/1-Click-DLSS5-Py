@@ -1008,6 +1008,27 @@ function Install-Dlss5 {
     [void](New-Item -ItemType Directory -Path $backupFolder -Force)
     $stateFile = Join-Path $targetFolder $script:StateName
 
+    # Se já existir uma instalação anterior de outro modo, limpar arquivos injetados do modo anterior
+    $existingBackedUp = @()
+    if (Test-Path -LiteralPath $stateFile -PathType Leaf) {
+        try {
+            $oldSaved = Get-Content -LiteralPath $stateFile -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($oldSaved.BackedUpFiles) { $existingBackedUp = @($oldSaved.BackedUpFiles) }
+            if ($oldSaved.Mode -and ($oldSaved.Mode -ne $effectiveMode)) {
+                Write-Status -Message "Detectada troca de modo ($($oldSaved.Mode) -> $effectiveMode). Removendo arquivos do modo anterior..." -Level "INFO"
+                $previousInjected = @($oldSaved.InjectedFiles)
+                foreach ($oldFile in $previousInjected) {
+                    if ($existingBackedUp -notcontains $oldFile) {
+                        $oldP = Join-Path $targetFolder $oldFile
+                        if (Test-Path -LiteralPath $oldP -PathType Leaf) {
+                            Remove-Item -LiteralPath $oldP -Force -ErrorAction SilentlyContinue
+                        }
+                    }
+                }
+            }
+        } catch {}
+    }
+
     $state = @{
         InstalledAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
         TargetExe = $target.Executable
@@ -1015,7 +1036,7 @@ function Install-Dlss5 {
         UpscalerType = $detectedUpscaler
         Architecture = $target.Architecture
         Api = $api
-        BackedUpFiles = @()
+        BackedUpFiles = $existingBackedUp
         InjectedFiles = @()
     }
 
@@ -1064,9 +1085,13 @@ function Install-Dlss5 {
         if (Test-Path -LiteralPath $nrSrc) {
             Safe-Copy -Src $nrSrc -DstName "nvngx_dlssnr.dll"
         }
-        $dlssSrc = Join-Path (Get-DLSS5PayloadDirectory) "nvngx_dlss.dll"
-        if (Test-Path -LiteralPath $dlssSrc) {
-            Safe-Copy -Src $dlssSrc -DstName "nvngx_dlss.dll"
+        # Preserva nvngx_dlss.dll original do jogo caso já exista (evita falha de integridade em launchers como RDR2)
+        $dlssTarget = Join-Path $targetFolder "nvngx_dlss.dll"
+        if (-not (Test-Path -LiteralPath $dlssTarget -PathType Leaf)) {
+            $dlssSrc = Join-Path (Get-DLSS5PayloadDirectory) "nvngx_dlss.dll"
+            if (Test-Path -LiteralPath $dlssSrc) {
+                Safe-Copy -Src $dlssSrc -DstName "nvngx_dlss.dll"
+            }
         }
     }
 
@@ -1084,7 +1109,15 @@ function Install-Dlss5 {
             Safe-Copy -Src $slNrSrc -DstName "sl.dlss_nr.dll"
         }
 
-        Set-Dlss5ReShadeIni -IniPath (Join-Path $targetFolder "ReShade.ini") -IsFeederMode $false -EnableHooks $hookVal
+        $targetIni = Join-Path $targetFolder "ReShade.ini"
+        if ((Test-Path -LiteralPath $targetIni -PathType Leaf) -and ($state.InjectedFiles -notcontains "ReShade.ini")) {
+            $bDst = Join-Path $backupFolder "ReShade.ini"
+            if (-not (Test-Path -LiteralPath $bDst -PathType Leaf)) {
+                Copy-Item -LiteralPath $targetIni -Destination $bDst -Force
+                $state.BackedUpFiles += "ReShade.ini"
+            }
+        }
+        Set-Dlss5ReShadeIni -IniPath $targetIni -IsFeederMode $false -EnableHooks $hookVal
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
     }
     elseif ($effectiveMode -eq "OPTISCALER") {
@@ -1094,7 +1127,15 @@ function Install-Dlss5 {
         if (Test-Path -LiteralPath $optiIni) { Safe-Copy -Src $optiIni -DstName "OptiScaler.ini" }
         $xessSrc = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\libxess.dll"
         if (Test-Path -LiteralPath $xessSrc) { Safe-Copy -Src $xessSrc -DstName "libxess.dll" }
-        Set-Dlss5ReShadeIni -IniPath (Join-Path $targetFolder "ReShade.ini") -IsFeederMode $false
+        $targetIni = Join-Path $targetFolder "ReShade.ini"
+        if ((Test-Path -LiteralPath $targetIni -PathType Leaf) -and ($state.InjectedFiles -notcontains "ReShade.ini")) {
+            $bDst = Join-Path $backupFolder "ReShade.ini"
+            if (-not (Test-Path -LiteralPath $bDst -PathType Leaf)) {
+                Copy-Item -LiteralPath $targetIni -Destination $bDst -Force
+                $state.BackedUpFiles += "ReShade.ini"
+            }
+        }
+        Set-Dlss5ReShadeIni -IniPath $targetIni -IsFeederMode $false
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
     }
     else {
@@ -1142,10 +1183,26 @@ function Install-Dlss5 {
             }
         }
 
-        Set-Dlss5PresetIni -PresetPath (Join-Path $targetFolder "ReShadePreset.ini")
+        $targetPreset = Join-Path $targetFolder "ReShadePreset.ini"
+        if ((Test-Path -LiteralPath $targetPreset -PathType Leaf) -and ($state.InjectedFiles -notcontains "ReShadePreset.ini")) {
+            $bDst = Join-Path $backupFolder "ReShadePreset.ini"
+            if (-not (Test-Path -LiteralPath $bDst -PathType Leaf)) {
+                Copy-Item -LiteralPath $targetPreset -Destination $bDst -Force
+                $state.BackedUpFiles += "ReShadePreset.ini"
+            }
+        }
+        Set-Dlss5PresetIni -PresetPath $targetPreset
         if ($state.InjectedFiles -notcontains "ReShadePreset.ini") { $state.InjectedFiles += "ReShadePreset.ini" }
 
-        Set-Dlss5ReShadeIni -IniPath (Join-Path $targetFolder "ReShade.ini") -IsFeederMode $true
+        $targetIni = Join-Path $targetFolder "ReShade.ini"
+        if ((Test-Path -LiteralPath $targetIni -PathType Leaf) -and ($state.InjectedFiles -notcontains "ReShade.ini")) {
+            $bDst = Join-Path $backupFolder "ReShade.ini"
+            if (-not (Test-Path -LiteralPath $bDst -PathType Leaf)) {
+                Copy-Item -LiteralPath $targetIni -Destination $bDst -Force
+                $state.BackedUpFiles += "ReShade.ini"
+            }
+        }
+        Set-Dlss5ReShadeIni -IniPath $targetIni -IsFeederMode $true
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
     }
 
@@ -1262,7 +1319,21 @@ function Start-GameExecutable {
     }
     $folder = (Split-Path -Parent $ExecutablePath)
     Write-Status -Message "Iniciando jogo: $(Split-Path -Leaf $ExecutablePath)..." -Level "INFO"
-    Start-Process -FilePath $ExecutablePath -WorkingDirectory $folder
+
+    $oldVkPath = $env:VK_LAYER_PATH
+    $oldVkLayers = $env:VK_INSTANCE_LAYERS
+    try {
+        # Se for um jogo Vulkan com camada Feeder injetada, ativar sem tocar no registro
+        $vkLayerDll = Join-Path $folder "VkLayer_feed_vk.dll"
+        if (Test-Path -LiteralPath $vkLayerDll -PathType Leaf) {
+            $env:VK_LAYER_PATH = $folder
+            $env:VK_INSTANCE_LAYERS = "VK_LAYER_feed_vk"
+        }
+        Start-Process -FilePath $ExecutablePath -WorkingDirectory $folder
+    } finally {
+        $env:VK_LAYER_PATH = $oldVkPath
+        $env:VK_INSTANCE_LAYERS = $oldVkLayers
+    }
 }
 
 # --- SCANNER DE AUTO-DESCOBERTA INSTANTÂNEA DE JOGOS ---
@@ -1338,7 +1409,8 @@ function Scan-DriveForGames {
     foreach ($root in $rootsToScan) {
         if (Test-Path -LiteralPath $root -PathType Container) {
             try {
-                if (Test-Path (Join-Path $root "*.exe") -PathType Leaf) {
+                $hasDirectExe = @(Get-ChildItem -LiteralPath $root -Filter "*.exe" -File -ErrorAction SilentlyContinue).Count -gt 0
+                if ($hasDirectExe) {
                     $norm = $root.ToLower()
                     if (-not $seenPaths.Contains($norm)) {
                         [void]$seenPaths.Add($norm)
