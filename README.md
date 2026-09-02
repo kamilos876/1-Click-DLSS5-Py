@@ -1,4 +1,4 @@
-# ⚡ 1-Click DLSS 5 (v2.5.2-beta)
+# ⚡ 1-Click DLSS 5 (v2.5.3-release)
 
 <div align="center">
 
@@ -7,12 +7,12 @@
 ### **Universal Neural Control Center • RTX 20/30/40/50 Series**
 *Deploy Next-Generation DLSS 5 Neural Rendering into Any PC Game with Just 1 Click.*
 
-[![Release](https://img.shields.io/badge/Release-v2.5.2--beta-76b900?style=for-the-badge&logo=nvidia&logoColor=white)](https://github.com/reiluisii/1-Click-DLSS5/releases)
+[![Release](https://img.shields.io/badge/Release-v2.5.3--release-76b900?style=for-the-badge&logo=nvidia&logoColor=white)](https://github.com/reiluisii/1-Click-DLSS5/releases)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows_10_%2F_11-0078d4?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![Architecture](https://img.shields.io/badge/Architecture-x64_%7C_x86-orange?style=for-the-badge)]()
 [![Languages](https://img.shields.io/badge/Languages-10_Native-purple?style=for-the-badge)]()
-[![Engine](https://img.shields.io/badge/Engineered_With-Gemini_3.7_Flash_Thinking-4285F4?style=for-the-badge&logo=google&logoColor=white)]()
+[![Engine](https://img.shields.io/badge/Engineered_With-Antigravity_Advanced_Coding-4285F4?style=for-the-badge&logo=google&logoColor=white)]()
 
 </div>
 
@@ -71,13 +71,16 @@ Traditionally, integrating DLSS-NR, custom ReShade add-ons, optical flow estimat
 
 ## 🌟 Key Features
 
-- 🎮 **Instant Game Auto-Discovery:** Multi-drive scanning across **Steam** (`libraryfolders.vdf`), **Epic Games** (`.item` manifests), **GOG Galaxy**, **Xbox App / XboxGames**, **EA App**, and custom directories.
+- ⚡ **Native 64-Bit Compiled Executable (`1-Click-DLSS5.exe`):** Seamless silent execution with embedded high-resolution application icon, Windows 11 manifest, and Per-Monitor V2 High-DPI scaling (zero console flashing).
+- 🎮 **Instant Game Auto-Discovery via Windows Registry:** Dynamic multi-drive scanning querying official Registry paths for **Steam**, **Epic Games**, **GOG Galaxy**, **Xbox Games**, and custom directories.
+- 🎯 **Deterministic PE Import Table (IAT) Inspection:** Directly scans game binaries for D3D12, D3D11, Vulkan, and OpenGL imports, ensuring flawless API detection even without local DirectX DLLs.
+- 📂 **Seamless Drag & Drop Support:** Drag any game folder or executable directly from File Explorer into the window to configure injection in 1 second.
 - ⚡ **1-Click Auto-Fix Engine:** Automatically detects and resolves file locks, lingering background processes, and folder permissions (`attrib -r`) with zero manual effort.
 - 🩺 **System Diagnostics Suite:** Built-in hardware checklist verifying RTX tensor capabilities, write permissions, process states, and runtime integrity.
 - 🌍 **10 Native Languages:** Full dynamic UI translation with instant switching for English, Portuguese (BR), Spanish, German, French, Italian, Japanese, Simplified Chinese, Russian, and Korean.
 - 🔄 **Universal Graphics API Support:** Direct interception and hooking for **DirectX 12, DirectX 11, DirectX 9, Vulkan, and OpenGL**.
 - 🧱 **32-Bit (x86) & 64-Bit (x64) Support:** Transparent IPC bridge via `host64` to enable modern 64-bit neural models in legacy 32-bit executables.
-- ↩️ **100% Clean Factory Restoration:** Surgical uninstaller that restores backed-up binaries and wipes all injected DLLs, add-ons, shaders, and logs, returning the game to pristine factory state.
+- ↩️ **100% Clean Factory Restoration:** Surgical uninstaller that strictly preserves native game binaries (protects `sl.interposer.dll` and `sl.common.dll` in Witcher 3 / Cyberpunk) while wiping all injected mod files.
 
 ---
 

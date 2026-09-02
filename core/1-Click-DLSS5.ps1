@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     1 Click DLSS 5 v2.5.2-beta • Universal Neural Control Center
     Auto-Descoberta Instantânea de Jogos (Steam, Epic, GOG, Xbox, EA), Motor de Resolução em 1 Clique (Auto-Fix),
@@ -14,8 +14,26 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
+# --- ATIVAÇÃO DE HIGH-DPI PER-MONITOR V2 (CRISTAL CLEAR EM 1080P/1440P/4K) ---
+try {
+    if (-not ([System.Management.Automation.PSTypeName]'DLSS5DpiHelper').Type) {
+        Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class DLSS5DpiHelper {
+    [DllImport("user32.dll")]
+    public static extern bool SetProcessDpiAwarenessContext(int dpiFlag);
+    public static void EnableHighDpi() {
+        try { SetProcessDpiAwarenessContext(-4); } catch {}
+    }
+}
+"@
+    }
+    [DLSS5DpiHelper]::EnableHighDpi()
+} catch {}
+
 # --- CONFIGURAÇÕES GLOBAIS ---
-$script:Version = "2.5.2-beta"
+$script:Version = "2.5.3-release"
 $script:CurrentLang = "PT"
 $script:AddOnName = "renodx-dlss5.addon64"
 $script:StateName = "_dlss5_install_state.json"
@@ -27,6 +45,9 @@ $script:CurrentGameLibrary = @()
 
 $script:PayloadFolder = Join-Path $PSScriptRoot "payload"
 $script:IconPath = Join-Path $PSScriptRoot "assets\icon.ico"
+if (-not (Test-Path -LiteralPath $script:IconPath -PathType Leaf)) {
+    $script:IconPath = Join-Path $PSScriptRoot "assets\logo.ico"
+}
 $script:TranslationsPath = Join-Path $PSScriptRoot "assets\translations.json"
 $script:LogFilePath = Join-Path $PSScriptRoot "1-Click-DLSS5.log"
 
@@ -268,6 +289,25 @@ function Detect-GameGraphicsApi {
     if ([string]::IsNullOrWhiteSpace($GameFolder)) {
         $GameFolder = (Split-Path -Parent $TargetExe)
     }
+
+    # 1. Inspeção direta do PE Import Table do executável alvo (IAT Determinístico)
+    if (Test-Path -LiteralPath $TargetExe -PathType Leaf) {
+        try {
+            $fs = [System.IO.File]::OpenRead($TargetExe)
+            $len = [Math]::Min($fs.Length, 4194304)
+            $bytes = New-Object byte[] $len
+            [void]$fs.Read($bytes, 0, $len)
+            $fs.Close()
+            $str = [System.Text.Encoding]::ASCII.GetString($bytes)
+            if ($str -match '(?i)\bd3d12\.dll\b') { return "D3D12" }
+            if ($str -match '(?i)\bvulkan-1\.dll\b') { return "VULKAN" }
+            if ($str -match '(?i)\bd3d11\.dll\b') { return "DXGI" }
+            if ($str -match '(?i)\bd3d9\.dll\b') { return "D3D9" }
+            if ($str -match '(?i)\bopengl32\.dll\b') { return "OPENGL" }
+        } catch {}
+    }
+
+    # 2. Verificação de DLLs distribuídas na pasta local do jogo
     $allDlls = @(Get-ChildItem -LiteralPath $GameFolder -Filter "*.dll" -File -Recurse -Depth 3 -ErrorAction SilentlyContinue | ForEach-Object { $_.Name.ToLower() })
     if ($allDlls -contains "d3d12.dll" -or $allDlls -contains "d3d12core.dll") { return "D3D12" }
     if ($allDlls -contains "vulkan-1.dll" -or $allDlls -contains "vulkan.dll") { return "VULKAN" }
@@ -275,6 +315,7 @@ function Detect-GameGraphicsApi {
     if ($allDlls -contains "d3d9.dll") { return "D3D9" }
     if ($allDlls -contains "opengl32.dll") { return "OPENGL" }
 
+    # 3. Varredura de nomes de arquivos
     $allFiles = @(Get-ChildItem -LiteralPath $GameFolder -File -Recurse -Depth 3 -ErrorAction SilentlyContinue | ForEach-Object { $_.Name.ToLower() })
     foreach ($f in $allFiles) {
         if ($f -match 'd3d12') { return "D3D12" }
@@ -878,7 +919,7 @@ function Set-Dlss5ReShadeIni {
         $iniContent = @"
 [ADDON]
 DisabledAddons=Generic Depth,Effect Runtime Sync
-OverlayCollapsed=DLSS 5 Feed 0.7.0@dlss5-feed.addon64,DLSS 5 Neural Rendering@renodx-dlss5.addon64,Generic Depth,Effect Runtime Sync
+OverlayCollapsed=DLSS 5 Feed 0.12.0@dlss5-feed.addon64,DLSS 5 Neural Rendering@renodx-dlss5.addon64,Generic Depth,Effect Runtime Sync
 
 [GENERAL]
 EffectSearchPaths=.\reshade-shaders\Shaders\**
@@ -1049,8 +1090,8 @@ function Install-Dlss5 {
                 foreach ($oldFile in $previousInjected) {
                     if ($existingBackedUp -notcontains $oldFile) {
                         $oldP = Join-Path $targetFolder $oldFile
-                        if (Test-Path -LiteralPath $oldP -PathType Leaf) {
-                            Remove-Item -LiteralPath $oldP -Force -ErrorAction SilentlyContinue
+                        if (Test-Path -LiteralPath $oldP) {
+                            Remove-Item -LiteralPath $oldP -Recurse -Force -ErrorAction SilentlyContinue
                         }
                     }
                 }
@@ -1285,7 +1326,9 @@ function Uninstall-Dlss5 {
         Remove-Item -LiteralPath $backupFolder -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    # Lista de purga cirúrgica incondicional (padrão absoluto para restauração limpa)
+    # Lista de purga cirúrgica incondicional (arquivos exclusivos do DLSS 5 / ReShade / OptiScaler / Feeder)
+    # ATENÇÃO: NUNCA incluir DLLs nativas de jogos (sl.interposer.dll, sl.common.dll, sl.dlss.dll, nvngx_dlss.dll)
+    # pois em títulos com DLSS/Streamline de fábrica eles não são substituídos e apagá-los quebra o jogo!
     $purgeList = @(
         "dxgi.dll", "d3d12.dll", "d3d9.dll", "opengl32.dll",
         "renodx-dlss5.addon64", "renodx-dlss5++.addon64", "renodx-dlss5-v3.addon64",
@@ -1296,9 +1339,6 @@ function Uninstall-Dlss5 {
         "nvngx_dlssnr.dll", "sl.dlss_nr.dll",
         "version.dll", "OptiScaler.ini", "OptiScaler.log", "libxess.dll",
         "ReShade.ini", "ReShadePreset.ini", "ReShade.log",
-        "sl.common.dll", "sl.interposer.dll", "sl.deepdvc.dll", "sl.dlss.dll", "sl.dlss_d.dll", "sl.dlss_g.dll",
-        "sl.nis.dll", "sl.pcl.dll", "sl.reflex.dll", "sl.config.json", "sl.param.global.log",
-        "nis.license.txt", "nvngx_dlss.license.txt", "reflex.license.txt",
         $script:StateName, "_1Click_DLSS5_State.json", "_DLSS5_Easy_Installer_State.json", "dlss5_backup_manifest.json"
     )
 
@@ -1311,8 +1351,8 @@ function Uninstall-Dlss5 {
     foreach ($pf in $purgeList) {
         if ($savedBacked -contains $pf) { continue }
         $p = Join-Path $targetFolder $pf
-        if (Test-Path -LiteralPath $p -PathType Leaf) {
-            Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $p) {
+            Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
 
@@ -1374,7 +1414,7 @@ function Scan-DriveForGames {
     $results = New-Object System.Collections.Generic.List[pscustomobject]
     $rootsToScan = New-Object System.Collections.Generic.List[string]
 
-    # 1. Leitura Direta de Bibliotecas Steam (VDF Multi-Drive)
+    # 1. Leitura de Bibliotecas Steam (Registro do Windows + VDF Multi-Drive)
     $steamCandidates = @(
         "C:\Program Files (x86)\Steam\steamapps\libraryfolders.vdf",
         "C:\Program Files\Steam\steamapps\libraryfolders.vdf",
@@ -1383,6 +1423,40 @@ function Scan-DriveForGames {
         "E:\Steam\steamapps\libraryfolders.vdf",
         "E:\SteamLibrary\steamapps\libraryfolders.vdf"
     )
+
+    # Consulta dinâmica ao Registro do Windows para Steam
+    $steamRegPaths = @(
+        "HKCU:\Software\Valve\Steam",
+        "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam",
+        "HKLM:\SOFTWARE\Valve\Steam"
+    )
+    foreach ($srp in $steamRegPaths) {
+        try {
+            $regProp = Get-ItemProperty -Path $srp -ErrorAction SilentlyContinue
+            if ($regProp) {
+                $sPath = if ($regProp.SteamPath) { $regProp.SteamPath } else { $regProp.InstallPath }
+                if ($sPath) {
+                    $vdf = Join-Path $sPath "steamapps\libraryfolders.vdf"
+                    if (Test-Path -LiteralPath $vdf -PathType Leaf) {
+                        if ($steamCandidates -notcontains $vdf) { $steamCandidates += $vdf }
+                    }
+                }
+            }
+        } catch {}
+    }
+
+    # Consulta ao Registro para GOG Galaxy
+    $gogRegPath = "HKLM:\SOFTWARE\WOW6432Node\GOG.com\Games"
+    if (Test-Path -Path $gogRegPath) {
+        $gogKeys = Get-ChildItem -Path $gogRegPath -ErrorAction SilentlyContinue
+        foreach ($gk in $gogKeys) {
+            $gProp = Get-ItemProperty -Path $gk.PSPath -ErrorAction SilentlyContinue
+            if ($gProp -and $gProp.path -and (Test-Path -LiteralPath $gProp.path)) {
+                [void]$rootsToScan.Add($gProp.path)
+            }
+        }
+    }
+
     foreach ($sc in $steamCandidates) {
         if (Test-Path -LiteralPath $sc -PathType Leaf) {
             try {
@@ -1539,17 +1613,56 @@ function Style-Button {
 # CONSTRUÇÃO DA HUD MODERNA E INTUITIVA PARA LEIGOS
 # ==============================================================================
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "1 Click DLSS 5 v2.5.2-beta • Universal Neural Control Center"
+$form.Text = "1 Click DLSS 5 v$($script:Version) • Universal Neural Control Center"
 $form.Size = New-Object System.Drawing.Size(1260, 860)
 $form.MinimumSize = New-Object System.Drawing.Size(1180, 800)
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
 $form.BackColor = [System.Drawing.Color]::FromArgb(11, 15, 25)
 $form.ForeColor = [System.Drawing.Color]::Gainsboro
 $form.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+$form.AllowDrop = $true
 
 if (Test-Path -LiteralPath $script:IconPath) {
     try { $form.Icon = New-Object System.Drawing.Icon($script:IconPath) } catch {}
 }
+
+# --- SUPORTE A DRAG & DROP (ARRASTAR E SOLTAR JOGOS DIRETAMENTE NA JANELA) ---
+$form.Add_DragEnter({
+    param($sender, $e)
+    if ($e.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) {
+        $e.Effect = [System.Windows.Forms.DragDropEffects]::Copy
+    } else {
+        $e.Effect = [System.Windows.Forms.DragDropEffects]::None
+    }
+})
+
+$form.Add_DragDrop({
+    param($sender, $e)
+    $files = $e.Data.GetData([System.Windows.Forms.DataFormats]::FileDrop)
+    if ($files -and $files.Length -gt 0) {
+        $droppedPath = $files[0]
+        try {
+            $resolved = Resolve-GameTarget -TargetPath $droppedPath
+            $api = Detect-GameGraphicsApi -TargetExe $resolved.Executable -GameFolder $resolved.InstallFolder
+            $upscaler = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder -GameRoot $resolved.Root
+            $gObj = [pscustomobject]@{
+                Order = 1
+                Name = (Split-Path -Leaf $droppedPath)
+                Path = $droppedPath
+                Api = "$api ($($resolved.Architecture))"
+                Upscaler = $upscaler
+                Icon = $resolved.Icon
+                ExeName = $resolved.ExeName
+            }
+            $script:CurrentGameLibrary = @($gObj)
+            Refresh-GameLibraryUI -Games @($gObj)
+            Select-GameInInspector -GameObj $gObj
+            Write-Status -Message "Jogo carregado via Arrastar e Soltar: $($gObj.Name)" -Level "OK"
+        } catch {
+            Show-FriendlyErrorDialog -Ex $_.Exception -Context "Arrastar e Soltar" -TargetPath $droppedPath
+        }
+    }
+})
 
 $imageList = New-Object System.Windows.Forms.ImageList
 $imageList.ImageSize = New-Object System.Drawing.Size(28, 28)
@@ -1994,11 +2107,20 @@ $footer.BackColor = [System.Drawing.Color]::FromArgb(8, 12, 20)
 $lblStatus = New-Object System.Windows.Forms.Label
 $lblStatus.Text = "● Pronto. Selecione um jogo para começar."
 $lblStatus.Location = New-Object System.Drawing.Point(18, 7)
-$lblStatus.Size = New-Object System.Drawing.Size(1020, 18)
+$lblStatus.Size = New-Object System.Drawing.Size(800, 18)
 $lblStatus.ForeColor = [System.Drawing.Color]::FromArgb(140, 180, 220)
 $lblStatus.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 [void]$footer.Controls.Add($lblStatus)
 $script:StatusLabel = $lblStatus
+
+$progressBar = New-Object System.Windows.Forms.ProgressBar
+$progressBar.Location = New-Object System.Drawing.Point(825, 6)
+$progressBar.Size = New-Object System.Drawing.Size(230, 20)
+$progressBar.Anchor = "Top, Right"
+$progressBar.Visible = $false
+$progressBar.Style = [System.Windows.Forms.ProgressBarStyle]::Continuous
+[void]$footer.Controls.Add($progressBar)
+$script:ProgressBar = $progressBar
 
 $btnOpenLog = New-Object System.Windows.Forms.Button
 $btnOpenLog.Text = "📄 VER LOG COMPLETO"
@@ -2169,15 +2291,23 @@ $btnScan.Add_Click({
     $d = Get-Dict -Lang $script:CurrentLang
     Write-Status -Message $d.StatusScanning -Level "INFO"
     $form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
+    if ($script:ProgressBar) {
+        $script:ProgressBar.Value = 0
+        $script:ProgressBar.Visible = $true
+    }
 
     $games = Scan-DriveForGames -DriveLetter "ALL" -ProgressCallback {
         param($pct, $name)
         $script:StatusLabel.Text = "● Escaneando: $name ($pct%)..."
+        if ($script:ProgressBar) {
+            $script:ProgressBar.Value = [Math]::Min(100, [Math]::Max(0, [int]$pct))
+        }
         [System.Windows.Forms.Application]::DoEvents()
     }
 
     $script:CurrentGameLibrary = $games
     Refresh-GameLibraryUI -Games $games
+    if ($script:ProgressBar) { $script:ProgressBar.Visible = $false }
     $form.Cursor = [System.Windows.Forms.Cursors]::Default
 
     Write-Status -Message ($d.StatusScanDone -f $games.Count) -Level "OK"
@@ -2269,9 +2399,22 @@ $txtSearch.Add_TextChanged({
 $form.Add_Shown({
     $d = Get-Dict -Lang $script:CurrentLang
     $lblStatus.Text = "● Carregando biblioteca de jogos instalados no PC..."
+    if ($script:ProgressBar) {
+        $script:ProgressBar.Value = 0
+        $script:ProgressBar.Visible = $true
+    }
     [System.Windows.Forms.Application]::DoEvents()
 
-    $autoGames = Scan-DriveForGames -DriveLetter "ALL"
+    $autoGames = Scan-DriveForGames -DriveLetter "ALL" -ProgressCallback {
+        param($pct, $name)
+        $lblStatus.Text = "● Carregando: $name ($pct%)..."
+        if ($script:ProgressBar) {
+            $script:ProgressBar.Value = [Math]::Min(100, [Math]::Max(0, [int]$pct))
+        }
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+    if ($script:ProgressBar) { $script:ProgressBar.Visible = $false }
+
     if ($autoGames.Count -gt 0) {
         $script:CurrentGameLibrary = $autoGames
         Refresh-GameLibraryUI -Games $autoGames
@@ -2283,5 +2426,5 @@ $form.Add_Shown({
 })
 
 # Inicialização
-Write-Status -Message "1 Click DLSS 5 v2.5.2-beta pronto e operacional." -Level "OK"
+Write-Status -Message "1 Click DLSS 5 v$($script:Version) pronto e operacional." -Level "OK"
 if (-not $env:DLSS5_HEADLESS) { [void]$form.ShowDialog() }

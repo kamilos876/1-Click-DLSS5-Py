@@ -2,6 +2,41 @@
 
 All notable changes, architectural overhauls, and bug fixes for the **1 Click DLSS 5** project are documented in this file.
 
+## [v2.5.3-release] - 2026-09-02
+
+### 🛡️ Critical Engine Bug Fixes & Architecture Hardening
+- **Native Game Streamline Preservation on Factory Reset (`Uninstall-Dlss5`):**
+  - Resolved critical issue where `Uninstall-Dlss5` was unconditionally deleting native game `sl.interposer.dll` and `sl.common.dll` in Streamline titles (*The Witcher 3: Complete Edition*, *Cyberpunk 2077*).
+  - The uninstaller now strictly purges only files injected by the mod, preserving native game files with 100% integrity.
+- **Recursive Directory Purge on Mode Switching (`Install-Dlss5`):**
+  - Fixed cross-mode transition cleanup to recursively remove folders (`reshade-shaders`, `host64`, `layer-x64`), preventing orphaned shader files or helper binaries when switching between Feeder, OptiScaler, and Direct modes.
+- **Payload Neural Plugin Bundling:**
+  - Bundled official `sl.dlss_nr.dll` into `core/payload/` for games utilizing Streamline DLSS-NR plugin architecture.
+- **Feeder v0.12.0 ReShade Overlay Synchronization:**
+  - Updated `OverlayCollapsed` in `ReShade.ini` to `DLSS 5 Feed 0.12.0@dlss5-feed.addon64`, ensuring proper in-game overlay menu collapse.
+
+### ⚡ Native Compilation & Professional Launcher
+- **Native 64-Bit Windows Executable (`1-Click-DLSS5.exe`):**
+  - Compiled high-performance C# native executable using `csc.exe` with embedded high-resolution application icon (`logo.ico`) and assembly metadata (`v2.5.3.0`).
+  - Completely eliminates console/CMD window flashing during application launch.
+  - Added seamless fallback chain in `1-Click-DLSS5.bat` prioritizing the native `.exe`.
+
+### 🎨 Visual & UI/UX Polish (HUD v2)
+- **High-DPI Per-Monitor V2 Awareness:**
+  - Integrated `SetProcessDpiAwarenessContext(-4)` via P/Invoke to deliver crisp typography and interface scaling across 1080p, 1440p, and 4K displays.
+- **Official Application Icon Loading:**
+  - Resolved `$script:IconPath` fallback between `assets\icon.ico` and `assets\logo.ico`, ensuring the custom icon appears on the window and Windows taskbar.
+- **Drag & Drop Game Folder Support:**
+  - Added native Windows Forms drag-and-drop handler allowing users to drag game folders or `.exe` files directly into the window.
+- **Dynamic Progress Bar in Footer:**
+  - Added visual continuous progress bar in the footer panel during drive scanning.
+
+### 🔍 Deterministic Detection Engine
+- **PE Import Table (IAT) Inspection:**
+  - Added fast binary inspection of the target executable's PE Import Table to detect graphics APIs (`d3d12.dll`, `d3d11.dll`, `vulkan-1.dll`, `opengl32.dll`) even when no local DirectX DLLs exist in the game directory.
+- **Windows Registry Library Auto-Discovery:**
+  - Integrated dynamic discovery querying Windows Registry keys for **Steam** (`SteamPath` / `InstallPath`), **Epic Games**, and **GOG Galaxy** across all storage drives.
+
 ---
 
 ## [v2.5.2-beta] - 2026-09-02
