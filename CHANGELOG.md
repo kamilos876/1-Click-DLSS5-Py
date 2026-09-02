@@ -7,6 +7,17 @@ All notable changes, architectural overhauls, and bug fixes for the **1 Click DL
 ## [v2.5.0-beta] - 2026-09-02
 
 ### 🚀 Major Features & Architectural Redesign (HUD v2)
+- **🛡️ The Witcher 3 & Streamline Interposer Protection (Mode 1):**
+  - Eliminated `Entry Point Not Found: slGetFeatureSettings` startup crashes in *The Witcher 3: Complete Edition* and Streamline games.
+  - The installer now strictly preserves the game's native `sl.interposer.dll` and `sl.common.dll`, injecting only ReShade proxy, RenoDX addon, and `nvngx_dlssnr.dll`.
+
+- **🎯 Red Dead Redemption 2 & Non-Streamline NGX Hooking:**
+  - Fixed `HOOKS ARMED - NO DLSS CREATE SEEN` / `0xBAD00007` in *Red Dead Redemption 2* and native NGX games.
+  - Automatically configures `EnableHooks=1` for non-Streamline games to hook the NVIDIA NGX export directly.
+  - Added smart guidance: RDR2 requires setting the in-game Graphics API to **DirectX 12** (*Settings > Graphics > Advanced > Graphics API = DirectX 12*).
+
+- **↩️ Bulletproof 1-Click Factory Restoration:**
+  - Restored unconditional, guaranteed purging of proxy DLLs (`dxgi.dll`, `d3d12.dll`, `d3d9.dll`, `opengl32.dll`), addons, and shaders during factory reset, preventing broken game states.
 - **✨ Complete UI Overhaul (HUD v2):**
   - Modern, minimalist, high-contrast dark theme built from the ground up for both beginner and advanced users.
   - Streamlined 3-step visual workflow: `[1] Select Game` ➔ `[2] Click Install` ➔ `[3] Launch & Enjoy!`.
@@ -45,7 +56,8 @@ All notable changes, architectural overhauls, and bug fixes for the **1 Click DL
   - Resolved DX11 startup crashes and texture blurring (e.g., in *Mafia Definitive Edition*).
   - Integrated **Lumenite Kernel** (`Lumenite_Kernel.fx`) at the head of ReShade's technique chain for accurate optical flow motion vector calculation.
   - Configured `preset=6` in `dlss5-feed.cfg` for maximum frame stability.
-  - Added recursive search paths (`\**`) in `ReShade.ini` (`EffectSearchPaths=.eshade-shaders\Shaders\**`).
+  - Added recursive search paths (`\**`) in `ReShade.ini` (`EffectSearchPaths=.
+eshade-shaders\Shaders\**`).
   - Calibrated RenoDX neural tone & structure parameters (`NRGlobalTone=0.9`, `NRLocalStructure=0.44`, `NRLocalTone=1.22`, `NRSkinStructure=1.16`).
 
 - **↩️ 100% Clean Factory Restoration:**

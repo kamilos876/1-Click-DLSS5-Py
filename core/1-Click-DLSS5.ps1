@@ -841,7 +841,8 @@ function Show-SystemDiagnosisDialog {
 function Set-Dlss5ReShadeIni {
     param(
         [Parameter(Mandatory = $true)][string]$IniPath,
-        [Parameter(Mandatory = $false)][bool]$IsFeederMode = $true
+        [Parameter(Mandatory = $false)][bool]$IsFeederMode = $true,
+        [Parameter(Mandatory = $false)][int]$EnableHooks = 1
     )
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     if ($IsFeederMode) {
@@ -895,7 +896,7 @@ VariableListHeight=200.000000
 VariableListUseTabs=0
 
 [RenoDX.DLSS5]
-EnableHooks=2
+EnableHooks=$EnableHooks
 NeuralUplift=1
 NRAutoMask=1
 NRDepthMode=0
@@ -947,7 +948,7 @@ SkipLoadingDisabledEffects=0
 TutorialProgress=4
 
 [RenoDX.DLSS5]
-EnableHooks=2
+EnableHooks=$EnableHooks
 NeuralUplift=1
 NRAutoMask=1
 NRDepthMode=0
@@ -1066,19 +1067,19 @@ function Install-Dlss5 {
 
     # 4. Injeção Específica por Modo
     if ($effectiveMode -eq "DIRECT") {
-        # Extrai streamline.zip se presente
-        $slZip = Join-Path (Get-DLSS5PayloadDirectory) "streamline.zip"
-        if (Test-Path -LiteralPath $slZip -PathType Leaf) {
-            $tempSl = Join-Path $env:TEMP ("dlss5_sl_" + [System.Guid]::NewGuid().ToString("N"))
-            [System.IO.Compression.ZipFile]::ExtractToDirectory($slZip, $tempSl)
-            $slFiles = Get-ChildItem -LiteralPath (Join-Path $tempSl "streamline") -File -ErrorAction SilentlyContinue
-            foreach ($sf in $slFiles) {
-                Safe-Copy -Src $sf.FullName -DstName $sf.Name
-            }
-            Remove-Item -LiteralPath $tempSl -Recurse -Force -ErrorAction SilentlyContinue
+        # JOGOS COM DLSS NATIVO: NUNCA sobrescrever o interposer Streamline nativo do jogo (ex: The Witcher 3, Cyberpunk)
+        # para evitar erros de Entry Point (como slGetFeatureSettings ausente).
+        # Apenas injetamos o proxy ReShade, o RenoDX Addon e o modelo nvngx_dlssnr.dll.
+        $hasStreamline = (Test-Path -LiteralPath (Join-Path $targetFolder "sl.interposer.dll") -PathType Leaf)
+        $hookVal = if ($hasStreamline) { 2 } else { 1 }
+        
+        # Se o jogo já possui Streamline e suporta sl.dlss_nr.dll opcional, podemos fornecer apenas o plugin neural sem tocar no interposer
+        $slNrSrc = Join-Path (Get-DLSS5PayloadDirectory) "sl.dlss_nr.dll"
+        if ($hasStreamline -and (Test-Path -LiteralPath $slNrSrc -PathType Leaf)) {
+            Safe-Copy -Src $slNrSrc -DstName "sl.dlss_nr.dll"
         }
 
-        Set-Dlss5ReShadeIni -IniPath (Join-Path $targetFolder "ReShade.ini") -IsFeederMode $false
+        Set-Dlss5ReShadeIni -IniPath (Join-Path $targetFolder "ReShade.ini") -IsFeederMode $false -EnableHooks $hookVal
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
     }
     elseif ($effectiveMode -eq "OPTISCALER") {
@@ -1182,7 +1183,9 @@ function Uninstall-Dlss5 {
         Remove-Item -LiteralPath $backupFolder -Recurse -Force -ErrorAction SilentlyContinue
     }
 
+    # Lista de purga cirúrgica incondicional (padrão absoluto para restauração limpa)
     $purgeList = @(
+        "dxgi.dll", "d3d12.dll", "d3d9.dll", "opengl32.dll",
         "renodx-dlss5.addon64", "renodx-dlss5++.addon64", "renodx-dlss5-v3.addon64",
         "dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed.cfg", "dlss5-feed.log", "dlss5-feed.ini",
         "nvngx_dlssnr.dll", "sl.dlss_nr.dll",
@@ -1193,22 +1196,6 @@ function Uninstall-Dlss5 {
         "nis.license.txt", "nvngx_dlss.license.txt", "reflex.license.txt",
         $script:StateName, "_1Click_DLSS5_State.json", "_DLSS5_Easy_Installer_State.json", "dlss5_backup_manifest.json"
     )
-
-    if ($savedInjected -contains "dxgi.dll" -and ($savedBacked -notcontains "dxgi.dll")) {
-        $purgeList += "dxgi.dll"
-    }
-    if ($savedInjected -contains "d3d12.dll" -and ($savedBacked -notcontains "d3d12.dll")) {
-        $purgeList += "d3d12.dll"
-    }
-    if ($savedInjected -contains "d3d9.dll" -and ($savedBacked -notcontains "d3d9.dll")) {
-        $purgeList += "d3d9.dll"
-    }
-    if ($savedInjected -contains "opengl32.dll" -and ($savedBacked -notcontains "opengl32.dll")) {
-        $purgeList += "opengl32.dll"
-    }
-    if ($savedInjected -contains "nvngx_dlss.dll" -and ($savedBacked -notcontains "nvngx_dlss.dll")) {
-        $purgeList += "nvngx_dlss.dll"
-    }
 
     foreach ($inj in $savedInjected) {
         if ($savedBacked -notcontains $inj -and ($purgeList -notcontains $inj)) {
@@ -1769,15 +1756,25 @@ function Highlight-SelectedModeCard {
     $cardMode3.BackColor = [System.Drawing.Color]::FromArgb(12, 22, 34)
 
     $d = Get-Dict -Lang $script:CurrentLang
+    $isRdr2 = ($script:SelectedGameObj -and ($script:SelectedGameObj.Name -match "Red Dead" -or $script:SelectedGameObj.ExeName -match "RDR2|rdr2"))
+
     if ($Mode -eq "DIRECT") {
         $cardMode1.BackColor = [System.Drawing.Color]::FromArgb(20, 48, 30)
-        $lblReqText.Text = $d.ReqMode1
+        if ($isRdr2) {
+            $lblReqText.Text = if ($script:CurrentLang -eq "PT") { "No RDR2: Mude API para DirectX 12 (Configurações > Gráficos > Avançado) e ATIVE o DLSS." } else { "In RDR2: Switch Graphics API to DirectX 12 (Settings > Graphics > Advanced) & ENABLE DLSS." }
+        } else {
+            $lblReqText.Text = $d.ReqMode1
+        }
     } elseif ($Mode -eq "OPTISCALER") {
         $cardMode2.BackColor = [System.Drawing.Color]::FromArgb(18, 40, 65)
         $lblReqText.Text = $d.ReqMode2
     } else {
         $cardMode3.BackColor = [System.Drawing.Color]::FromArgb(35, 25, 55)
-        $lblReqText.Text = $d.ReqMode3
+        if ($isRdr2) {
+            $lblReqText.Text = if ($script:CurrentLang -eq "PT") { "No RDR2: O Feeder requer DirectX 12. Mude a API para DirectX 12 nas opções do jogo." } else { "In RDR2: Feeder requires DirectX 12. Switch Graphics API to DirectX 12 in game settings." }
+        } else {
+            $lblReqText.Text = $d.ReqMode3
+        }
     }
 }
 
