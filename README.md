@@ -46,15 +46,24 @@ Traditionally, integrating DLSS-NR, custom ReShade add-ons, optical flow estimat
 
 <div align="center">
 
-### Modern 3-Step Neural Control Center (HUD v2)
-<img src="core/docs/ui_preview.png" alt="1-Click DLSS 5 Main Interface" width="900" />
+### 1️⃣ Main Control Center & Mode 1: Direct Injection (Cyberpunk 2077)
+![1-Click DLSS 5 Main Interface](core/docs/ui_preview.png)
 
-*Auto-discovers installed games (Steam, Epic, GOG, Xbox, EA), detects graphics APIs and architectures, and selects the ideal injection mode automatically.*
+*Streamlined HUD v2 layout with 3-step workflow, real-time API detection, and auto-mode selection.*
 
-### Universal Feeder & Motion Estimation Pipeline (Mode 3)
-<img src="core/docs/ui_preview_feeder.png" alt="Mode 3 Universal Feeder Interface" width="900" />
+<br/>
 
-*Configured for non-DLSS games with Lumenite Kernel optical flow motion vectors and 100% native resolution DLAA reconstruction.*
+### 2️⃣ Mode 3: Universal Feeder & Optical Flow Pipeline (Mafia: Definitive Edition)
+![Mode 3 Universal Feeder Interface](core/docs/ui_preview_feeder.png)
+
+*Engineered for games without native DLSS using Lumenite Kernel motion vectors and 100% native resolution DLAA reconstruction.*
+
+<br/>
+
+### 3️⃣ Mode 2: OptiScaler Bridge Mode (God of War - FSR2/XeSS)
+![Mode 2 OptiScaler Bridge Interface](core/docs/feeder_settings.png)
+
+*Redirects in-game AMD FSR 2/3 or Intel XeSS calls directly into the NVIDIA DLSS-NR neural model.*
 
 </div>
 
