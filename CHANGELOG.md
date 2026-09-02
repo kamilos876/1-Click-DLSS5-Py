@@ -4,6 +4,31 @@ All notable changes, architectural overhauls, and bug fixes for the **1 Click DL
 
 ---
 
+## [v2.5.2-beta] - 2026-09-02
+
+### 🚀 Major Engine Upgrades & DLSS 5 Feeder v0.12.0
+- **Feeder Core Upgraded to Official v0.12.0 (Mode 3):**
+  - Updated all bundled Feeder binaries (`dlss5-feed.addon64`, `dlss5-feed.addon32`, `host64/dlss5-feed-host64.exe`, and `DLSS5_Feed.fx`) to the latest official v0.12.0 release.
+  - **GPU Drain Before Rebuild:** Added command queue draining prior to D3D12 feature recreation, eliminating Device Removal (TDR) crashes.
+  - **AMD FSR 1 Expand-Back (EASU + RCAS):** Replaced legacy bilinear stretching with AMD FSR 1 spatial upscaling + sharpening when operating at lower work resolutions.
+  - **In-Game Overlay for 32-bit Games:** Added live in-game panel mirroring for 32-bit titles without requiring Alt-Tab.
+- **Pristine 100% Native DLAA Clarity (Zero Blurry Text):**
+  - Strictly enforced native resolution DLAA profile (`preset=6` and `work_resolution=100`) in `dlss5-feed.cfg`.
+  - Preserved the full **LumeniteFX Kernel** suite (`lumenite_Kernel.fx`, `lumenite_TRAA.fx`, headers and blue noise texture) at the top of the execution chain (`DLSS5_MV_PROVIDER=3`).
+- **Dynamic Cross-Mode Isolation:**
+  - Automatically detects and cleanly purges inactive mode files when switching between Mode 1 (Direct), Mode 2 (OptiScaler), and Mode 3 (Feeder), preventing dual-proxy conflicts (`version.dll` + `dxgi.dll`).
+  - Preserves original game file backups across mode changes.
+- **Preexisting ReShade Configuration Protection:**
+  - Preexisting `ReShade.ini` and `ReShadePreset.ini` are now safely preserved in `_1Click_DLSS5_Backup\` and restored with 100% byte-fidelity on factory reset.
+- **Native Game `nvngx_dlss.dll` Integrity Protection (Mode 1):**
+  - Mode 1 strictly preserves native game DLSS binaries, preventing hash mismatch flags in third-party launchers (Rockstar Games Launcher in RDR2, EA App, Ubisoft Connect).
+- **Universal Launcher & Path Resiliency:**
+  - Added standalone `1-Click-DLSS5.bat` launcher in repository root with robust `%~dp0` quote handling.
+  - Hardened game drive scanner with bracket `[...]` and non-ASCII character immunity.
+  - Added non-invasive runtime Vulkan layer binding (`VK_LAYER_PATH` / `VK_INSTANCE_LAYERS`) without Windows Registry modifications.
+
+---
+
 ## [v2.5.1] - 2026-09-02
 
 ### 🛡️ Critical Engine Fixes & Game Compatibility

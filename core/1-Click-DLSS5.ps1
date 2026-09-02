@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    1 Click DLSS 5 v2.5.1 • Universal Neural Control Center
+    1 Click DLSS 5 v2.5.2-beta • Universal Neural Control Center
     Auto-Descoberta Instantânea de Jogos (Steam, Epic, GOG, Xbox, EA), Motor de Resolução em 1 Clique (Auto-Fix),
     Suporte Universal a APIs (DirectX 9/10/11/12, Vulkan, OpenGL), 32 e 64-bit, 10 Idiomas Nativos.
 #>
@@ -15,7 +15,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 # --- CONFIGURAÇÕES GLOBAIS ---
-$script:Version = "2.5.1"
+$script:Version = "2.5.2-beta"
 $script:CurrentLang = "PT"
 $script:AddOnName = "renodx-dlss5.addon64"
 $script:StateName = "_dlss5_install_state.json"
@@ -1510,7 +1510,7 @@ function Style-Button {
 # CONSTRUÇÃO DA HUD MODERNA E INTUITIVA PARA LEIGOS
 # ==============================================================================
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "1 Click DLSS 5 v2.5.1 • Universal Neural Control Center"
+$form.Text = "1 Click DLSS 5 v2.5.2-beta • Universal Neural Control Center"
 $form.Size = New-Object System.Drawing.Size(1260, 860)
 $form.MinimumSize = New-Object System.Drawing.Size(1180, 800)
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
@@ -2254,5 +2254,5 @@ $form.Add_Shown({
 })
 
 # Inicialização
-Write-Status -Message "1 Click DLSS 5 v2.5.1 pronto e operacional." -Level "OK"
+Write-Status -Message "1 Click DLSS 5 v2.5.2-beta pronto e operacional." -Level "OK"
 if (-not $env:DLSS5_HEADLESS) { [void]$form.ShowDialog() }
