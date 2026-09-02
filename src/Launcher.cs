@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 [assembly: AssemblyTitle("1 Click DLSS 5")]
 [assembly: AssemblyDescription("Universal Neural Control Center • DLSS 5 (DLSS-NR) Installer")]
@@ -35,7 +36,6 @@ namespace OneClickDLSS5
 
             if (!File.Exists(scriptPath))
             {
-                // Fallback check
                 string altScript = Path.Combine(baseDir, "1-Click-DLSS5.ps1");
                 if (File.Exists(altScript))
                 {
@@ -43,38 +43,57 @@ namespace OneClickDLSS5
                 }
                 else
                 {
-                    System.Windows.Forms.MessageBox.Show(
-                        "Erro: Não foi possível localizar o script principal em:\n" + scriptPath,
-                        "1 Click DLSS 5",
-                        System.Windows.Forms.MessageBoxButtons.OK,
-                        System.Windows.Forms.MessageBoxIcon.Error);
+                    MessageBox.Show(
+                        "Não foi possível localizar o script principal do 1 Click DLSS 5 em:\n" + scriptPath,
+                        "1 Click DLSS 5 - Arquivo Não Encontrado",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
                     return 1;
                 }
+            }
+
+            // Seleciona o interpretador PowerShell mais recente disponível
+            string psExe = "powershell.exe";
+            string pwsh7 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"PowerShell\7\pwsh.exe");
+            if (File.Exists(pwsh7))
+            {
+                psExe = pwsh7;
             }
 
             try
             {
                 ProcessStartInfo psi = new ProcessStartInfo();
-                psi.FileName = "powershell.exe";
-                psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + scriptPath + "\"";
-                psi.WorkingDirectory = Path.GetDirectoryName(scriptPath);
+                psi.FileName = psExe;
+                psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -STA -File \"" + scriptPath + "\"";
+                psi.WorkingDirectory = baseDir;
                 psi.UseShellExecute = false;
                 psi.CreateNoWindow = true;
-                psi.WindowStyle = ProcessWindowStyle.Hidden;
+                psi.WindowStyle = ProcessWindowStyle.Normal;
+                psi.RedirectStandardError = true;
 
                 using (Process proc = Process.Start(psi))
                 {
+                    string stderr = proc.StandardError.ReadToEnd();
                     proc.WaitForExit();
+
+                    if (proc.ExitCode != 0 && !string.IsNullOrEmpty(stderr) && !stderr.Contains("OperationCanceledException"))
+                    {
+                        MessageBox.Show(
+                            "Ocorreu um erro durante a inicialização do 1 Click DLSS 5:\n\n" + stderr,
+                            "1 Click DLSS 5 - Erro",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+                    }
                     return proc.ExitCode;
                 }
             }
             catch (Exception ex)
             {
-                System.Windows.Forms.MessageBox.Show(
+                MessageBox.Show(
                     "Falha ao iniciar o 1 Click DLSS 5:\n\n" + ex.Message,
-                    "1 Click DLSS 5",
-                    System.Windows.Forms.MessageBoxButtons.OK,
-                    System.Windows.Forms.MessageBoxIcon.Error);
+                    "1 Click DLSS 5 - Falha Crítica",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
                 return 1;
             }
         }

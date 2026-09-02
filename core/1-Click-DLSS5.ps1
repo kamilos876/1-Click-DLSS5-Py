@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     1 Click DLSS 5 v2.5.2-beta • Universal Neural Control Center
     Auto-Descoberta Instantânea de Jogos (Steam, Epic, GOG, Xbox, EA), Motor de Resolução em 1 Clique (Auto-Fix),
@@ -431,7 +431,7 @@ function Get-Dict {
         "SearchPlaceholder" = "Pesquisar jogos..."
         "BtnScan" = "ESCANEAR DISCOS"
         "BtnBrowse" = "PROCURAR JOGO"
-        "BtnDiagnose" = "DIAGNÓSTICO DO SISTEMA"
+        "BtnDiagnose" = "DIAGNOSTICO DO SISTEMA"
         "BtnAutoFix" = "[⚡] RESOLVER PROBLEMA EM 1 CLIQUE"
         "AutoFixDone" = "Problema resolvido com sucesso e DLSS 5 instalado!"
         "AutoFixProgress" = "Executando correcao em 1 clique..."
@@ -459,7 +459,7 @@ function Get-Dict {
         "BtnLaunch" = "[►] INICIAR JOGO"
         "BtnLaunchNow" = "[►] INICIAR JOGO AGORA"
         "BtnUninstall" = "[↩] RESTAURAR DE FÁBRICA"
-        "BtnOpenFolder" = "[📂] ABRIR PASTA"
+        "BtnOpenFolder" = "[PASTA] ABRIR PASTA"
         "BtnOpenLog" = "VER LOG COMPLETO"
         "BtnClose" = "Fechar"
         "StatusReady" = "Pronto. Selecione um jogo para comecar."
@@ -1752,7 +1752,7 @@ $lblStep3.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9)
 
 # Botão Diagnóstico e Idioma no Canto Superior Direito
 $btnDiagnose = New-Object System.Windows.Forms.Button
-$btnDiagnose.Text = "🩺 DIAGNÓSTICO"
+$btnDiagnose.Text = "[+] DIAGNOSTICO"
 $btnDiagnose.Location = New-Object System.Drawing.Point(880, 12)
 $btnDiagnose.Size = New-Object System.Drawing.Size(160, 28)
 $btnDiagnose.Anchor = "Top, Right"
@@ -2090,7 +2090,7 @@ Style-Button -Button $btnUninstall -BaseColor ([System.Drawing.Color]::FromArgb(
 [void]$actionPanel.Controls.Add($btnUninstall)
 
 $btnOpenFolder = New-Object System.Windows.Forms.Button
-$btnOpenFolder.Text = "[📂] ABRIR PASTA"
+$btnOpenFolder.Text = "[PASTA] ABRIR PASTA"
 $btnOpenFolder.Location = New-Object System.Drawing.Point(367, 62)
 $btnOpenFolder.Size = New-Object System.Drawing.Size(355, 38)
 Style-Button -Button $btnOpenFolder -BaseColor ([System.Drawing.Color]::FromArgb(35, 55, 90)) -HoverColor ([System.Drawing.Color]::FromArgb(50, 75, 125)) -TextColor ([System.Drawing.Color]::White)
@@ -2427,4 +2427,13 @@ $form.Add_Shown({
 
 # Inicialização
 Write-Status -Message "1 Click DLSS 5 v$($script:Version) pronto e operacional." -Level "OK"
-if (-not $env:DLSS5_HEADLESS) { [void]$form.ShowDialog() }
+if (-not $env:DLSS5_HEADLESS) {
+    [void][System.Windows.Forms.Application]::EnableVisualStyles()
+    $form.TopMost = $true
+    $form.Add_Shown({
+        $this.TopMost = $false
+        $this.Activate()
+        $this.BringToFront()
+    })
+    [void][System.Windows.Forms.Application]::Run($form)
+}
