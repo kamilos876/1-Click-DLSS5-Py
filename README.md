@@ -46,24 +46,24 @@ Traditionally, integrating DLSS-NR, custom ReShade add-ons, optical flow estimat
 
 <div align="center">
 
-### 1️⃣ Main Control Center & Mode 1: Direct Injection (Cyberpunk 2077)
-![1-Click DLSS 5 Main Interface](core/docs/ui_preview.png)
+### 1️⃣ Mode 1: Direct Injection Mode (Cyberpunk 2077 • Native DLSS)
+![Mode 1: Direct Injection](core/docs/mode1_direct_preview.png)
 
-*Streamlined HUD v2 layout with 3-step workflow, real-time API detection, and auto-mode selection.*
-
-<br/>
-
-### 2️⃣ Mode 3: Universal Feeder & Optical Flow Pipeline (Mafia: Definitive Edition)
-![Mode 3 Universal Feeder Interface](core/docs/ui_preview_feeder.png)
-
-*Engineered for games without native DLSS using Lumenite Kernel motion vectors and 100% native resolution DLAA reconstruction.*
+*Streamlined HUD v2 layout with 3-step workflow, real-time D3D12 detection, and automated Mode 1 selection for native DLSS games.*
 
 <br/>
 
-### 3️⃣ Mode 2: OptiScaler Bridge Mode (God of War - FSR2/XeSS)
-![Mode 2 OptiScaler Bridge Interface](core/docs/feeder_settings.png)
+### 2️⃣ Mode 2: OptiScaler Bridge Mode (God of War • AMD FSR 2/3 & Intel XeSS)
+![Mode 2: OptiScaler Bridge](core/docs/mode2_optiscaler_preview.png)
 
-*Redirects in-game AMD FSR 2/3 or Intel XeSS calls directly into the NVIDIA DLSS-NR neural model.*
+*Redirects in-game AMD FSR 2/3 or Intel XeSS calls directly into the NVIDIA DLSS-NR neural model via proxy redirection.*
+
+<br/>
+
+### 3️⃣ Mode 3: Universal Feeder Mode (Mafia: Definitive Edition • 100% Native DLAA)
+![Mode 3: Universal Feeder](core/docs/mode3_feeder_preview.png)
+
+*Engineered for games without any native upscalers using Lumenite Kernel optical flow motion vectors and zero loss of clarity.*
 
 </div>
 
