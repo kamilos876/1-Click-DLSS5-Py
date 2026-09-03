@@ -1259,7 +1259,14 @@ function Install-Dlss5 {
                 Write-Status -Message "Detectada troca de modo ($($oldSaved.Mode) -> $effectiveMode). Removendo arquivos do modo anterior..." -Level "INFO"
                 $previousInjected = @($oldSaved.InjectedFiles)
                 foreach ($oldFile in $previousInjected) {
-                    if ($existingBackedUp -notcontains $oldFile) {
+                    if ($existingBackedUp -contains $oldFile) {
+                        $bSrc = Join-Path $backupFolder $oldFile
+                        if (Test-Path -LiteralPath $bSrc -PathType Leaf) {
+                            Copy-Item -LiteralPath $bSrc -Destination (Join-Path $targetFolder $oldFile) -Force
+                            Write-Status -Message "Restaurado arquivo original de backup na troca de modo: $oldFile" -Level "INFO"
+                        }
+                    }
+                    else {
                         $oldP = Join-Path $targetFolder $oldFile
                         if (Test-Path -LiteralPath $oldP) {
                             Remove-Item -LiteralPath $oldP -Recurse -Force -ErrorAction SilentlyContinue
@@ -1336,6 +1343,36 @@ function Install-Dlss5 {
             $dlssSrc = Join-Path (Get-DLSS5PayloadDirectory) "nvngx_dlss.dll"
             if (Test-Path -LiteralPath $dlssSrc) {
                 Safe-Copy -Src $dlssSrc -DstName "nvngx_dlss.dll"
+            }
+        }
+    }
+
+    # 3. Preservacao e Recuperacao de Dependencias Criticas (Ex: libxess.dll)
+    # Jogos como Forza Horizon importam libxess.dll diretamente no executavel.
+    # Se libxess.dll estiver ausente da pasta mas o executavel exigir, restaura automaticamente do payload!
+    $xessTarget = Join-Path $targetFolder "libxess.dll"
+    if (-not (Test-Path -LiteralPath $xessTarget -PathType Leaf)) {
+        $exeFile = $target.Executable
+        $needsXess = $false
+        if (Test-Path -LiteralPath $exeFile -PathType Leaf) {
+            try {
+                $stream = [System.IO.File]::OpenRead($exeFile)
+                $reader = New-Object System.IO.BinaryReader($stream)
+                $readLen = [Math]::Min(100MB, $stream.Length)
+                $exeBytes = $reader.ReadBytes($readLen)
+                $reader.Close()
+                $stream.Close()
+                $exeAscii = [System.Text.Encoding]::ASCII.GetString($exeBytes)
+                if ($exeAscii -match 'libxess\.dll') {
+                    $needsXess = $true
+                }
+            } catch {}
+        }
+        if ($needsXess) {
+            $xessSrc = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\libxess.dll"
+            if (Test-Path -LiteralPath $xessSrc) {
+                Copy-Item -LiteralPath $xessSrc -Destination $xessTarget -Force
+                Write-Status -Message "Detectada dependencia nativa de libxess.dll exigida pelo executavel. Restaurada com sucesso do payload!" -Level "OK"
             }
         }
     }
@@ -1541,10 +1578,27 @@ function Uninstall-Dlss5 {
         "VkLayer_feed_vk.dll", "VkLayer_feed_vk.json", "run-with-feed-layer.bat",
         "VkLayer_feed_vk32.dll", "VkLayer_feed_vk32.json", "run-with-feed-layer32.bat",
         "nvngx_dlssnr.dll", "sl.dlss_nr.dll",
-        "version.dll", "OptiScaler.ini", "OptiScaler.log", "libxess.dll",
+        "version.dll", "OptiScaler.ini", "OptiScaler.log",
         "ReShade.ini", "ReShadePreset.ini", "ReShade.log",
         $script:StateName, "_1Click_DLSS5_State.json", "_DLSS5_Easy_Installer_State.json", "dlss5_backup_manifest.json"
     )
+
+    # Protecao: Nunca purgar libxess.dll se o executavel do jogo possuir dependencia nativa dele!
+    $exeFile = $target.Executable
+    if (Test-Path -LiteralPath $exeFile -PathType Leaf) {
+        try {
+            $stream = [System.IO.File]::OpenRead($exeFile)
+            $reader = New-Object System.IO.BinaryReader($stream)
+            $readLen = [Math]::Min(100MB, $stream.Length)
+            $exeBytes = $reader.ReadBytes($readLen)
+            $reader.Close()
+            $stream.Close()
+            $exeAscii = [System.Text.Encoding]::ASCII.GetString($exeBytes)
+            if ($exeAscii -match 'libxess\.dll') {
+                $purgeList = @($purgeList | Where-Object { $_ -ne "libxess.dll" })
+            }
+        } catch {}
+    }
 
     foreach ($inj in $savedInjected) {
         if ($savedBacked -notcontains $inj -and ($purgeList -notcontains $inj)) {
