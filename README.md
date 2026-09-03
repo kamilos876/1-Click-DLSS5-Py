@@ -5,7 +5,7 @@
 **A PySide6 rewrite of the 1 Click DLSS 5 injector**
 *Same injection behaviour, rebuilt as a testable Python core with a Qt interface*
 
-[![Version](https://img.shields.io/badge/version-1.5.1-brightgreen.svg)](https://github.com/kamilos876/1-Click-DLSS5-Py)
+[![Version](https://img.shields.io/badge/version-2.6.0-brightgreen.svg)](https://github.com/kamilos876/1-Click-DLSS5-Py)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20x64-0078D6.svg)](https://github.com/kamilos876/1-Click-DLSS5-Py)
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](https://www.python.org/)
@@ -109,15 +109,15 @@ python tests/run_all.py
 
 13 modules covering executable and graphics-API detection, install/restore round
 trips against synthetic game folders, `ReShade.ini` rewriting, translation-table
-integrity (60 log keys × 3 languages), and Qt layout at several window sizes.
+integrity (62 log keys × 3 languages), and Qt layout at several window sizes.
 
 ---
 
 ## Payload
 
 The port reads the same payload folder as the PowerShell edition —
-`core/payload/` since v1.5.0, with the older top-level `payload/` layout still
-detected automatically.
+`core/payload/`, with the older top-level `payload/` layout still detected
+automatically.
 
 `streamline.zip` is the one piece not committed here (excluded for size). Drop it
 into `core/payload/` and it is picked up on startup. Without it, Direct and
@@ -136,9 +136,9 @@ on disk, follows executables that moved between patches, and flags what is gone
 rather than deleting it. The PowerShell edition rescans from scratch every time.
 
 **A UI that stays responsive.** Scanning, refreshing and installing each run on
-their own `QThread` and report back through signals, behind a progress dialog;
-a long scan or refresh can be cancelled while it runs. The PowerShell edition
-scans on the UI thread, so the window freezes for the duration.
+their own `QThread`, with progress shown inline in the main window and a long
+scan or refresh cancellable while it runs. The PowerShell edition scans on the
+UI thread, so the window freezes for the duration.
 
 **Polish, alongside English and Portuguese.** Upstream ships EN and PT. Because
 the core emits message keys instead of sentences, adding a language is a table,
@@ -164,6 +164,13 @@ DirectX 12, Unreal layout — is collected in one walk of each game folder rathe
 than one walk per family, so the full depth stays affordable: an Unreal title
 keeps its DLSS DLL under `Engine/Plugins/.../Binaries/ThirdParty/`, well past
 the depth a shallow scan would reach.
+
+**Runtime integrity checks.** A game's own Streamline, XeSS and DLSS DLLs are
+never deleted by a restore unless this install is on record as having injected
+them, and Direct mode leaves a game's native `sl.interposer.dll` alone rather
+than replacing part of a matched set. When the executable's PE import table
+names an upscaler runtime the folder no longer has, it is restored from the
+payload — a game that links `libxess.dll` directly will not start without it.
 
 ### One deliberate behaviour change
 

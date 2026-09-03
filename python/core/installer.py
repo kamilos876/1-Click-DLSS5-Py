@@ -305,6 +305,19 @@ def _copy_with_backup(
         state.injected_files.append(track_name)
 
 
+def _payload_source(name: str, payload_folder: Path) -> Path:
+    """Where a runtime file should be copied from.
+
+    The extracted ZIP is the primary source, but the shipped payload carries
+    some of these too -- sl.dlss_nr.dll moved there in the v2.x payloads. A ZIP
+    that predates the move would otherwise silently skip the file.
+    """
+    from_zip = payload_folder / name
+    if from_zip.is_file():
+        return from_zip
+    return C.PAYLOAD_ROOT / name
+
+
 def _repair_missing_dependencies(
     target: GameTarget, folder: Path, log: LogFn
 ) -> None:
@@ -365,7 +378,9 @@ def _install_direct(
             log(msg("NativeStreamlineKept", len(skipped)), "INFO")
 
     for name in files:
-        _copy_with_backup(payload_folder / name, folder / name, backup_folder, state, name)
+        _copy_with_backup(
+            _payload_source(name, payload_folder), folder / name, backup_folder, state, name
+        )
 
     # Engine plugin folders (Unreal ships its own DLSS DLLs) need the same update.
     # Our own backup folders hold a copied nvngx_dlss.dll too, so they look like
@@ -381,7 +396,9 @@ def _install_direct(
         plugin_backup = plugin_dir / C.BACKUP_NAME
         plugin_backup.mkdir(parents=True, exist_ok=True)
         for name in files:
-            _copy_with_backup(payload_folder / name, plugin_dir / name, plugin_backup, None)
+            _copy_with_backup(
+                _payload_source(name, payload_folder), plugin_dir / name, plugin_backup, None
+            )
 
 
 def _install_optiscaler(
@@ -498,7 +515,9 @@ def _install_feeder(
     # originals: a restore has to put the game's own runtime back.
     backup_folder = folder / C.BACKUP_NAME
     for name in ("nvngx_dlssnr.dll", "nvngx_dlss.dll"):
-        _copy_with_backup(payload_folder / name, folder / name, backup_folder, state, name)
+        _copy_with_backup(
+            _payload_source(name, payload_folder), folder / name, backup_folder, state, name
+        )
 
     shader_dir = folder / "reshade-shaders" / "Shaders"
     texture_dir = folder / "reshade-shaders" / "Textures"

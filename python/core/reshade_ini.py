@@ -86,11 +86,35 @@ NRPreset=2
 Style=1
 NRStyle=1"""
 
-# Calibrated validation values (v1.5.0): a tighter luma tolerance with a higher
-# static bias suppresses ghosting on UI and particles without freezing motion.
-FEEDER_PRESET_CONTENT = "\r\n".join([
-    "Techniques=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx",
-    "TechniqueSorting=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx",
+# The chain that must run, in this order, for the Feeder to work at all.
+_ACTIVE_TECHNIQUES = "Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx"
+
+# Optional filters shipped in the payload since the v2.x releases. They are
+# listed in the sort order but never in Techniques, so they sit ready in the
+# ReShade overlay for the user to switch on, without altering the image by
+# default. Each is offered only when its .fx is actually present.
+_OPTIONAL_FILTERS = [
+    ("SMAA@SMAA.fx", "SMAA.fx"),
+    ("FXAA@FXAA.fx", "FXAA.fx"),
+    ("Lumenite_TRAA@lumenite_TRAA.fx", "lumenite_TRAA.fx"),
+    ("Vibrance@Vibrance.fx", "Vibrance.fx"),
+    ("Tonemap@Tonemap.fx", "Tonemap.fx"),
+    ("ContrastAdaptiveSharpen@CAS.fx", "CAS.fx"),
+    ("Splitscreen@Splitscreen.fx", "Splitscreen.fx"),
+]
+
+
+def _technique_sorting() -> str:
+    """The Feeder chain, followed by whichever optional filters are installed."""
+    shaders = C.PAYLOAD_ROOT / "feeder" / "shaders"
+    available = [
+        entry for entry, filename in _OPTIONAL_FILTERS if (shaders / filename).is_file()
+    ]
+    return ",".join([_ACTIVE_TECHNIQUES] + available)
+
+
+_PRESET_BODY = "\r\n".join([
+    "",
     "",
     "[DLSS5_Feed.fx]",
     "VALIDATE_LUMA=1",
@@ -104,6 +128,15 @@ FEEDER_PRESET_CONTENT = "\r\n".join([
     "MV_CONSISTENCY=1.000000",
     "GEOM_ENABLE=0",
 ])
+
+
+def feeder_preset_content() -> str:
+    """ReShadePreset.ini for Feeder mode: the chain, its order, and its tuning."""
+    header = "\r\n".join([
+        f"Techniques={_ACTIVE_TECHNIQUES}",
+        f"TechniqueSorting={_technique_sorting()}",
+    ])
+    return header + _PRESET_BODY
 
 
 def write_dlss5_reshade_ini(ini_path: Path, feeder_mode: bool = False) -> None:
@@ -177,4 +210,4 @@ def _build_sections(feeder_mode: bool) -> str:
 
 def write_feeder_preset(preset_path: Path) -> None:
     """Write ReShadePreset.ini pinning the LumeniteFX -> DLSS5_Feed chain."""
-    preset_path.write_text(FEEDER_PRESET_CONTENT, encoding="utf-8", newline="")
+    preset_path.write_text(feeder_preset_content(), encoding="utf-8", newline="")

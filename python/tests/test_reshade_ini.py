@@ -5,7 +5,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core.reshade_ini import write_dlss5_reshade_ini
+from core import constants as C
+from core.reshade_ini import (
+    _ACTIVE_TECHNIQUES,
+    _OPTIONAL_FILTERS,
+    write_dlss5_reshade_ini,
+    write_feeder_preset,
+)
 
 
 def _sections(text: str) -> list[str]:
@@ -88,6 +94,32 @@ def test_no_bom(tmp: Path) -> None:
     assert not ini.read_bytes().startswith(b"\xef\xbb\xbf")
 
 
+def test_optional_filters_are_offered_but_not_enabled(tmp: Path) -> None:
+    """The v2.x payload ships CAS, SMAA, FXAA and friends.
+
+    They belong in TechniqueSorting so the ReShade overlay lists them in a
+    sensible order, but never in Techniques: switching one on is the user's
+    choice, and enabling them by default would change the image nobody asked
+    to change.
+    """
+    preset = tmp / "ReShadePreset.ini"
+    write_feeder_preset(preset)
+    text = preset.read_text(encoding="utf-8")
+
+    active = next(l for l in text.splitlines() if l.startswith("Techniques="))
+    sorting = next(l for l in text.splitlines() if l.startswith("TechniqueSorting="))
+
+    # The Feeder chain must be the only thing running.
+    assert active == "Techniques=" + _ACTIVE_TECHNIQUES, active
+
+    shaders = C.PAYLOAD_ROOT / "feeder" / "shaders"
+    for entry, filename in _OPTIONAL_FILTERS:
+        if not (shaders / filename).is_file():
+            continue
+        assert entry in sorting, f"{entry} missing from the sort order"
+        assert entry not in active, f"{entry} must not be enabled by default"
+
+
 if __name__ == "__main__":
     tests = [
         test_direct_mode_sections,
@@ -96,6 +128,7 @@ if __name__ == "__main__":
         test_reinstall_is_idempotent,
         test_mode_switch_drops_feeder_chain,
         test_no_bom,
+        test_optional_filters_are_offered_but_not_enabled,
     ]
     for func in tests:
         with tempfile.TemporaryDirectory() as raw:

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 PRODUCT_NAME = "1 Click DLSS 5"
-VERSION = "1.5.1"
+VERSION = "2.6.0"
 
 ADDON_NAME = "renodx-dlss5.addon64"
 ADDON_HASH = "E1C28FDE0922B12FC10734E58C3D24A36808E575247F4FD4F36226540D7EE023"
