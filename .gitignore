@@ -7,6 +7,12 @@ $RECYCLE.BIN/
 
 # Large Binaries and Release Packages (>100MB for GitHub)
 *.zip
+core/payload/*.zip
+core/payload/streamline.zip
+core/payload/nvngx_dlssnr.dll
+core/payload/nvngx_dlss.dll
+core/payload/dxgi.dll
+core/payload/dxgi32.dll
 payload/*.zip
 payload/streamline.zip
 payload/optiscaler/OptiScaler.dll
@@ -14,6 +20,7 @@ payload/optiscaler/libxess.dll
 
 # Temporary & Runtime Logs
 *.log
+1-Click-DLSS5.log
 ReShade.log
 sl.param.global.log
 sl.config.json
@@ -23,6 +30,8 @@ _1Click_DLSS5_Backup/
 _1Click_DLSS5_State.json
 _DLSS5_Easy_Backup/
 _DLSS5_Easy_Installer_State.json
+_DLSS5_Backup/
+_dlss5_install_state.json
 dlss5_backup_manifest.json
 
 # Local AppData Caches & Python Bytecode

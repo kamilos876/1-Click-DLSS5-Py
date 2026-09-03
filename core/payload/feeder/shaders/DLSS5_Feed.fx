@@ -241,7 +241,7 @@ uniform float STATIC_BIAS <
     ui_label = "Static bias";
     ui_tooltip = "How much worse (relative) the static explanation may score than the vector's and still win.\n"
                  "0 = the vector must strictly beat 'did not move'. Higher favours zero vectors.";
-> = 0.35;
+> = 0.15;
 
 uniform float STATIC_MIN_CONTRAST <
     ui_category = "Validation (flicker / flames / disocclusion)";
@@ -258,8 +258,9 @@ uniform bool VALIDATE_LUMA <
     ui_label = "Luma test (mask only)";
     ui_tooltip = "The reprojected previous luma must fall inside the current 3x3 neighbourhood's luma range.\n"
                  "A failure only raises the mask (DLSS leans on the current frame); it never zeroes the vector,\n"
-                 "because a lighting change does not prove the surface did not move.";
-> = true;
+                 "because a lighting change does not prove the surface did not move. Off by default: on a\n"
+                 "flickering surface it asks DLSS to drop exactly the history that would smooth the flicker.";
+> = false;
 
 uniform float LUMA_TOLERANCE <
     ui_category = "Validation (flicker / flames / disocclusion)";
@@ -267,7 +268,7 @@ uniform float LUMA_TOLERANCE <
     ui_label = "Luma tolerance";
     ui_tooltip = "How far outside the current 3x3 neighbourhood's luma range the reprojected previous luma\n"
                  "may fall (relative to that range's maximum). Lower = stricter.";
-> = 0.15;
+> = 0.25;
 
 uniform bool VALIDATE_DEPTH <
     ui_category = "Validation (flicker / flames / disocclusion)";
@@ -647,8 +648,33 @@ float4 GeometryDecide(float2 uv, float d, float2 flow)
     return float4(pred, 2.0, GEOM_MASK_REJECTED * saturate((r - agree) / (4.0 * agree)));
 }
 
+float RawDepth(float2 uv)
+{
+    // Raw hardware depth, exactly as the game wrote it -- the same orientation/offset
+    // corrections ReShade.fxh applies in GetLinearizedDepth(), minus the linearisation
+    // (DLSS must receive the raw values; the add-on tells it whether the range is reversed).
+    float2 t = uv;
+#if RESHADE_DEPTH_INPUT_IS_UPSIDE_DOWN
+    t.y = 1.0 - t.y;
+#endif
+    t.x /= RESHADE_DEPTH_INPUT_X_SCALE;
+    t.y /= RESHADE_DEPTH_INPUT_Y_SCALE;
+#if RESHADE_DEPTH_INPUT_X_PIXEL_OFFSET
+    t.x -= RESHADE_DEPTH_INPUT_X_PIXEL_OFFSET * BUFFER_RCP_WIDTH;
+#else
+    t.x -= RESHADE_DEPTH_INPUT_X_OFFSET / 2.000000001;
+#endif
+#if RESHADE_DEPTH_INPUT_Y_PIXEL_OFFSET
+    t.y += RESHADE_DEPTH_INPUT_Y_PIXEL_OFFSET * BUFFER_RCP_HEIGHT;
+#else
+    t.y += RESHADE_DEPTH_INPUT_Y_OFFSET / 2.000000001;
+#endif
+    return tex2Dlod(ReShade::DepthBuffer, float4(t, 0.0, 0.0)).x;
+}
+
 void PS_MotionVectors(float4 vpos : SV_Position, float2 uv : TEXCOORD,
-                      out float2 mv_out : SV_Target0, out float mask : SV_Target1)
+                      out float2 mv_out : SV_Target0, out float mask : SV_Target1,
+                      out float depth : SV_Target2)
 {
     // Providers hand out "delta UV": previous position = uv + mv. DLSS wants the same
     // direction, in pixels.
@@ -685,30 +711,7 @@ void PS_MotionVectors(float4 vpos : SV_Position, float2 uv : TEXCOORD,
 
     mv_out = mv * float2(BUFFER_WIDTH, BUFFER_HEIGHT) * MV_SIGN * MV_SCALE;
     mask   = distrust * MASK_STRENGTH;
-}
-
-float PS_Depth(float4 vpos : SV_Position, float2 uv : TEXCOORD) : SV_Target
-{
-    // Raw hardware depth, exactly as the game wrote it -- the same orientation/offset
-    // corrections ReShade.fxh applies in GetLinearizedDepth(), minus the linearisation
-    // (DLSS must receive the raw values; the add-on tells it whether the range is reversed).
-    float2 t = uv;
-#if RESHADE_DEPTH_INPUT_IS_UPSIDE_DOWN
-    t.y = 1.0 - t.y;
-#endif
-    t.x /= RESHADE_DEPTH_INPUT_X_SCALE;
-    t.y /= RESHADE_DEPTH_INPUT_Y_SCALE;
-#if RESHADE_DEPTH_INPUT_X_PIXEL_OFFSET
-    t.x -= RESHADE_DEPTH_INPUT_X_PIXEL_OFFSET * BUFFER_RCP_WIDTH;
-#else
-    t.x -= RESHADE_DEPTH_INPUT_X_OFFSET / 2.000000001;
-#endif
-#if RESHADE_DEPTH_INPUT_Y_PIXEL_OFFSET
-    t.y += RESHADE_DEPTH_INPUT_Y_PIXEL_OFFSET * BUFFER_RCP_HEIGHT;
-#else
-    t.y += RESHADE_DEPTH_INPUT_Y_OFFSET / 2.000000001;
-#endif
-    return tex2Dlod(ReShade::DepthBuffer, float4(t, 0.0, 0.0)).x;
+    depth  = RawDepth(uv);
 }
 
 // End of the technique: this frame becomes next frame's history. The raw provider vector is
@@ -725,8 +728,14 @@ float3 PS_Debug(float4 vpos : SV_Position, float2 uv : TEXCOORD) : SV_Target
 {
     if (DEBUG_VIEW == 1)
     {
-        float d = tex2Dlod(sDLSS5_Depth, float4(uv, 0.0, 0.0)).x;
-        return d.xxx;
+        const float raw_depth = tex2Dlod(sDLSS5_Depth, float4(uv, 0.0, 0.0)).x;
+#if RESHADE_DEPTH_INPUT_IS_REVERSED
+        const float proximity = raw_depth;
+#else
+        const float proximity = 1.0 - raw_depth;
+#endif
+        // Display-only contrast curve: DLSS5_Depth itself remains raw and untouched.
+        return pow(saturate(proximity), 0.125).xxx;
     }
     if (DEBUG_VIEW == 2)
     {
@@ -793,8 +802,7 @@ technique DLSS5_Feed
 {
     pass FitSamples    { VertexShader = PostProcessVS; PixelShader = PS_FitSamples;    RenderTarget0 = DLSS5_FitA; RenderTarget1 = DLSS5_FitB; }
     pass FitSolve      { VertexShader = PostProcessVS; PixelShader = PS_FitSolve;      RenderTarget0 = DLSS5_Cam0; RenderTarget1 = DLSS5_Cam1; RenderTarget2 = DLSS5_Cam2; RenderTarget3 = DLSS5_Cam3; RenderTarget4 = DLSS5_Cam4; RenderTarget5 = DLSS5_Cam5; }
-    pass MotionVectors { VertexShader = PostProcessVS; PixelShader = PS_MotionVectors; RenderTarget0 = DLSS5_MV; RenderTarget1 = DLSS5_Mask; }
-    pass Depth         { VertexShader = PostProcessVS; PixelShader = PS_Depth;         RenderTarget  = DLSS5_Depth; }
+    pass Guides        { VertexShader = PostProcessVS; PixelShader = PS_MotionVectors; RenderTarget0 = DLSS5_MV; RenderTarget1 = DLSS5_Mask; RenderTarget2 = DLSS5_Depth; }
     pass History       { VertexShader = PostProcessVS; PixelShader = PS_StoreHistory;  RenderTarget0 = DLSS5_PrevLuma; RenderTarget1 = DLSS5_PrevDepth; RenderTarget2 = DLSS5_PrevMV; }
     DLSS5_MV_REQUEST_PASS   // Launchpad only: ask it to compute optical flow again next frame
 }
