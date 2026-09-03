@@ -1,7 +1,7 @@
 ﻿<#
 .SYNOPSIS
-    1 Click DLSS 5 v2.5.2-beta • Universal Neural Control Center
-    Auto-Descoberta Instantânea de Jogos (Steam, Epic, GOG, Xbox, EA), Motor de Resolução em 1 Clique (Auto-Fix),
+    1 Click DLSS 5 v2.5.2-beta   Universal Neural Control Center
+    Auto-Descoberta Instant nea de Jogos (Steam, Epic, GOG, Xbox, EA), Motor de Resolu  o em 1 Clique (Auto-Fix),
     Suporte Universal a APIs (DirectX 9/10/11/12, Vulkan, OpenGL), 32 e 64-bit, 10 Idiomas Nativos.
 #>
 
@@ -14,7 +14,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
-# --- ATIVAÇÃO DE HIGH-DPI PER-MONITOR V2 (CRISTAL CLEAR EM 1080P/1440P/4K) ---
+# --- ATIVA  O DE HIGH-DPI PER-MONITOR V2 (CRISTAL CLEAR EM 1080P/1440P/4K) ---
 try {
     if (-not ([System.Management.Automation.PSTypeName]'DLSS5DpiHelper').Type) {
         Add-Type -TypeDefinition @"
@@ -30,9 +30,10 @@ public class DLSS5DpiHelper {
 "@
     }
     [DLSS5DpiHelper]::EnableHighDpi()
-} catch {}
+}
+catch {}
 
-# --- CONFIGURAÇÕES GLOBAIS ---
+# --- CONFIGURA  ES GLOBAIS ---
 $script:Version = "2.5.3-release"
 $script:CurrentLang = "PT"
 $script:AddOnName = "renodx-dlss5.addon64"
@@ -56,10 +57,11 @@ if (Test-Path -LiteralPath $script:TranslationsPath -PathType Leaf) {
     try {
         $jsonRaw = Get-Content -LiteralPath $script:TranslationsPath -Raw -Encoding UTF8
         $script:Translations = $jsonRaw | ConvertFrom-Json
-    } catch {}
+    }
+    catch {}
 }
 
-# --- INICIALIZAÇÃO DE TELEMETRIA E LOG CONTÍNUO ---
+# --- INICIALIZA  O DE TELEMETRIA E LOG CONT NUO ---
 function Write-Status {
     param(
         [Parameter(Mandatory = $true)][string]$Message,
@@ -77,18 +79,21 @@ function Write-Status {
     try {
         $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
         [System.IO.File]::AppendAllText($script:LogFilePath, $logLine + "`r`n", $utf8NoBom)
-    } catch {}
+    }
+    catch {}
 
     if ($script:StatusLabel) {
         $color = [System.Drawing.Color]::FromArgb(170, 205, 255)
         if ($Level -eq "OK") {
             $color = [System.Drawing.Color]::FromArgb(118, 225, 125)
-        } elseif ($Level -eq "WARN") {
+        }
+        elseif ($Level -eq "WARN") {
             $color = [System.Drawing.Color]::FromArgb(255, 205, 90)
-        } elseif ($Level -eq "ERROR") {
+        }
+        elseif ($Level -eq "ERROR") {
             $color = [System.Drawing.Color]::FromArgb(255, 110, 110)
         }
-        $script:StatusLabel.Text = "● " + $Message
+        $script:StatusLabel.Text = "  " + $Message
         $script:StatusLabel.ForeColor = $color
     }
 }
@@ -96,7 +101,7 @@ function Write-Status {
 function Init-SystemTelemetryLog {
     if (-not (Test-Path -LiteralPath $script:LogFilePath -PathType Leaf)) {
         $sysInfo = "================================================================================`r`n"
-        $sysInfo = $sysInfo + "   1 CLICK DLSS 5 v$($script:Version) • NEURAL CONTROL CENTER LOG DE TELEMETRIA`r`n"
+        $sysInfo = $sysInfo + "   1 CLICK DLSS 5 v$($script:Version)   NEURAL CONTROL CENTER LOG DE TELEMETRIA`r`n"
         $sysInfo = $sysInfo + "   Iniciado em: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))`r`n"
         $sysInfo = $sysInfo + "================================================================================`r`n"
         try {
@@ -110,12 +115,14 @@ function Init-SystemTelemetryLog {
             }
             $cpu = Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue
             if ($cpu) { $sysInfo = $sysInfo + "CPU: $($cpu.Name)`r`n" }
-        } catch {}
+        }
+        catch {}
         $sysInfo = $sysInfo + "================================================================================`r`n`r`n"
         try { 
             $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
             [System.IO.File]::WriteAllText($script:LogFilePath, $sysInfo, $utf8NoBom) 
-        } catch {}
+        }
+        catch {}
     }
 }
 Init-SystemTelemetryLog
@@ -123,7 +130,8 @@ Init-SystemTelemetryLog
 function Open-LogFile {
     if (Test-Path -LiteralPath $script:LogFilePath -PathType Leaf) {
         Start-Process "notepad.exe" -ArgumentList "`"$script:LogFilePath`""
-    } else {
+    }
+    else {
         [System.Windows.Forms.MessageBox]::Show("Nenhum log gerado ainda.", "1 Click DLSS 5", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     }
 }
@@ -147,7 +155,7 @@ function Get-Sha256 {
     $hashBytes = $sha.ComputeHash($stream)
     $stream.Close()
     $stream.Dispose()
-    return (-join ($hashBytes | ForEach-Object { "{0:x2}" -f $_ }))
+    return ( -join ($hashBytes | ForEach-Object { "{0:x2}" -f $_ }))
 }
 
 function Get-PeArchitecture {
@@ -171,7 +179,8 @@ function Get-PeArchitecture {
         if ($machine -eq 0x014C) { return "X86" }
         if ($machine -eq 0xAA64) { return "ARM64" }
         return "OTHER"
-    } catch {
+    }
+    catch {
         return "UNKNOWN"
     }
 }
@@ -202,7 +211,8 @@ function Resolve-GameTarget {
     $folder = ""
     if ($targetItem.PSIsContainer) {
         $folder = $targetItem.FullName
-    } else {
+    }
+    else {
         $folder = $targetItem.Directory.FullName
     }
     $root = $folder
@@ -211,49 +221,54 @@ function Resolve-GameTarget {
     $allExes = @(Get-ChildItem -LiteralPath $folder -Filter "*.exe" -File -Recurse -Depth 4 -ErrorAction SilentlyContinue)
     $ignoredPattern = '^(crashreport|crashhandler|unitycrashhandler|unins.*|setup|config|launcher|easyanticheat|battleye|epicgameslauncher|redist|vcredist|dxsetup|quickstart|webinstaller|support|console.*|banana.*)$'
     $filtered = @($allExes | Where-Object {
-        $baseName = $_.BaseName.ToLower()
-        -not ($baseName -match $ignoredPattern)
-    })
+            $baseName = $_.BaseName.ToLower()
+            -not ($baseName -match $ignoredPattern)
+        })
 
-    # Se o usuário apontou diretamente para um executável específico
+    # Se o usu rio apontou diretamente para um execut vel espec fico
     if (-not $targetItem.PSIsContainer -and $targetItem.Extension -ieq ".exe") {
         $directArch = Get-PeArchitecture -Path $targetItem.FullName
-        # Se apontou para um executável 64-bit ou se está em subpasta profunda, respeitar a escolha
+        # Se apontou para um execut vel 64-bit ou se est  em subpasta profunda, respeitar a escolha
         if ($directArch -eq "X64" -or ($targetItem.Directory.FullName -ne $folder)) {
             $exePath = $targetItem.FullName
         }
     }
 
     if (-not $exePath) {
-        # 1. Prioridade Máxima: Executáveis em subpastas de engine 64-bit conhecidas
+        # 1. Prioridade M xima: Execut veis em subpastas de engine 64-bit conhecidas
         # (Bin64 [BeamNG, CryEngine], bin\x64 [Cyberpunk, Witcher], binaries\win64 [Unreal], x64, bin\win64)
         $known64Subfolders = '\\(binaries\\win64|bin64|bin\\x64|bin\\x64_dx12|bin\\win64|x64)\\'
         $found64Subdir = @($filtered | Where-Object {
-            $_.FullName -imatch $known64Subfolders -and (Test-ValidPe -Path $_.FullName) -and ((Get-PeArchitecture -Path $_.FullName) -eq "X64")
-        } | Sort-Object -Property Length -Descending)
+                $_.FullName -imatch $known64Subfolders -and (Test-ValidPe -Path $_.FullName) -and ((Get-PeArchitecture -Path $_.FullName) -eq "X64")
+            } | Sort-Object -Property Length -Descending)
 
         if ($found64Subdir.Count -gt 0) {
             $exePath = $found64Subdir[0].FullName
-        } else {
-            # 2. Executáveis com sufixo x64 (ex: *.x64.exe, *64.exe)
+        }
+        else {
+            # 2. Execut veis com sufixo x64 (ex: *.x64.exe, *64.exe)
             $foundX64Named = @($filtered | Where-Object {
-                $_.Name -imatch '(\.x64\.exe|_x64\.exe|win64.*\.exe)$' -and (Test-ValidPe -Path $_.FullName) -and ((Get-PeArchitecture -Path $_.FullName) -eq "X64")
-            } | Sort-Object -Property Length -Descending)
+                    $_.Name -imatch '(\.x64\.exe|_x64\.exe|win64.*\.exe)$' -and (Test-ValidPe -Path $_.FullName) -and ((Get-PeArchitecture -Path $_.FullName) -eq "X64")
+                } | Sort-Object -Property Length -Descending)
 
             if ($foundX64Named.Count -gt 0) {
                 $exePath = $foundX64Named[0].FullName
-            } else {
-                # 3. Executáveis na raiz vs subpastas: se o da raiz for 32-bit (X86), mas existir um 64-bit em subpasta, preferir o 64-bit
+            }
+            else {
+                # 3. Execut veis na raiz vs subpastas: se o da raiz for 32-bit (X86), mas existir um 64-bit em subpasta, preferir o 64-bit
                 $rootExes = @($filtered | Where-Object { $_.Directory.FullName -ieq $folder -and (Test-ValidPe -Path $_.FullName) } | Sort-Object -Property Length -Descending)
                 $allX64 = @($filtered | Where-Object { (Test-ValidPe -Path $_.FullName) -and ((Get-PeArchitecture -Path $_.FullName) -eq "X64") } | Sort-Object -Property Length -Descending)
 
                 if ($rootExes.Count -gt 0 -and ((Get-PeArchitecture -Path $rootExes[0].FullName) -eq "X64")) {
                     $exePath = $rootExes[0].FullName
-                } elseif ($allX64.Count -gt 0) {
+                }
+                elseif ($allX64.Count -gt 0) {
                     $exePath = $allX64[0].FullName
-                } elseif ($rootExes.Count -gt 0) {
+                }
+                elseif ($rootExes.Count -gt 0) {
                     $exePath = $rootExes[0].FullName
-                } elseif ($filtered.Count -gt 0) {
+                }
+                elseif ($filtered.Count -gt 0) {
                     $largest = $filtered | Sort-Object -Property Length -Descending | Select-Object -First 1
                     $exePath = $largest.FullName
                 }
@@ -269,15 +284,16 @@ function Resolve-GameTarget {
     $icon = $null
     try {
         $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($exePath)
-    } catch {}
+    }
+    catch {}
 
     return [pscustomobject]@{
-        Root = $root
+        Root          = $root
         InstallFolder = $installFolder
-        Executable = $exePath
-        ExeName = (Split-Path -Leaf $exePath)
-        Icon = $icon
-        Architecture = (Get-PeArchitecture -Path $exePath)
+        Executable    = $exePath
+        ExeName       = (Split-Path -Leaf $exePath)
+        Icon          = $icon
+        Architecture  = (Get-PeArchitecture -Path $exePath)
     }
 }
 
@@ -290,7 +306,7 @@ function Detect-GameGraphicsApi {
         $GameFolder = (Split-Path -Parent $TargetExe)
     }
 
-    # 1. Inspeção direta do PE Import Table do executável alvo (IAT Determinístico)
+    # 1. Inspe  o direta do PE Import Table do execut vel alvo (IAT Determin stico)
     if (Test-Path -LiteralPath $TargetExe -PathType Leaf) {
         try {
             $fs = [System.IO.File]::OpenRead($TargetExe)
@@ -304,10 +320,11 @@ function Detect-GameGraphicsApi {
             if ($str -match '(?i)\bd3d11\.dll\b') { return "DXGI" }
             if ($str -match '(?i)\bd3d9\.dll\b') { return "D3D9" }
             if ($str -match '(?i)\bopengl32\.dll\b') { return "OPENGL" }
-        } catch {}
+        }
+        catch {}
     }
 
-    # 2. Verificação de DLLs distribuídas na pasta local do jogo
+    # 2. Verifica  o de DLLs distribu das na pasta local do jogo
     $allDlls = @(Get-ChildItem -LiteralPath $GameFolder -Filter "*.dll" -File -Recurse -Depth 3 -ErrorAction SilentlyContinue | ForEach-Object { $_.Name.ToLower() })
     if ($allDlls -contains "d3d12.dll" -or $allDlls -contains "d3d12core.dll") { return "D3D12" }
     if ($allDlls -contains "vulkan-1.dll" -or $allDlls -contains "vulkan.dll") { return "VULKAN" }
@@ -344,24 +361,27 @@ function Detect-GameUpscalerType {
         }
     }
 
-    # 1. Verifica se já está instalado o mod DLSS 5
+    # 1. Verifica se j  est  instalado o mod DLSS 5
     $isModded = $false
     $modMode = ""
     if ($allFiles.Contains("dlss5-feed.addon64") -or $allFiles.Contains("dlss5-feed.addon32")) {
         $isModded = $true
         $modMode = "FEEDER"
-    } elseif ($allFiles.Contains("version.dll") -and $allFiles.Contains("optiscaler.ini")) {
+    }
+    elseif ($allFiles.Contains("version.dll") -and $allFiles.Contains("optiscaler.ini")) {
         $isModded = $true
         $modMode = "OPTISCALER"
-    } elseif ($allFiles.Contains("sl.interposer.dll") -and $allFiles.Contains("nvngx_dlssnr.dll")) {
+    }
+    elseif ($allFiles.Contains("sl.interposer.dll") -and $allFiles.Contains("nvngx_dlssnr.dll")) {
         $isModded = $true
         $modMode = "DIRECT"
-    } elseif ($allFiles.Contains("nvngx_dlssnr.dll")) {
+    }
+    elseif ($allFiles.Contains("nvngx_dlssnr.dll")) {
         $isModded = $true
         $modMode = "FEEDER"
     }
 
-    # 2. Verifica se há arquivo de estado
+    # 2. Verifica se h  arquivo de estado
     $stateFiles = @("_dlss5_install_state.json", "_1click_dlss5_state.json", "_dlss5_easy_installer_state.json")
     foreach ($sf in $stateFiles) {
         $sp = Join-Path $GameFolder $sf
@@ -369,11 +389,12 @@ function Detect-GameUpscalerType {
             try {
                 $saved = Get-Content -LiteralPath $sp -Raw -Encoding UTF8 | ConvertFrom-Json
                 if ($saved.UpscalerType) { return $saved.UpscalerType }
-            } catch {}
+            }
+            catch {}
         }
     }
 
-    # Se for um jogo que já tem o mod instalado e não tem state file, retornar o modo detectado dos binários
+    # Se for um jogo que j  tem o mod instalado e n o tem state file, retornar o modo detectado dos bin rios
     if ($isModded) {
         if ($modMode -eq "DIRECT") { return "NATIVE_DLSS" }
         if ($modMode -eq "OPTISCALER") { return "FSR2_BRIDGE" }
@@ -422,68 +443,68 @@ function Get-Dict {
         return $script:Translations.PT
     }
     return [pscustomobject]@{
-        "Title" = "1 CLICK DLSS 5"
-        "Tagline" = "NEURAL CONTROL CENTER • RTX 20/30/40/50"
-        "SubBadge" = "DirectX 9 / 10 / 11 / 12 • Vulkan • OpenGL • 32 & 64-bit"
-        "Step1" = "[1] Escolha o Jogo"
-        "Step2" = "[2] Clique em Instalar"
-        "Step3" = "[3] Inicie e Aproveite!"
+        "Title"             = "1 CLICK DLSS 5"
+        "Tagline"           = "NEURAL CONTROL CENTER   RTX 20/30/40/50"
+        "SubBadge"          = "DirectX 9 / 10 / 11 / 12   Vulkan   OpenGL   32 & 64-bit"
+        "Step1"             = "[1] Escolha o Jogo"
+        "Step2"             = "[2] Clique em Instalar"
+        "Step3"             = "[3] Inicie e Aproveite!"
         "SearchPlaceholder" = "Pesquisar jogos..."
-        "BtnScan" = "ESCANEAR DISCOS"
-        "BtnBrowse" = "PROCURAR JOGO"
-        "BtnDiagnose" = "DIAGNOSTICO DO SISTEMA"
-        "BtnAutoFix" = "[⚡] RESOLVER PROBLEMA EM 1 CLIQUE"
-        "AutoFixDone" = "Problema resolvido com sucesso e DLSS 5 instalado!"
-        "AutoFixProgress" = "Executando correcao em 1 clique..."
-        "LibraryTitle" = "BIBLIOTECA DE JOGOS DETECTADOS"
-        "ColGame" = "Jogo"
-        "ColApi" = "API / Arq"
-        "ColMode" = "Modo / Status"
-        "InspectorTitle" = "PAINEL DE CONTROLE DE INJEÇÃO"
-        "NoGameSelected" = "Selecione um jogo na biblioteca."
-        "FolderLabel" = "DIRETÓRIO DE INSTALAÇÃO DO JOGO:"
-        "ModeSectionTitle" = "ESCOLHA O MODO DE INJEÇÃO DLSS 5:"
-        "AutoModeNotice" = "O modo ideal para este jogo ja foi selecionado automaticamente!"
-        "Mode1Title" = "MODO 1: DIRETO (DLSS Nativo)"
-        "Mode1Desc" = "Para jogos com DLSS nativo. Ativa Streamline + IA."
-        "Mode2Title" = "MODO 2: PONTE OPTISCALER (FSR2/XeSS)"
-        "Mode2Desc" = "Redireciona chamadas FSR2/XeSS para DLSS 5."
-        "Mode3Title" = "MODO 3: FEEDER UNIVERSAL (DLAA 100% Nativo)"
-        "Mode3Desc" = "Para qualquer jogo. 100% nativo sem perda de nitidez."
-        "RequirementTitle" = "REQUISITO NO JOGO:"
-        "ReqMode1" = "No menu do jogo: ATIVE o DLSS (Qualidade/Desempenho)."
-        "ReqMode2" = "No menu do jogo: ATIVE o FSR2 ou XeSS (Qualidade)."
-        "ReqMode3" = "No menu do jogo: Deixe o DLSS/Upscaling DESLIGADO."
-        "BtnInstall" = "[⚡] 1-CLIQUE: INSTALAR DLSS 5"
-        "BtnReinstall" = "[⚡] REINSTALAR / ATUALIZAR DLSS 5"
-        "BtnLaunch" = "[►] INICIAR JOGO"
-        "BtnLaunchNow" = "[►] INICIAR JOGO AGORA"
-        "BtnUninstall" = "[↩] RESTAURAR DE FÁBRICA"
-        "BtnOpenFolder" = "[PASTA] ABRIR PASTA"
-        "BtnOpenLog" = "VER LOG COMPLETO"
-        "BtnClose" = "Fechar"
-        "StatusReady" = "Pronto. Selecione um jogo para comecar."
-        "StatusScanning" = "Escaneando discos..."
-        "StatusScanDone" = "Varredura concluida! {0} jogos carregados."
-        "StatusInstalled" = "[✓ DLSS 5 INSTALADO]"
-        "SuccessTitle" = "Instalação Concluída com Sucesso"
-        "SuccessMsg" = "O DLSS 5 foi injetado com sucesso no jogo!\n\nModo aplicado: {0}\n\nVocê já pode iniciar o jogo e aproveitar a qualidade máxima."
-        "RestoreTitle" = "Restauração Completa"
-        "RestoreMsg" = "Jogo restaurado ao estado original de fabrica!"
-        "ErrDialogTitle" = "Assistente de Diagnostico e Resolucao"
-        "ErrWhatHappened" = "O QUE ACONTECEU:"
-        "ErrProbableCause" = "CAUSA PROVAVEL:"
-        "ErrHowToFix" = "COMO RESOLVER:"
-        "DiagTitle" = "Diagnostico do Sistema"
-        "DiagGpuOk" = "Placa de Video RTX detectada."
-        "DiagPermsOk" = "Permissoes de gravacao liberadas."
-        "DiagProcOk" = "Jogo nao esta em execucao."
-        "DiagRuntimeOk" = "Runtimes neurais DLSS 5 integros."
-        "DiagAllPass" = "Computador e jogo 100% prontos!"
+        "BtnScan"           = "ESCANEAR DISCOS"
+        "BtnBrowse"         = "PROCURAR JOGO"
+        "BtnDiagnose"       = "DIAGNOSTICO DO SISTEMA"
+        "BtnAutoFix"        = "[ ] RESOLVER PROBLEMA EM 1 CLIQUE"
+        "AutoFixDone"       = "Problema resolvido com sucesso e DLSS 5 instalado!"
+        "AutoFixProgress"   = "Executando correcao em 1 clique..."
+        "LibraryTitle"      = "BIBLIOTECA DE JOGOS DETECTADOS"
+        "ColGame"           = "Jogo"
+        "ColApi"            = "API / Arq"
+        "ColMode"           = "Modo / Status"
+        "InspectorTitle"    = "PAINEL DE CONTROLE DE INJE  O"
+        "NoGameSelected"    = "Selecione um jogo na biblioteca."
+        "FolderLabel"       = "DIRET RIO DE INSTALA  O DO JOGO:"
+        "ModeSectionTitle"  = "ESCOLHA O MODO DE INJE  O DLSS 5:"
+        "AutoModeNotice"    = "O modo ideal para este jogo ja foi selecionado automaticamente!"
+        "Mode1Title"        = "MODO 1: DIRETO (DLSS Nativo)"
+        "Mode1Desc"         = "Para jogos com DLSS nativo. Ativa Streamline + IA."
+        "Mode2Title"        = "MODO 2: PONTE OPTISCALER (FSR2/XeSS)"
+        "Mode2Desc"         = "Redireciona chamadas FSR2/XeSS para DLSS 5."
+        "Mode3Title"        = "MODO 3: FEEDER UNIVERSAL (DLAA 100% Nativo)"
+        "Mode3Desc"         = "Para qualquer jogo. 100% nativo sem perda de nitidez."
+        "RequirementTitle"  = "REQUISITO NO JOGO:"
+        "ReqMode1"          = "No menu do jogo: ATIVE o DLSS (Qualidade/Desempenho)."
+        "ReqMode2"          = "No menu do jogo: ATIVE o FSR2 ou XeSS (Qualidade)."
+        "ReqMode3"          = "No menu do jogo: Deixe o DLSS/Upscaling DESLIGADO."
+        "BtnInstall"        = "[ ] 1-CLIQUE: INSTALAR DLSS 5"
+        "BtnReinstall"      = "[ ] REINSTALAR / ATUALIZAR DLSS 5"
+        "BtnLaunch"         = "[ ] INICIAR JOGO"
+        "BtnLaunchNow"      = "[ ] INICIAR JOGO AGORA"
+        "BtnUninstall"      = "[ ] RESTAURAR DE F BRICA"
+        "BtnOpenFolder"     = "[PASTA] ABRIR PASTA"
+        "BtnOpenLog"        = "VER LOG COMPLETO"
+        "BtnClose"          = "Fechar"
+        "StatusReady"       = "Pronto. Selecione um jogo para comecar."
+        "StatusScanning"    = "Escaneando discos..."
+        "StatusScanDone"    = "Varredura concluida! {0} jogos carregados."
+        "StatusInstalled"   = "[  DLSS 5 INSTALADO]"
+        "SuccessTitle"      = "Instala  o Conclu da com Sucesso"
+        "SuccessMsg"        = "O DLSS 5 foi injetado com sucesso no jogo!\n\nModo aplicado: {0}\n\nVoc  j  pode iniciar o jogo e aproveitar a qualidade m xima."
+        "RestoreTitle"      = "Restaura  o Completa"
+        "RestoreMsg"        = "Jogo restaurado ao estado original de fabrica!"
+        "ErrDialogTitle"    = "Assistente de Diagnostico e Resolucao"
+        "ErrWhatHappened"   = "O QUE ACONTECEU:"
+        "ErrProbableCause"  = "CAUSA PROVAVEL:"
+        "ErrHowToFix"       = "COMO RESOLVER:"
+        "DiagTitle"         = "Diagnostico do Sistema"
+        "DiagGpuOk"         = "Placa de Video RTX detectada."
+        "DiagPermsOk"       = "Permissoes de gravacao liberadas."
+        "DiagProcOk"        = "Jogo nao esta em execucao."
+        "DiagRuntimeOk"     = "Runtimes neurais DLSS 5 integros."
+        "DiagAllPass"       = "Computador e jogo 100% prontos!"
     }
 }
 
-# --- MODAL MODERNO DE SUCESSO DA INSTALAÇÃO ---
+# --- MODAL MODERNO DE SUCESSO DA INSTALA  O ---
 function Show-InstallationSuccessDialog {
     param(
         [Parameter(Mandatory = $true)][string]$GameName,
@@ -507,7 +528,7 @@ function Show-InstallationSuccessDialog {
     $succForm.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
 
     $lblBigTitle = New-Object System.Windows.Forms.Label
-    $lblBigTitle.Text = "✨ DLSS 5 INJETADO COM SUCESSO!"
+    $lblBigTitle.Text = "  DLSS 5 INJETADO COM SUCESSO!"
     $lblBigTitle.Location = New-Object System.Drawing.Point(20, 18)
     $lblBigTitle.Size = New-Object System.Drawing.Size(565, 30)
     $lblBigTitle.Font = New-Object System.Drawing.Font("Segoe UI Bold", 13)
@@ -521,7 +542,7 @@ function Show-InstallationSuccessDialog {
     [void]$succForm.Controls.Add($infoBox)
 
     $lblGame = New-Object System.Windows.Forms.Label
-    $lblGame.Text = "🎮 Jogo: " + $GameName
+    $lblGame.Text = "   Jogo: " + $GameName
     $lblGame.Location = New-Object System.Drawing.Point(15, 14)
     $lblGame.Size = New-Object System.Drawing.Size(535, 22)
     $lblGame.Font = New-Object System.Drawing.Font("Segoe UI Bold", 10.5)
@@ -529,7 +550,7 @@ function Show-InstallationSuccessDialog {
     [void]$infoBox.Controls.Add($lblGame)
 
     $lblMode = New-Object System.Windows.Forms.Label
-    $lblMode.Text = "⚙️ Modo: " + $ModeName
+    $lblMode.Text = "   Modo: " + $ModeName
     $lblMode.Location = New-Object System.Drawing.Point(15, 42)
     $lblMode.Size = New-Object System.Drawing.Size(535, 22)
     $lblMode.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 9.5)
@@ -543,18 +564,19 @@ function Show-InstallationSuccessDialog {
     [void]$infoBox.Controls.Add($lblSep)
 
     $lblInstTitle = New-Object System.Windows.Forms.Label
-    $lblInstTitle.Text = "📋 COMO APROVEITAR NO JOGO:"
+    $lblInstTitle.Text = "   COMO APROVEITAR NO JOGO:"
     $lblInstTitle.Location = New-Object System.Drawing.Point(15, 84)
     $lblInstTitle.Size = New-Object System.Drawing.Size(535, 20)
     $lblInstTitle.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9)
     $lblInstTitle.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 90)
     [void]$infoBox.Controls.Add($lblInstTitle)
 
-    $instText = "No menu do jogo: Deixe o upscaler desligado. O DLSS 5 rodará na resolução nativa com qualidade neural máxima!"
+    $instText = "No menu do jogo: Deixe o upscaler desligado. O DLSS 5 rodar  na resolu  o nativa com qualidade neural m xima!"
     if ($ModeName -match 'DIRECT|Modo 1') {
-        $instText = "No menu de vídeo do jogo: ATIVE o DLSS (Qualidade ou Desempenho). Pressione [Home] para abrir o painel neural."
-    } elseif ($ModeName -match 'OPTISCALER|Modo 2') {
-        $instText = "No menu de vídeo do jogo: ATIVE o FSR 2 ou XeSS (Qualidade). O OptiScaler redirecionará para a IA DLSS 5."
+        $instText = "No menu de v deo do jogo: ATIVE o DLSS (Qualidade ou Desempenho). Pressione [Home] para abrir o painel neural."
+    }
+    elseif ($ModeName -match 'OPTISCALER|Modo 2') {
+        $instText = "No menu de v deo do jogo: ATIVE o FSR 2 ou XeSS (Qualidade). O OptiScaler redirecionar  para a IA DLSS 5."
     }
 
     $lblInstDesc = New-Object System.Windows.Forms.Label
@@ -565,17 +587,17 @@ function Show-InstallationSuccessDialog {
     $lblInstDesc.Font = New-Object System.Drawing.Font("Segoe UI", 9)
     [void]$infoBox.Controls.Add($lblInstDesc)
 
-    # Botões de Ação
+    # Bot es de A  o
     $btnLaunchNow = New-Object System.Windows.Forms.Button
-    $btnLaunchNow.Text = "[►] INICIAR JOGO AGORA"
+    $btnLaunchNow.Text = "[ ] INICIAR JOGO AGORA"
     $btnLaunchNow.Location = New-Object System.Drawing.Point(20, 275)
     $btnLaunchNow.Size = New-Object System.Drawing.Size(370, 48)
     $btnLaunchNow.Font = New-Object System.Drawing.Font("Segoe UI Bold", 11)
     Style-Button -Button $btnLaunchNow -BaseColor ([System.Drawing.Color]::FromArgb(0, 130, 230)) -HoverColor ([System.Drawing.Color]::FromArgb(20, 160, 255))
     $btnLaunchNow.Add_Click({
-        $succForm.Close()
-        Start-GameExecutable -ExecutablePath $TargetExePath
-    })
+            $succForm.Close()
+            Start-GameExecutable -ExecutablePath $TargetExePath
+        })
     [void]$succForm.Controls.Add($btnLaunchNow)
 
     $btnClose = New-Object System.Windows.Forms.Button
@@ -590,7 +612,7 @@ function Show-InstallationSuccessDialog {
     [void]$succForm.ShowDialog()
 }
 
-# --- ASSISTENTE DE RESOLUÇÃO EM 1 CLIQUE (AUTO-FIX) ---
+# --- ASSISTENTE DE RESOLU  O EM 1 CLIQUE (AUTO-FIX) ---
 function Resolve-IssueInOneClick {
     param([string]$TargetPath, [string]$SelectedMode)
     $d = Get-Dict -Lang $script:CurrentLang
@@ -613,11 +635,12 @@ function Resolve-IssueInOneClick {
             Start-Process -FilePath "cmd.exe" -ArgumentList "/c attrib -r `"$folder\*.*`" /s /d" -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
         }
 
-        # 3. Executa a instalação
+        # 3. Executa a instala  o
         Install-Dlss5 -TargetPath $TargetPath -SelectedMode $SelectedMode
         Write-Status -Message $d.AutoFixDone -Level "OK"
         return $true
-    } catch {
+    }
+    catch {
         Write-Status -Message ("Falha no Auto-Fix: " + $_.Exception.Message) -Level "ERROR"
         return $false
     }
@@ -629,7 +652,7 @@ function Get-ErrorDiagnosis {
     $code = "ERR_UNKNOWN"
     $what = "Ocorreu um imprevisto ao executar a operacao ($Context)."
     $cause = "Inconsistencia no sistema de arquivos ou configuracao de seguranca do Windows."
-    $fix = "1. Feche o jogo caso ele esteja aberto.`n2. Clique em '[⚡] RESOLVER PROBLEMA EM 1 CLIQUE'.`n3. Ou execute como Administrador."
+    $fix = "1. Feche o jogo caso ele esteja aberto.`n2. Clique em '[ ] RESOLVER PROBLEMA EM 1 CLIQUE'.`n3. Ou execute como Administrador."
 
     if ($msg -match 'ERR_EXE_NOT_FOUND' -or $msg -match 'Nenhum executavel') {
         $code = "ERR_EXE_NOT_FOUND"
@@ -641,13 +664,13 @@ function Get-ErrorDiagnosis {
         $code = "ERR_PERM_DENIED"
         $what = "O Windows bloqueou a gravacao ou modificacao de arquivos na pasta do jogo."
         $cause = "Falta de privilegios de Administrador ou permissao 'Somente Leitura' na pasta de instalacao."
-        $fix = "1. Clique no botao '[⚡] RESOLVER PROBLEMA EM 1 CLIQUE' abaixo para liberar o acesso automaticamente.`n2. Ou execute o 1 Click DLSS 5 clicando com o botao direito e 'Executar como Administrador'."
+        $fix = "1. Clique no botao '[ ] RESOLVER PROBLEMA EM 1 CLIQUE' abaixo para liberar o acesso automaticamente.`n2. Ou execute o 1 Click DLSS 5 clicando com o botao direito e 'Executar como Administrador'."
     }
     elseif ($msg -match 'IOException' -or $msg -match 'being used by another process' -or $msg -match 'sendo usado por outro processo') {
         $code = "ERR_FILE_LOCKED"
         $what = "Um dos arquivos do jogo esta travado e nao pode ser atualizado no momento."
         $cause = "O jogo ainda esta aberto em segundo plano, ou um programa como Discord/RivaTuner esta travando a DLL."
-        $fix = "1. Clique no botao '[⚡] RESOLVER PROBLEMA EM 1 CLIQUE' abaixo para fechar os processos travados e instalar automaticamente."
+        $fix = "1. Clique no botao '[ ] RESOLVER PROBLEMA EM 1 CLIQUE' abaixo para fechar os processos travados e instalar automaticamente."
     }
     elseif ($msg -match 'ERR_PATH_NOT_FOUND' -or $msg -match 'nao existe') {
         $code = "ERR_PATH_NOT_FOUND"
@@ -657,10 +680,10 @@ function Get-ErrorDiagnosis {
     }
 
     return [pscustomobject]@{
-        Code = $code
-        What = $what
-        Cause = $cause
-        Fix = $fix
+        Code       = $code
+        What       = $what
+        Cause      = $cause
+        Fix        = $fix
         RawMessage = $msg
         StackTrace = $Ex.StackTrace
     }
@@ -744,7 +767,7 @@ function Show-FriendlyErrorDialog {
     $txtFix.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
     [void]$errForm.Controls.Add($txtFix)
 
-    # Botão 1-Click Auto Fix
+    # Bot o 1-Click Auto Fix
     if (-not [string]::IsNullOrWhiteSpace($TargetPath)) {
         $btnAutoFix = New-Object System.Windows.Forms.Button
         $btnAutoFix.Text = $d.BtnAutoFix
@@ -753,14 +776,14 @@ function Show-FriendlyErrorDialog {
         $btnAutoFix.Font = New-Object System.Drawing.Font("Segoe UI Bold", 11)
         Style-Button -Button $btnAutoFix -BaseColor ([System.Drawing.Color]::FromArgb(118, 185, 0)) -HoverColor ([System.Drawing.Color]::FromArgb(140, 220, 0)) -TextColor ([System.Drawing.Color]::Black)
         $btnAutoFix.Add_Click({
-            $ok = Resolve-IssueInOneClick -TargetPath $TargetPath -SelectedMode $SelectedMode
-            if ($ok) { $errForm.Close() }
-        })
+                $ok = Resolve-IssueInOneClick -TargetPath $TargetPath -SelectedMode $SelectedMode
+                if ($ok) { $errForm.Close() }
+            })
         [void]$errForm.Controls.Add($btnAutoFix)
     }
 
     $btnOpenLogDlg = New-Object System.Windows.Forms.Button
-    $btnOpenLogDlg.Text = "📄 " + $d.BtnOpenLog
+    $btnOpenLogDlg.Text = "   " + $d.BtnOpenLog
     $btnOpenLogDlg.Location = New-Object System.Drawing.Point(20, 405)
     $btnOpenLogDlg.Size = New-Object System.Drawing.Size(200, 36)
     Style-Button -Button $btnOpenLogDlg -BaseColor ([System.Drawing.Color]::FromArgb(35, 55, 90)) -HoverColor ([System.Drawing.Color]::FromArgb(50, 75, 125))
@@ -792,7 +815,7 @@ function Show-SystemDiagnosisDialog {
     $diagForm.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
 
     $lblHdr = New-Object System.Windows.Forms.Label
-    $lblHdr.Text = "🩺 CHECKLIST DE COMPATIBILIDADE DO COMPUTADOR"
+    $lblHdr.Text = "   CHECKLIST DE COMPATIBILIDADE DO COMPUTADOR"
     $lblHdr.Location = New-Object System.Drawing.Point(20, 15)
     $lblHdr.Size = New-Object System.Drawing.Size(590, 24)
     $lblHdr.Font = New-Object System.Drawing.Font("Segoe UI Bold", 11)
@@ -819,8 +842,9 @@ function Show-SystemDiagnosisDialog {
     try {
         $g = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($g) { $gpuName = $g.Name; $gpuDesc = "$($g.Name) (Driver $($g.DriverVersion))" }
-    } catch {}
-    $it1 = New-Object System.Windows.Forms.ListViewItem("Placa de Vídeo / Driver")
+    }
+    catch {}
+    $it1 = New-Object System.Windows.Forms.ListViewItem("Placa de V deo / Driver")
     [void]$it1.SubItems.Add($gpuStatus)
     [void]$it1.SubItems.Add($gpuDesc)
     $it1.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
@@ -834,17 +858,19 @@ function Show-SystemDiagnosisDialog {
         try {
             [System.IO.File]::WriteAllText($testF, "test")
             [System.IO.File]::Delete($testF)
-        } catch {
+        }
+        catch {
             $permStatus = "[FALHA]"
             $permDesc = "Acesso negado na pasta. Clique em Auto-Fix."
         }
     }
-    $it2 = New-Object System.Windows.Forms.ListViewItem("Permissões de Escrita")
+    $it2 = New-Object System.Windows.Forms.ListViewItem("Permiss es de Escrita")
     [void]$it2.SubItems.Add($permStatus)
     [void]$it2.SubItems.Add($permDesc)
     if ($permStatus -eq "[PASS]") {
         $it2.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
-    } else {
+    }
+    else {
         $it2.ForeColor = [System.Drawing.Color]::FromArgb(255, 110, 110)
     }
     [void]$listChecks.Items.Add($it2)
@@ -865,7 +891,8 @@ function Show-SystemDiagnosisDialog {
     [void]$it3.SubItems.Add($procDesc)
     if ($procStatus -eq "[PASS]") {
         $it3.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
-    } else {
+    }
+    else {
         $it3.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 90)
     }
     [void]$listChecks.Items.Add($it3)
@@ -883,13 +910,14 @@ function Show-SystemDiagnosisDialog {
     [void]$it4.SubItems.Add($payDesc)
     if ($payStatus -eq "[PASS]") {
         $it4.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
-    } else {
+    }
+    else {
         $it4.ForeColor = [System.Drawing.Color]::FromArgb(255, 110, 110)
     }
     [void]$listChecks.Items.Add($it4)
 
     $lblAll = New-Object System.Windows.Forms.Label
-    $lblAll.Text = "✨ " + $d.DiagAllPass
+    $lblAll.Text = "  " + $d.DiagAllPass
     $lblAll.Location = New-Object System.Drawing.Point(20, 355)
     $lblAll.Size = New-Object System.Drawing.Size(585, 24)
     $lblAll.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
@@ -907,7 +935,7 @@ function Show-SystemDiagnosisDialog {
     [void]$diagForm.ShowDialog()
 }
 
-# --- CONFIGURAÇÃO DO RESHADE.INI E PRESET ---
+# --- CONFIGURA  O DO RESHADE.INI E PRESET ---
 function Set-Dlss5ReShadeIni {
     param(
         [Parameter(Mandatory = $true)][string]$IniPath,
@@ -939,7 +967,7 @@ TextureSearchPaths=.\reshade-shaders\Textures\**
 [INPUT]
 ForceShortcutModifiers=1
 InputProcessing=2
-KeyEffects=0,0,0,0
+KeyEffects=35,0,0,0
 KeyFPS=0,0,0,0
 KeyFrametime=0,0,0,0
 KeyNextPreset=0,0,0,0
@@ -1000,7 +1028,8 @@ StyleIndex=2
 TabRounding=5.000000
 WindowRounding=0.000000
 "@
-    } else {
+    }
+    else {
         $iniContent = @"
 [ADDON]
 DisabledAddons=Generic Depth,Effect Runtime Sync
@@ -1008,13 +1037,46 @@ OverlayCollapsed=DLSS 5 Neural Rendering@renodx-dlss5.addon64,Generic Depth,Effe
 
 [GENERAL]
 EffectSearchPaths=.\reshade-shaders\Shaders\**
-TextureSearchPaths=.\reshade-shaders\Textures\**
-PerformanceMode=0
+IntermediateCachePath=$env:TEMP\ReShade
+NoDebugInfo=1
+NoEffectCache=0
 NoReloadOnInit=0
+PerformanceMode=0
+PresetPath=.\ReShadePreset.ini
+PresetShortcutKeys=
+PresetShortcutPaths=
+PresetTransitionDuration=1000
 SkipLoadingDisabledEffects=0
+StartupPresetPath=
+TextureSearchPaths=.\reshade-shaders\Textures\**
+
+[INPUT]
+ForceShortcutModifiers=1
+InputProcessing=2
+KeyEffects=35,0,0,0
+KeyFPS=0,0,0,0
+KeyFrametime=0,0,0,0
+KeyNextPreset=0,0,0,0
+KeyOverlay=36,0,0,0
+KeyPreviousPreset=0,0,0,0
+KeyReload=0,0,0,0
+KeyScreenshot=44,0,0,0
 
 [OVERLAY]
+AutoSavePreset=1
+ClockFormat=0
+FPSPosition=1
+Language=
+ShowClock=0
+ShowForceLoadEffectsButton=1
+ShowFPS=2
+ShowFrameTime=0
+ShowPresetName=0
+ShowPresetTransitionMessage=1
+ShowScreenshotMessage=1
 TutorialProgress=4
+VariableListHeight=200.000000
+VariableListUseTabs=0
 
 [RenoDX.DLSS5]
 EnableHooks=$EnableHooks
@@ -1029,26 +1091,102 @@ NRPreset=2
 NRSkinStructure=1.16
 NRStyle=1
 NRUICorrection=1
+
+[STYLE]
+Alpha=1.000000
+ChildRounding=0.000000
+ColFPSText=1.000000,1.000000,0.784314,1.000000
+EditorFont=
+EditorFontSize=13.000000
+EditorStyleIndex=0
+Font=
+FontScale=1.000000
+FontSize=13.000000
+FPSScale=1.000000
+FrameRounding=0.000000
+GrabRounding=0.000000
+HdrOverlayBrightness=203.000000
+HdrOverlayOverwriteColorSpaceTo=0
+LatinFont=
+PopupRounding=0.000000
+ScrollbarRounding=0.000000
+StyleIndex=2
+TabRounding=5.000000
+WindowRounding=0.000000
 "@
     }
     [System.IO.File]::WriteAllText($IniPath, $iniContent, $utf8NoBom)
 }
 
 function Set-Dlss5PresetIni {
-    param([Parameter(Mandatory = $true)][string]$PresetPath)
+    param(
+        [Parameter(Mandatory = $true)][string]$PresetPath,
+        [Parameter(Mandatory = $false)][bool]$IsFeederMode = $true
+    )
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
-    $presetContent = @"
-Techniques=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
-TechniqueSorting=Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx
-PreprocessorDefinitions=DLSS5_MV_PROVIDER=3
+    $techniques = ""
+    $sorting = ""
+    $definitions = ""
+    $feederSection = ""
+
+    if ($IsFeederMode) {
+        $techniques = "Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx"
+        $sorting = "Lumenite_Kernel@lumenite_Kernel.fx,DLSS5_Feed@DLSS5_Feed.fx,SMAA@SMAA.fx,FXAA@FXAA.fx,Lumenite_TRAA@lumenite_TRAA.fx,Vibrance@Vibrance.fx,Tonemap@Tonemap.fx,ContrastAdaptiveSharpen@CAS.fx,Splitscreen@Splitscreen.fx"
+        $definitions = "PreprocessorDefinitions=DLSS5_MV_PROVIDER=3`r`n"
+        $feederSection = @"
 
 [DLSS5_Feed.fx]
 PreprocessorDefinitions=DLSS5_MV_PROVIDER=3
 "@
+    }
+    else {
+        $techniques = ""
+        $sorting = "SMAA@SMAA.fx,FXAA@FXAA.fx,Vibrance@Vibrance.fx,Tonemap@Tonemap.fx,ContrastAdaptiveSharpen@CAS.fx,Splitscreen@Splitscreen.fx"
+        $definitions = ""
+        $feederSection = ""
+    }
+
+    $presetContent = @"
+Techniques=$techniques
+TechniqueSorting=$sorting
+$definitions$feederSection
+[CAS.fx]
+Contrast=0.000000
+Sharpening=1.000000
+Sharpness=0.400000
+
+[Vibrance.fx]
+Vibrance=0.280000
+VibranceRGBBalance=1.000000,1.000000,1.000000
+
+[Tonemap.fx]
+Bleach=0.000000
+Defog=0.000000
+Exposure=0.000000
+Gamma=1.000000
+Saturation=0.000000
+
+[SMAA.fx]
+CornerRounding=25
+DebugOutput=0
+DepthEdgeDetectionThreshold=0.010000
+EdgeDetectionThreshold=0.080000
+EdgeDetectionType=1
+MaxSearchSteps=32
+MaxSearchStepsDiag=16
+PredicationScale=2.000000
+PredicationStrength=0.400000
+PredicationThreshold=0.010000
+
+[FXAA.fx]
+EdgeThreshold=0.166000
+EdgeThresholdMin=0.083300
+Subpix=0.750000
+"@
     [System.IO.File]::WriteAllText($PresetPath, $presetContent, $utf8NoBom)
 }
 
-# --- MOTOR DE INSTALAÇÃO UNIVERSAL ---
+# --- MOTOR DE INSTALA  O UNIVERSAL ---
 function Install-Dlss5 {
     param(
         [Parameter(Mandatory = $true)][string]$TargetPath,
@@ -1065,9 +1203,11 @@ function Install-Dlss5 {
     if ($effectiveMode -eq "AUTO") {
         if ($detectedUpscaler -eq "NATIVE_DLSS") {
             $effectiveMode = "DIRECT"
-        } elseif ($detectedUpscaler -eq "FSR2_BRIDGE" -or $detectedUpscaler -eq "XESS_BRIDGE") {
+        }
+        elseif ($detectedUpscaler -eq "FSR2_BRIDGE" -or $detectedUpscaler -eq "XESS_BRIDGE") {
             $effectiveMode = "OPTISCALER"
-        } else {
+        }
+        else {
             $effectiveMode = "FEEDER"
         }
     }
@@ -1078,7 +1218,7 @@ function Install-Dlss5 {
     [void](New-Item -ItemType Directory -Path $backupFolder -Force)
     $stateFile = Join-Path $targetFolder $script:StateName
 
-    # Se já existir uma instalação anterior de outro modo, limpar arquivos injetados do modo anterior
+    # Se j  existir uma instala  o anterior de outro modo, limpar arquivos injetados do modo anterior
     $existingBackedUp = @()
     if (Test-Path -LiteralPath $stateFile -PathType Leaf) {
         try {
@@ -1096,16 +1236,17 @@ function Install-Dlss5 {
                     }
                 }
             }
-        } catch {}
+        }
+        catch {}
     }
 
     $state = @{
-        InstalledAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-        TargetExe = $target.Executable
-        Mode = $effectiveMode
-        UpscalerType = $detectedUpscaler
-        Architecture = $target.Architecture
-        Api = $api
+        InstalledAt   = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+        TargetExe     = $target.Executable
+        Mode          = $effectiveMode
+        UpscalerType  = $detectedUpscaler
+        Architecture  = $target.Architecture
+        Api           = $api
         BackedUpFiles = $existingBackedUp
         InjectedFiles = @()
     }
@@ -1114,7 +1255,7 @@ function Install-Dlss5 {
         param($Src, $DstName)
         $dst = Join-Path $targetFolder $DstName
         if (Test-Path -LiteralPath $dst -PathType Leaf) {
-            # Só faz backup se o arquivo original NÃO foi injetado nesta mesma sessão
+            # S  faz backup se o arquivo original N O foi injetado nesta mesma sess o
             if ($state.InjectedFiles -notcontains $DstName) {
                 $bDst = Join-Path $backupFolder $DstName
                 if (-not (Test-Path -LiteralPath $bDst -PathType Leaf)) {
@@ -1131,7 +1272,7 @@ function Install-Dlss5 {
     $proxyDll = "dxgi.dll"
     if (-not $isX64) { $proxyDll = "dxgi32.dll" }
 
-    # 1. ReShade proxy (adaptação automática por API)
+    # 1. ReShade proxy (adapta  o autom tica por API)
     $dxgiSrc = Join-Path (Get-DLSS5PayloadDirectory) $proxyDll
     if (Test-Path -LiteralPath $dxgiSrc) {
         Safe-Copy -Src $dxgiSrc -DstName "dxgi.dll"
@@ -1145,7 +1286,7 @@ function Install-Dlss5 {
 
     # 2. RenoDX Addon e Modelos Neurais NVIDIA
     # Em jogos 64-bit (ou modos DIRECT/OPTISCALER), eles ficam na raiz do jogo.
-    # Em jogos 32-bit no MODO FEEDER, eles vão EXCLUSIVAMENTE para a pasta host64\ onde o helper 64-bit os executa.
+    # Em jogos 32-bit no MODO FEEDER, eles v o EXCLUSIVAMENTE para a pasta host64\ onde o helper 64-bit os executa.
     if ($isX64 -or ($effectiveMode -ne "FEEDER")) {
         $renoSrc = Join-Path (Get-DLSS5PayloadDirectory) $script:AddOnName
         if (Test-Path -LiteralPath $renoSrc) {
@@ -1155,7 +1296,7 @@ function Install-Dlss5 {
         if (Test-Path -LiteralPath $nrSrc) {
             Safe-Copy -Src $nrSrc -DstName "nvngx_dlssnr.dll"
         }
-        # Preserva nvngx_dlss.dll original do jogo caso já exista (evita falha de integridade em launchers como RDR2)
+        # Preserva nvngx_dlss.dll original do jogo caso j  exista (evita falha de integridade em launchers como RDR2)
         $dlssTarget = Join-Path $targetFolder "nvngx_dlss.dll"
         if (-not (Test-Path -LiteralPath $dlssTarget -PathType Leaf)) {
             $dlssSrc = Join-Path (Get-DLSS5PayloadDirectory) "nvngx_dlss.dll"
@@ -1165,7 +1306,7 @@ function Install-Dlss5 {
         }
     }
 
-    # 4. Injeção Específica por Modo
+    # 4. Inje  o Espec fica por Modo
     if ($effectiveMode -eq "DIRECT") {
         # JOGOS COM DLSS NATIVO: NUNCA sobrescrever o interposer Streamline nativo do jogo (ex: The Witcher 3, Cyberpunk)
         # para evitar erros de Entry Point (como slGetFeatureSettings ausente).
@@ -1173,11 +1314,35 @@ function Install-Dlss5 {
         $hasStreamline = (Test-Path -LiteralPath (Join-Path $targetFolder "sl.interposer.dll") -PathType Leaf)
         $hookVal = if ($hasStreamline) { 2 } else { 1 }
         
-        # Se o jogo já possui Streamline e suporta sl.dlss_nr.dll opcional, podemos fornecer apenas o plugin neural sem tocar no interposer
+        # Se o jogo j  possui Streamline e suporta sl.dlss_nr.dll opcional, podemos fornecer apenas o plugin neural sem tocar no interposer
         $slNrSrc = Join-Path (Get-DLSS5PayloadDirectory) "sl.dlss_nr.dll"
         if ($hasStreamline -and (Test-Path -LiteralPath $slNrSrc -PathType Leaf)) {
             Safe-Copy -Src $slNrSrc -DstName "sl.dlss_nr.dll"
         }
+
+        # Shaders e Texturas opcionais para ReShade (CAS, Vibrance, Tonemap, SMAA, FXAA)
+        $shaderDir = Join-Path $targetFolder "reshade-shaders\Shaders"
+        [void](New-Item -ItemType Directory -Path $shaderDir -Force)
+        Get-ChildItem -LiteralPath (Join-Path $feederPayload "shaders") | Copy-Item -Destination $shaderDir -Recurse -Force
+        
+        $texPayload = Join-Path $feederPayload "textures"
+        if (Test-Path -LiteralPath $texPayload -PathType Container) {
+            $texDir = Join-Path $targetFolder "reshade-shaders\Textures"
+            [void](New-Item -ItemType Directory -Path $texDir -Force)
+            Get-ChildItem -LiteralPath $texPayload | Copy-Item -Destination $texDir -Recurse -Force
+        }
+        if ($state.InjectedFiles -notcontains "reshade-shaders") { $state.InjectedFiles += "reshade-shaders" }
+
+        $targetPreset = Join-Path $targetFolder "ReShadePreset.ini"
+        if ((Test-Path -LiteralPath $targetPreset -PathType Leaf) -and ($state.InjectedFiles -notcontains "ReShadePreset.ini")) {
+            $bDst = Join-Path $backupFolder "ReShadePreset.ini"
+            if (-not (Test-Path -LiteralPath $bDst -PathType Leaf)) {
+                Copy-Item -LiteralPath $targetPreset -Destination $bDst -Force
+                $state.BackedUpFiles += "ReShadePreset.ini"
+            }
+        }
+        Set-Dlss5PresetIni -PresetPath $targetPreset -IsFeederMode $false
+        if ($state.InjectedFiles -notcontains "ReShadePreset.ini") { $state.InjectedFiles += "ReShadePreset.ini" }
 
         $targetIni = Join-Path $targetFolder "ReShade.ini"
         if ((Test-Path -LiteralPath $targetIni -PathType Leaf) -and ($state.InjectedFiles -notcontains "ReShade.ini")) {
@@ -1212,7 +1377,8 @@ function Install-Dlss5 {
         if ($isX64) {
             $feedSrc = Join-Path $feederPayload "dlss5-feed.addon64"
             if (Test-Path -LiteralPath $feedSrc) { Safe-Copy -Src $feedSrc -DstName "dlss5-feed.addon64" }
-        } else {
+        }
+        else {
             $feedSrc32 = Join-Path $feederPayload "dlss5-feed.addon32"
             if (Test-Path -LiteralPath $feedSrc32) { Safe-Copy -Src $feedSrc32 -DstName "dlss5-feed.addon32" }
             $hostDst = Join-Path $targetFolder "host64"
@@ -1242,7 +1408,7 @@ function Install-Dlss5 {
         $cfgSrc = Join-Path $feederPayload "dlss5-feed.cfg"
         if (Test-Path -LiteralPath $cfgSrc) { Safe-Copy -Src $cfgSrc -DstName "dlss5-feed.cfg" }
 
-        # Injeção de camada Vulkan se o jogo for baseado em Vulkan
+        # Inje  o de camada Vulkan se o jogo for baseado em Vulkan
         if ($api -eq "VULKAN") {
             $layerFolderName = if ($isX64) { "layer-x64" } else { "layer-x86" }
             $layerSrcDir = Join-Path $feederPayload $layerFolderName
@@ -1261,7 +1427,7 @@ function Install-Dlss5 {
                 $state.BackedUpFiles += "ReShadePreset.ini"
             }
         }
-        Set-Dlss5PresetIni -PresetPath $targetPreset
+        Set-Dlss5PresetIni -PresetPath $targetPreset -IsFeederMode $true
         if ($state.InjectedFiles -notcontains "ReShadePreset.ini") { $state.InjectedFiles += "ReShadePreset.ini" }
 
         $targetIni = Join-Path $targetFolder "ReShade.ini"
@@ -1280,15 +1446,15 @@ function Install-Dlss5 {
     [System.IO.File]::WriteAllText($stateFile, ($state | ConvertTo-Json -Depth 4), $utf8NoBom)
     
     $modeReadable = switch ($effectiveMode) {
-        "DIRECT"     { "Modo 1: Direto (DLSS Nativo)" }
+        "DIRECT" { "Modo 1: Direto (DLSS Nativo)" }
         "OPTISCALER" { "Modo 2: Ponte OptiScaler (FSR2/XeSS)" }
-        default      { "Modo 3: Feeder Universal (DLAA 100% Nativo)" }
+        default { "Modo 3: Feeder Universal (DLAA 100% Nativo)" }
     }
     
     Show-InstallationSuccessDialog -GameName $target.ExeName -ModeName $modeReadable -TargetExePath $target.Executable
 }
 
-# --- MOTOR DE RESTAURAÇÃO DE FÁBRICA (UNINSTALL) ---
+# --- MOTOR DE RESTAURA  O DE F BRICA (UNINSTALL) ---
 function Uninstall-Dlss5 {
     param([Parameter(Mandatory = $true)][string]$TargetPath)
     $target = Resolve-GameTarget -TargetPath $TargetPath
@@ -1306,7 +1472,8 @@ function Uninstall-Dlss5 {
             $saved = Get-Content -LiteralPath $stateFile -Raw -Encoding UTF8 | ConvertFrom-Json
             if ($saved.BackedUpFiles) { $savedBacked = @($saved.BackedUpFiles) }
             if ($saved.InjectedFiles) { $savedInjected = @($saved.InjectedFiles) }
-        } catch {}
+        }
+        catch {}
     }
 
     if (Test-Path -LiteralPath $backupFolder -PathType Container) {
@@ -1326,9 +1493,9 @@ function Uninstall-Dlss5 {
         Remove-Item -LiteralPath $backupFolder -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    # Lista de purga cirúrgica incondicional (arquivos exclusivos do DLSS 5 / ReShade / OptiScaler / Feeder)
-    # ATENÇÃO: NUNCA incluir DLLs nativas de jogos (sl.interposer.dll, sl.common.dll, sl.dlss.dll, nvngx_dlss.dll)
-    # pois em títulos com DLSS/Streamline de fábrica eles não são substituídos e apagá-los quebra o jogo!
+    # Lista de purga cir rgica incondicional (arquivos exclusivos do DLSS 5 / ReShade / OptiScaler / Feeder)
+    # ATEN  O: NUNCA incluir DLLs nativas de jogos (sl.interposer.dll, sl.common.dll, sl.dlss.dll, nvngx_dlss.dll)
+    # pois em t tulos com DLSS/Streamline de f brica eles n o s o substitu dos e apag -los quebra o jogo!
     $purgeList = @(
         "dxgi.dll", "d3d12.dll", "d3d9.dll", "opengl32.dll",
         "renodx-dlss5.addon64", "renodx-dlss5++.addon64", "renodx-dlss5-v3.addon64",
@@ -1399,13 +1566,14 @@ function Start-GameExecutable {
             $env:VK_INSTANCE_LAYERS = "VK_LAYER_feed_vk"
         }
         Start-Process -FilePath $ExecutablePath -WorkingDirectory $folder
-    } finally {
+    }
+    finally {
         $env:VK_LAYER_PATH = $oldVkPath
         $env:VK_INSTANCE_LAYERS = $oldVkLayers
     }
 }
 
-# --- SCANNER DE AUTO-DESCOBERTA INSTANTÂNEA DE JOGOS ---
+# --- SCANNER DE AUTO-DESCOBERTA INSTANT NEA DE JOGOS ---
 function Scan-DriveForGames {
     param(
         [string]$DriveLetter = "ALL",
@@ -1424,7 +1592,7 @@ function Scan-DriveForGames {
         "E:\SteamLibrary\steamapps\libraryfolders.vdf"
     )
 
-    # Consulta dinâmica ao Registro do Windows para Steam
+    # Consulta din mica ao Registro do Windows para Steam
     $steamRegPaths = @(
         "HKCU:\Software\Valve\Steam",
         "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam",
@@ -1442,7 +1610,8 @@ function Scan-DriveForGames {
                     }
                 }
             }
-        } catch {}
+        }
+        catch {}
     }
 
     # Consulta ao Registro para GOG Galaxy
@@ -1467,7 +1636,8 @@ function Scan-DriveForGames {
                     $common = Join-Path $p "steamapps\common"
                     if (Test-Path -LiteralPath $common) { [void]$rootsToScan.Add($common) }
                 }
-            } catch {}
+            }
+            catch {}
         }
     }
 
@@ -1481,7 +1651,8 @@ function Scan-DriveForGames {
                 if ($itemData.InstallLocation -and (Test-Path -LiteralPath $itemData.InstallLocation)) {
                     [void]$rootsToScan.Add($itemData.InstallLocation)
                 }
-            } catch {}
+            }
+            catch {}
         }
     }
 
@@ -1489,7 +1660,8 @@ function Scan-DriveForGames {
     $drives = @()
     if ($DriveLetter -eq "ALL") {
         $drives = @([System.IO.DriveInfo]::GetDrives() | Where-Object { $_.DriveType -eq [System.IO.DriveType]::Fixed -and $_.IsReady } | ForEach-Object { $_.Name })
-    } else {
+    }
+    else {
         $drives = @($DriveLetter)
     }
     foreach ($d in $drives) {
@@ -1519,7 +1691,8 @@ function Scan-DriveForGames {
                         [void]$seenPaths.Add($norm)
                         [void]$allGameDirs.Add([pscustomobject]@{ Root = $root; Dir = (Get-Item -LiteralPath $root) })
                     }
-                } else {
+                }
+                else {
                     $dirs = Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue
                     foreach ($dir in $dirs) {
                         $dirLow = $dir.Name.ToLower()
@@ -1532,7 +1705,8 @@ function Scan-DriveForGames {
                         }
                     }
                 }
-            } catch {}
+            }
+            catch {}
         }
     }
 
@@ -1563,27 +1737,29 @@ function Scan-DriveForGames {
         $order = 3
         if ($isInstalled) {
             $order = 0
-        } elseif ($upscaler -eq "NATIVE_DLSS") {
+        }
+        elseif ($upscaler -eq "NATIVE_DLSS") {
             $order = 1
-        } elseif ($upscaler -eq "FSR2_BRIDGE" -or $upscaler -eq "XESS_BRIDGE") {
+        }
+        elseif ($upscaler -eq "FSR2_BRIDGE" -or $upscaler -eq "XESS_BRIDGE") {
             $order = 2
         }
 
         [void]$results.Add([pscustomobject]@{
-            Order = $order
-            Name = $dir.Name
-            Path = $gamePath
-            Api = "$api ($arch)"
-            Upscaler = $upscaler
-            IsInstalled = $isInstalled
-            Icon = $resolved.Icon
-            ExeName = $resolved.ExeName
-        })
+                Order       = $order
+                Name        = $dir.Name
+                Path        = $gamePath
+                Api         = "$api ($arch)"
+                Upscaler    = $upscaler
+                IsInstalled = $isInstalled
+                Icon        = $resolved.Icon
+                ExeName     = $resolved.ExeName
+            })
     }
     return @($results | Sort-Object -Property Order, Name)
 }
 
-# --- HELPERS DE ESTILIZAÇÃO E COMPONENTES MODERNOS ---
+# --- HELPERS DE ESTILIZA  O E COMPONENTES MODERNOS ---
 function Style-Button {
     param(
         [System.Windows.Forms.Button]$Button,
@@ -1600,20 +1776,20 @@ function Style-Button {
     $Button.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
     $Button.Tag = @{ Base = $BaseColor; Hover = $HoverColor; Text = $TextColor }
     $Button.Add_MouseEnter({ 
-        if ($this.Tag -and $this.Tag.Hover) { $this.BackColor = $this.Tag.Hover }
-        if ($this.Tag -and $this.Tag.Text) { $this.ForeColor = $this.Tag.Text }
-    })
+            if ($this.Tag -and $this.Tag.Hover) { $this.BackColor = $this.Tag.Hover }
+            if ($this.Tag -and $this.Tag.Text) { $this.ForeColor = $this.Tag.Text }
+        })
     $Button.Add_MouseLeave({ 
-        if ($this.Tag -and $this.Tag.Base) { $this.BackColor = $this.Tag.Base }
-        if ($this.Tag -and $this.Tag.Text) { $this.ForeColor = $this.Tag.Text }
-    })
+            if ($this.Tag -and $this.Tag.Base) { $this.BackColor = $this.Tag.Base }
+            if ($this.Tag -and $this.Tag.Text) { $this.ForeColor = $this.Tag.Text }
+        })
 }
 
 # ==============================================================================
-# CONSTRUÇÃO DA HUD MODERNA E INTUITIVA PARA LEIGOS
+# CONSTRU  O DA HUD MODERNA E INTUITIVA PARA LEIGOS
 # ==============================================================================
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "1 Click DLSS 5 v$($script:Version) • Universal Neural Control Center"
+$form.Text = "1 Click DLSS 5 v$($script:Version)   Universal Neural Control Center"
 $form.Size = New-Object System.Drawing.Size(1260, 860)
 $form.MinimumSize = New-Object System.Drawing.Size(1180, 800)
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
@@ -1628,41 +1804,43 @@ if (Test-Path -LiteralPath $script:IconPath) {
 
 # --- SUPORTE A DRAG & DROP (ARRASTAR E SOLTAR JOGOS DIRETAMENTE NA JANELA) ---
 $form.Add_DragEnter({
-    param($sender, $e)
-    if ($e.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) {
-        $e.Effect = [System.Windows.Forms.DragDropEffects]::Copy
-    } else {
-        $e.Effect = [System.Windows.Forms.DragDropEffects]::None
-    }
-})
+        param($sender, $e)
+        if ($e.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) {
+            $e.Effect = [System.Windows.Forms.DragDropEffects]::Copy
+        }
+        else {
+            $e.Effect = [System.Windows.Forms.DragDropEffects]::None
+        }
+    })
 
 $form.Add_DragDrop({
-    param($sender, $e)
-    $files = $e.Data.GetData([System.Windows.Forms.DataFormats]::FileDrop)
-    if ($files -and $files.Length -gt 0) {
-        $droppedPath = $files[0]
-        try {
-            $resolved = Resolve-GameTarget -TargetPath $droppedPath
-            $api = Detect-GameGraphicsApi -TargetExe $resolved.Executable -GameFolder $resolved.InstallFolder
-            $upscaler = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder -GameRoot $resolved.Root
-            $gObj = [pscustomobject]@{
-                Order = 1
-                Name = (Split-Path -Leaf $droppedPath)
-                Path = $droppedPath
-                Api = "$api ($($resolved.Architecture))"
-                Upscaler = $upscaler
-                Icon = $resolved.Icon
-                ExeName = $resolved.ExeName
+        param($sender, $e)
+        $files = $e.Data.GetData([System.Windows.Forms.DataFormats]::FileDrop)
+        if ($files -and $files.Length -gt 0) {
+            $droppedPath = $files[0]
+            try {
+                $resolved = Resolve-GameTarget -TargetPath $droppedPath
+                $api = Detect-GameGraphicsApi -TargetExe $resolved.Executable -GameFolder $resolved.InstallFolder
+                $upscaler = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder -GameRoot $resolved.Root
+                $gObj = [pscustomobject]@{
+                    Order    = 1
+                    Name     = (Split-Path -Leaf $droppedPath)
+                    Path     = $droppedPath
+                    Api      = "$api ($($resolved.Architecture))"
+                    Upscaler = $upscaler
+                    Icon     = $resolved.Icon
+                    ExeName  = $resolved.ExeName
+                }
+                $script:CurrentGameLibrary = @($gObj)
+                Refresh-GameLibraryUI -Games @($gObj)
+                Select-GameInInspector -GameObj $gObj
+                Write-Status -Message "Jogo carregado via Arrastar e Soltar: $($gObj.Name)" -Level "OK"
             }
-            $script:CurrentGameLibrary = @($gObj)
-            Refresh-GameLibraryUI -Games @($gObj)
-            Select-GameInInspector -GameObj $gObj
-            Write-Status -Message "Jogo carregado via Arrastar e Soltar: $($gObj.Name)" -Level "OK"
-        } catch {
-            Show-FriendlyErrorDialog -Ex $_.Exception -Context "Arrastar e Soltar" -TargetPath $droppedPath
+            catch {
+                Show-FriendlyErrorDialog -Ex $_.Exception -Context "Arrastar e Soltar" -TargetPath $droppedPath
+            }
         }
-    }
-})
+    })
 
 $imageList = New-Object System.Windows.Forms.ImageList
 $imageList.ImageSize = New-Object System.Drawing.Size(28, 28)
@@ -1683,7 +1861,7 @@ $headerAccent.BackColor = [System.Drawing.Color]::FromArgb(118, 185, 0)
 [void]$header.Controls.Add($headerAccent)
 
 $lblTagline = New-Object System.Windows.Forms.Label
-$lblTagline.Text = "NEURAL CONTROL CENTER • RTX 20/30/40/50"
+$lblTagline.Text = "NEURAL CONTROL CENTER   RTX 20/30/40/50"
 $lblTagline.Location = New-Object System.Drawing.Point(22, 10)
 $lblTagline.Size = New-Object System.Drawing.Size(600, 18)
 $lblTagline.ForeColor = [System.Drawing.Color]::FromArgb(118, 185, 0)
@@ -1699,7 +1877,7 @@ $lblTitle.ForeColor = [System.Drawing.Color]::White
 [void]$header.Controls.Add($lblTitle)
 
 $lblSubBadge = New-Object System.Windows.Forms.Label
-$lblSubBadge.Text = "DirectX 9 / 10 / 11 / 12 • Vulkan • OpenGL • 32 & 64-bit"
+$lblSubBadge.Text = "DirectX 9 / 10 / 11 / 12   Vulkan   OpenGL   32 & 64-bit"
 $lblSubBadge.Location = New-Object System.Drawing.Point(22, 60)
 $lblSubBadge.Size = New-Object System.Drawing.Size(550, 18)
 $lblSubBadge.ForeColor = [System.Drawing.Color]::FromArgb(145, 175, 210)
@@ -1721,7 +1899,7 @@ $lblStep1.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9)
 [void]$stepPanel.Controls.Add($lblStep1)
 
 $lblStepArrow1 = New-Object System.Windows.Forms.Label
-$lblStepArrow1.Text = "➔"
+$lblStepArrow1.Text = " "
 $lblStepArrow1.Location = New-Object System.Drawing.Point(185, 2)
 $lblStepArrow1.Size = New-Object System.Drawing.Size(20, 20)
 $lblStepArrow1.ForeColor = [System.Drawing.Color]::Gray
@@ -1736,7 +1914,7 @@ $lblStep2.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9)
 [void]$stepPanel.Controls.Add($lblStep2)
 
 $lblStepArrow2 = New-Object System.Windows.Forms.Label
-$lblStepArrow2.Text = "➔"
+$lblStepArrow2.Text = " "
 $lblStepArrow2.Location = New-Object System.Drawing.Point(395, 2)
 $lblStepArrow2.Size = New-Object System.Drawing.Size(20, 20)
 $lblStepArrow2.ForeColor = [System.Drawing.Color]::Gray
@@ -1750,7 +1928,7 @@ $lblStep3.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 90)
 $lblStep3.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9)
 [void]$stepPanel.Controls.Add($lblStep3)
 
-# Botão Diagnóstico e Idioma no Canto Superior Direito
+# Bot o Diagn stico e Idioma no Canto Superior Direito
 $btnDiagnose = New-Object System.Windows.Forms.Button
 $btnDiagnose.Text = "[+] DIAGNOSTICO"
 $btnDiagnose.Location = New-Object System.Drawing.Point(880, 12)
@@ -1768,7 +1946,7 @@ $comboLang.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
 $comboLang.BackColor = [System.Drawing.Color]::FromArgb(22, 32, 54)
 $comboLang.ForeColor = [System.Drawing.Color]::White
 $comboLang.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 9)
-[void]$comboLang.Items.AddRange(@("Português", "English", "Español", "Deutsch", "Français", "Italiano", "日本語", "简体中文", "Русский", "한국어"))
+[void]$comboLang.Items.AddRange(@("Portugu s", "English", "Espa ol", "Deutsch", "Fran ais", "Italiano", "   ", "    ", "       ", "   "))
 $comboLang.SelectedIndex = 0
 [void]$header.Controls.Add($comboLang)
 
@@ -1781,7 +1959,7 @@ $toolbar.BackColor = [System.Drawing.Color]::FromArgb(16, 24, 40)
 [void]$form.Controls.Add($toolbar)
 
 $btnScan = New-Object System.Windows.Forms.Button
-$btnScan.Text = "🔍 ESCANEAR DISCOS"
+$btnScan.Text = "   ESCANEAR DISCOS"
 $btnScan.Location = New-Object System.Drawing.Point(8, 7)
 $btnScan.Size = New-Object System.Drawing.Size(180, 30)
 Style-Button -Button $btnScan -BaseColor ([System.Drawing.Color]::FromArgb(35, 80, 145)) -HoverColor ([System.Drawing.Color]::FromArgb(50, 110, 195))
@@ -1798,7 +1976,7 @@ $txtSearch.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
 [void]$toolbar.Controls.Add($txtSearch)
 
 $btnBrowse = New-Object System.Windows.Forms.Button
-$btnBrowse.Text = "📁 PROCURAR JOGO"
+$btnBrowse.Text = "   PROCURAR JOGO"
 $btnBrowse.Location = New-Object System.Drawing.Point(1042, 7)
 $btnBrowse.Size = New-Object System.Drawing.Size(172, 30)
 $btnBrowse.Anchor = "Top, Right"
@@ -1870,16 +2048,16 @@ $lblGameTitle.ForeColor = [System.Drawing.Color]::White
 [void]$gameBanner.Controls.Add($lblGameTitle)
 
 $lblGameStatus = New-Object System.Windows.Forms.Label
-$lblGameStatus.Text = "Escolha um jogo na lista à esquerda ou procure uma pasta."
+$lblGameStatus.Text = "Escolha um jogo na lista   esquerda ou procure uma pasta."
 $lblGameStatus.Location = New-Object System.Drawing.Point(70, 38)
 $lblGameStatus.Size = New-Object System.Drawing.Size(640, 22)
 $lblGameStatus.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
 $lblGameStatus.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 9)
 [void]$gameBanner.Controls.Add($lblGameStatus)
 
-# Pasta de Instalação Consolidada
+# Pasta de Instala  o Consolidada
 $lblFolderTitle = New-Object System.Windows.Forms.Label
-$lblFolderTitle.Text = "DIRETÓRIO DE INSTALAÇÃO DO JOGO:"
+$lblFolderTitle.Text = "DIRET RIO DE INSTALA  O DO JOGO:"
 $lblFolderTitle.Location = New-Object System.Drawing.Point(16, 90)
 $lblFolderTitle.Size = New-Object System.Drawing.Size(500, 18)
 $lblFolderTitle.ForeColor = [System.Drawing.Color]::FromArgb(160, 190, 225)
@@ -1896,9 +2074,9 @@ $txtFolderPath.ForeColor = [System.Drawing.Color]::FromArgb(140, 210, 255)
 $txtFolderPath.BorderStyle = "FixedSingle"
 [void]$rightPanel.Controls.Add($txtFolderPath)
 
-# Seletor de Modo de Injeção em Cards Modernos
+# Seletor de Modo de Inje  o em Cards Modernos
 $lblModeSecTitle = New-Object System.Windows.Forms.Label
-$lblModeSecTitle.Text = "ESCOLHA O MODO DE INJEÇÃO DLSS 5:"
+$lblModeSecTitle.Text = "ESCOLHA O MODO DE INJE  O DLSS 5:"
 $lblModeSecTitle.Location = New-Object System.Drawing.Point(16, 142)
 $lblModeSecTitle.Size = New-Object System.Drawing.Size(400, 18)
 $lblModeSecTitle.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 90)
@@ -1906,7 +2084,7 @@ $lblModeSecTitle.Font = New-Object System.Drawing.Font("Segoe UI Bold", 8.5)
 [void]$rightPanel.Controls.Add($lblModeSecTitle)
 
 $lblAutoNotice = New-Object System.Windows.Forms.Label
-$lblAutoNotice.Text = "✨ Modo ideal selecionado automaticamente!"
+$lblAutoNotice.Text = "  Modo ideal selecionado automaticamente!"
 $lblAutoNotice.Location = New-Object System.Drawing.Point(420, 142)
 $lblAutoNotice.Size = New-Object System.Drawing.Size(318, 18)
 $lblAutoNotice.Anchor = "Top, Right"
@@ -1925,7 +2103,7 @@ $cardMode1.Cursor = [System.Windows.Forms.Cursors]::Hand
 [void]$rightPanel.Controls.Add($cardMode1)
 
 $lblCard1Title = New-Object System.Windows.Forms.Label
-$lblCard1Title.Text = "● MODO 1: DIRETO (DLSS Nativo)"
+$lblCard1Title.Text = "  MODO 1: DIRETO (DLSS Nativo)"
 $lblCard1Title.Location = New-Object System.Drawing.Point(12, 6)
 $lblCard1Title.Size = New-Object System.Drawing.Size(690, 20)
 $lblCard1Title.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9.5)
@@ -1949,7 +2127,7 @@ $cardMode2.Cursor = [System.Windows.Forms.Cursors]::Hand
 [void]$rightPanel.Controls.Add($cardMode2)
 
 $lblCard2Title = New-Object System.Windows.Forms.Label
-$lblCard2Title.Text = "● MODO 2: PONTE OPTISCALER (FSR2/XeSS)"
+$lblCard2Title.Text = "  MODO 2: PONTE OPTISCALER (FSR2/XeSS)"
 $lblCard2Title.Location = New-Object System.Drawing.Point(12, 6)
 $lblCard2Title.Size = New-Object System.Drawing.Size(690, 20)
 $lblCard2Title.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9.5)
@@ -1973,7 +2151,7 @@ $cardMode3.Cursor = [System.Windows.Forms.Cursors]::Hand
 [void]$rightPanel.Controls.Add($cardMode3)
 
 $lblCard3Title = New-Object System.Windows.Forms.Label
-$lblCard3Title.Text = "● MODO 3: FEEDER UNIVERSAL (DLAA 100% Nativo)"
+$lblCard3Title.Text = "  MODO 3: FEEDER UNIVERSAL (DLAA 100% Nativo)"
 $lblCard3Title.Location = New-Object System.Drawing.Point(12, 6)
 $lblCard3Title.Size = New-Object System.Drawing.Size(690, 20)
 $lblCard3Title.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9.5)
@@ -1981,7 +2159,7 @@ $lblCard3Title.ForeColor = [System.Drawing.Color]::FromArgb(190, 150, 255)
 [void]$cardMode3.Controls.Add($lblCard3Title)
 
 $lblCard3Desc = New-Object System.Windows.Forms.Label
-$lblCard3Desc.Text = "Para QUALQUER jogo (Mafia, GTA, etc). Reconstrução 100% limpa e sem perda de nitidez."
+$lblCard3Desc.Text = "Para QUALQUER jogo (Mafia, GTA, etc). Reconstru  o 100% limpa e sem perda de nitidez."
 $lblCard3Desc.Location = New-Object System.Drawing.Point(12, 26)
 $lblCard3Desc.Size = New-Object System.Drawing.Size(690, 20)
 $lblCard3Desc.ForeColor = [System.Drawing.Color]::FromArgb(170, 195, 220)
@@ -2000,18 +2178,22 @@ function Highlight-SelectedModeCard {
     if ($Mode -eq "DIRECT") {
         $cardMode1.BackColor = [System.Drawing.Color]::FromArgb(20, 48, 30)
         if ($isRdr2) {
-            $lblReqText.Text = if ($script:CurrentLang -eq "PT") { "No RDR2: Mude API para DirectX 12 (Configurações > Gráficos > Avançado) e ATIVE o DLSS." } else { "In RDR2: Switch Graphics API to DirectX 12 (Settings > Graphics > Advanced) & ENABLE DLSS." }
-        } else {
+            $lblReqText.Text = if ($script:CurrentLang -eq "PT") { "No RDR2: Mude API para DirectX 12 (Configura  es > Gr ficos > Avan ado) e ATIVE o DLSS." } else { "In RDR2: Switch Graphics API to DirectX 12 (Settings > Graphics > Advanced) & ENABLE DLSS." }
+        }
+        else {
             $lblReqText.Text = $d.ReqMode1
         }
-    } elseif ($Mode -eq "OPTISCALER") {
+    }
+    elseif ($Mode -eq "OPTISCALER") {
         $cardMode2.BackColor = [System.Drawing.Color]::FromArgb(18, 40, 65)
         $lblReqText.Text = $d.ReqMode2
-    } else {
+    }
+    else {
         $cardMode3.BackColor = [System.Drawing.Color]::FromArgb(35, 25, 55)
         if ($isRdr2) {
-            $lblReqText.Text = if ($script:CurrentLang -eq "PT") { "No RDR2: O Feeder requer DirectX 12. Mude a API para DirectX 12 nas opções do jogo." } else { "In RDR2: Feeder requires DirectX 12. Switch Graphics API to DirectX 12 in game settings." }
-        } else {
+            $lblReqText.Text = if ($script:CurrentLang -eq "PT") { "No RDR2: O Feeder requer DirectX 12. Mude a API para DirectX 12 nas op  es do jogo." } else { "In RDR2: Feeder requires DirectX 12. Switch Graphics API to DirectX 12 in game settings." }
+        }
+        else {
             $lblReqText.Text = $d.ReqMode3
         }
     }
@@ -2044,7 +2226,7 @@ $reqAccent.BackColor = [System.Drawing.Color]::FromArgb(255, 195, 0)
 [void]$reqCard.Controls.Add($reqAccent)
 
 $lblReqTitle = New-Object System.Windows.Forms.Label
-$lblReqTitle.Text = "⚡ REQUISITO NO JOGO:"
+$lblReqTitle.Text = "  REQUISITO NO JOGO:"
 $lblReqTitle.Location = New-Object System.Drawing.Point(12, 6)
 $lblReqTitle.Size = New-Object System.Drawing.Size(700, 18)
 $lblReqTitle.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9)
@@ -2052,14 +2234,14 @@ $lblReqTitle.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 50)
 [void]$reqCard.Controls.Add($lblReqTitle)
 
 $lblReqText = New-Object System.Windows.Forms.Label
-$lblReqText.Text = "Selecione um jogo para carregar as instruções automáticas."
+$lblReqText.Text = "Selecione um jogo para carregar as instru  es autom ticas."
 $lblReqText.Location = New-Object System.Drawing.Point(12, 26)
 $lblReqText.Size = New-Object System.Drawing.Size(700, 30)
 $lblReqText.ForeColor = [System.Drawing.Color]::FromArgb(240, 230, 190)
 $lblReqText.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)
 [void]$reqCard.Controls.Add($lblReqText)
 
-# Barra de Ações Principais
+# Barra de A  es Principais
 $actionPanel = New-Object System.Windows.Forms.Panel
 $actionPanel.Location = New-Object System.Drawing.Point(16, 410)
 $actionPanel.Size = New-Object System.Drawing.Size(722, 185)
@@ -2067,7 +2249,7 @@ $actionPanel.Anchor = "Top, Bottom, Left, Right"
 [void]$rightPanel.Controls.Add($actionPanel)
 
 $btnInstall = New-Object System.Windows.Forms.Button
-$btnInstall.Text = "[⚡] 1-CLIQUE: INSTALAR DLSS 5"
+$btnInstall.Text = "[ ] 1-CLIQUE: INSTALAR DLSS 5"
 $btnInstall.Location = New-Object System.Drawing.Point(0, 5)
 $btnInstall.Size = New-Object System.Drawing.Size(355, 48)
 $btnInstall.Font = New-Object System.Drawing.Font("Segoe UI Bold", 11.5)
@@ -2075,7 +2257,7 @@ Style-Button -Button $btnInstall -BaseColor ([System.Drawing.Color]::FromArgb(11
 [void]$actionPanel.Controls.Add($btnInstall)
 
 $btnLaunch = New-Object System.Windows.Forms.Button
-$btnLaunch.Text = "[►] INICIAR JOGO"
+$btnLaunch.Text = "[ ] INICIAR JOGO"
 $btnLaunch.Location = New-Object System.Drawing.Point(367, 5)
 $btnLaunch.Size = New-Object System.Drawing.Size(355, 48)
 $btnLaunch.Font = New-Object System.Drawing.Font("Segoe UI Bold", 11.5)
@@ -2083,7 +2265,7 @@ Style-Button -Button $btnLaunch -BaseColor ([System.Drawing.Color]::FromArgb(0, 
 [void]$actionPanel.Controls.Add($btnLaunch)
 
 $btnUninstall = New-Object System.Windows.Forms.Button
-$btnUninstall.Text = "[↩] RESTAURAR ORIGINAL"
+$btnUninstall.Text = "[ ] RESTAURAR ORIGINAL"
 $btnUninstall.Location = New-Object System.Drawing.Point(0, 62)
 $btnUninstall.Size = New-Object System.Drawing.Size(355, 38)
 Style-Button -Button $btnUninstall -BaseColor ([System.Drawing.Color]::FromArgb(170, 45, 45)) -HoverColor ([System.Drawing.Color]::FromArgb(205, 55, 55)) -TextColor ([System.Drawing.Color]::White)
@@ -2096,7 +2278,7 @@ $btnOpenFolder.Size = New-Object System.Drawing.Size(355, 38)
 Style-Button -Button $btnOpenFolder -BaseColor ([System.Drawing.Color]::FromArgb(35, 55, 90)) -HoverColor ([System.Drawing.Color]::FromArgb(50, 75, 125)) -TextColor ([System.Drawing.Color]::White)
 [void]$actionPanel.Controls.Add($btnOpenFolder)
 
-# --- RODAPÉ MINIMALISTA COM LOG E STATUS ---
+# --- RODAP  MINIMALISTA COM LOG E STATUS ---
 $footer = New-Object System.Windows.Forms.Panel
 $footer.Location = New-Object System.Drawing.Point(0, 790)
 $footer.Size = New-Object System.Drawing.Size(1260, 32)
@@ -2105,7 +2287,7 @@ $footer.BackColor = [System.Drawing.Color]::FromArgb(8, 12, 20)
 [void]$form.Controls.Add($footer)
 
 $lblStatus = New-Object System.Windows.Forms.Label
-$lblStatus.Text = "● Pronto. Selecione um jogo para começar."
+$lblStatus.Text = "  Pronto. Selecione um jogo para come ar."
 $lblStatus.Location = New-Object System.Drawing.Point(18, 7)
 $lblStatus.Size = New-Object System.Drawing.Size(800, 18)
 $lblStatus.ForeColor = [System.Drawing.Color]::FromArgb(140, 180, 220)
@@ -2123,7 +2305,7 @@ $progressBar.Style = [System.Windows.Forms.ProgressBarStyle]::Continuous
 $script:ProgressBar = $progressBar
 
 $btnOpenLog = New-Object System.Windows.Forms.Button
-$btnOpenLog.Text = "📄 VER LOG COMPLETO"
+$btnOpenLog.Text = "   VER LOG COMPLETO"
 $btnOpenLog.Location = New-Object System.Drawing.Point(1070, 3)
 $btnOpenLog.Size = New-Object System.Drawing.Size(170, 26)
 $btnOpenLog.Anchor = "Top, Right"
@@ -2132,7 +2314,7 @@ $btnOpenLog.Font = New-Object System.Drawing.Font("Segoe UI", 8)
 $btnOpenLog.Add_Click({ Open-LogFile })
 [void]$footer.Controls.Add($btnOpenLog)
 
-# --- SINCRONIZAÇÃO DE IDIOMAS ---
+# --- SINCRONIZA  O DE IDIOMAS ---
 function Update-UiLanguage {
     param([string]$Lang)
     $script:CurrentLang = $Lang
@@ -2163,7 +2345,7 @@ function Update-UiLanguage {
     $btnOpenLog.Text = $d.BtnOpenLog
 
     $btnInstallText = $d.BtnInstall
-    if ([string]::IsNullOrWhiteSpace($btnInstallText)) { $btnInstallText = "[⚡] 1-CLIQUE: INSTALAR DLSS 5" }
+    if ([string]::IsNullOrWhiteSpace($btnInstallText)) { $btnInstallText = "[ ] 1-CLIQUE: INSTALAR DLSS 5" }
     $btnInstall.Text = $btnInstallText
 
     $gameList.Columns[0].Text = $d.ColGame
@@ -2172,20 +2354,21 @@ function Update-UiLanguage {
 
     if ($script:SelectedGameObj) {
         Select-GameInInspector -GameObj $script:SelectedGameObj
-    } else {
-        $lblStatus.Text = "● " + $d.StatusReady
+    }
+    else {
+        $lblStatus.Text = "  " + $d.StatusReady
     }
 }
 
 $comboLang.Add_SelectedIndexChanged({
-    $langCodes = @("PT", "EN", "ES", "DE", "FR", "IT", "JA", "ZH", "RU", "KO")
-    $idx = $comboLang.SelectedIndex
-    if ($idx -ge 0 -and $idx -lt $langCodes.Length) {
-        Update-UiLanguage -Lang $langCodes[$idx]
-    }
-})
+        $langCodes = @("PT", "EN", "ES", "DE", "FR", "IT", "JA", "ZH", "RU", "KO")
+        $idx = $comboLang.SelectedIndex
+        if ($idx -ge 0 -and $idx -lt $langCodes.Length) {
+            Update-UiLanguage -Lang $langCodes[$idx]
+        }
+    })
 
-# --- EVENTOS E LOGICA DE INSPEÇÃO ---
+# --- EVENTOS E LOGICA DE INSPE  O ---
 function Select-GameInInspector {
     param([pscustomobject]$GameObj)
     if ($null -eq $GameObj) { return }
@@ -2197,7 +2380,8 @@ function Select-GameInInspector {
 
     if ($GameObj.Icon) {
         $picIcon.Image = $GameObj.Icon.ToBitmap()
-    } else {
+    }
+    else {
         $picIcon.Image = $null
     }
 
@@ -2207,7 +2391,8 @@ function Select-GameInInspector {
     $modeCode = "FEEDER"
     if ($detected -eq "NATIVE_DLSS") {
         $modeCode = "DIRECT"
-    } elseif ($detected -eq "FSR2_BRIDGE" -or $detected -eq "XESS_BRIDGE") {
+    }
+    elseif ($detected -eq "FSR2_BRIDGE" -or $detected -eq "XESS_BRIDGE") {
         $modeCode = "OPTISCALER"
     }
     Highlight-SelectedModeCard -Mode $modeCode
@@ -2215,24 +2400,26 @@ function Select-GameInInspector {
     $modeText = "Universal (Feeder)"
     if ($detected -eq "NATIVE_DLSS") {
         $modeText = "DLSS Nativo"
-    } elseif ($detected -like "*BRIDGE*") {
+    }
+    elseif ($detected -like "*BRIDGE*") {
         $modeText = "FSR2/XeSS (OptiScaler)"
     }
 
     $isInstalled = Test-GameDlss5Installed -GameFolder $GameObj.Path
     if ($isInstalled) {
-        $lblGameStatus.Text = $d.StatusInstalled + " • API: " + $GameObj.Api
+        $lblGameStatus.Text = $d.StatusInstalled + "   API: " + $GameObj.Api
         $lblGameStatus.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 90)
         
         $btnText = $d.BtnReinstall
-        if ([string]::IsNullOrWhiteSpace($btnText)) { $btnText = "[⚡] REINSTALAR / ATUALIZAR DLSS 5" }
+        if ([string]::IsNullOrWhiteSpace($btnText)) { $btnText = "[ ] REINSTALAR / ATUALIZAR DLSS 5" }
         $btnInstall.Text = $btnText
-    } else {
-        $lblGameStatus.Text = "API: " + $GameObj.Api + " • Modo Ideal: " + $modeText
+    }
+    else {
+        $lblGameStatus.Text = "API: " + $GameObj.Api + "   Modo Ideal: " + $modeText
         $lblGameStatus.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
         
         $btnText = $d.BtnInstall
-        if ([string]::IsNullOrWhiteSpace($btnText)) { $btnText = "[⚡] 1-CLIQUE: INSTALAR DLSS 5" }
+        if ([string]::IsNullOrWhiteSpace($btnText)) { $btnText = "[ ] 1-CLIQUE: INSTALAR DLSS 5" }
         $btnInstall.Text = $btnText
     }
 
@@ -2240,13 +2427,13 @@ function Select-GameInInspector {
 }
 
 $gameList.Add_SelectedIndexChanged({
-    if ($gameList.SelectedIndices.Count -gt 0) {
-        $idx = $gameList.SelectedIndices[0]
-        if ($script:CurrentGameLibrary -and $idx -lt $script:CurrentGameLibrary.Count) {
-            Select-GameInInspector -GameObj $script:CurrentGameLibrary[$idx]
+        if ($gameList.SelectedIndices.Count -gt 0) {
+            $idx = $gameList.SelectedIndices[0]
+            if ($script:CurrentGameLibrary -and $idx -lt $script:CurrentGameLibrary.Count) {
+                Select-GameInInspector -GameObj $script:CurrentGameLibrary[$idx]
+            }
         }
-    }
-})
+    })
 
 function Refresh-GameLibraryUI {
     param($Games)
@@ -2262,19 +2449,23 @@ function Refresh-GameLibraryUI {
             try {
                 $imageList.Images.Add($g.Icon.ToBitmap())
                 $imgIdx = $imageList.Images.Count - 1
-            } catch {}
+            }
+            catch {}
         }
 
         $isInst = Test-GameDlss5Installed -GameFolder $g.Path
         $modeLabel = ""
         if ($isInst) {
-            $modeLabel = "[✓] DLSS 5 Ativo"
-        } else {
+            $modeLabel = "[ ] DLSS 5 Ativo"
+        }
+        else {
             if ($g.Upscaler -eq "NATIVE_DLSS") {
                 $modeLabel = "[Modo 1] DLSS"
-            } elseif ($g.Upscaler -eq "FSR2_BRIDGE" -or $g.Upscaler -eq "XESS_BRIDGE") {
+            }
+            elseif ($g.Upscaler -eq "FSR2_BRIDGE" -or $g.Upscaler -eq "XESS_BRIDGE") {
                 $modeLabel = "[Modo 2] OptiScaler"
-            } else {
+            }
+            else {
                 $modeLabel = "[Modo 3] Feeder"
             }
         }
@@ -2288,144 +2479,150 @@ function Refresh-GameLibraryUI {
 }
 
 $btnScan.Add_Click({
-    $d = Get-Dict -Lang $script:CurrentLang
-    Write-Status -Message $d.StatusScanning -Level "INFO"
-    $form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
-    if ($script:ProgressBar) {
-        $script:ProgressBar.Value = 0
-        $script:ProgressBar.Visible = $true
-    }
-
-    $games = Scan-DriveForGames -DriveLetter "ALL" -ProgressCallback {
-        param($pct, $name)
-        $script:StatusLabel.Text = "● Escaneando: $name ($pct%)..."
+        $d = Get-Dict -Lang $script:CurrentLang
+        Write-Status -Message $d.StatusScanning -Level "INFO"
+        $form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
         if ($script:ProgressBar) {
-            $script:ProgressBar.Value = [Math]::Min(100, [Math]::Max(0, [int]$pct))
+            $script:ProgressBar.Value = 0
+            $script:ProgressBar.Visible = $true
         }
-        [System.Windows.Forms.Application]::DoEvents()
-    }
 
-    $script:CurrentGameLibrary = $games
-    Refresh-GameLibraryUI -Games $games
-    if ($script:ProgressBar) { $script:ProgressBar.Visible = $false }
-    $form.Cursor = [System.Windows.Forms.Cursors]::Default
+        $games = Scan-DriveForGames -DriveLetter "ALL" -ProgressCallback {
+            param($pct, $name)
+            $script:StatusLabel.Text = "  Escaneando: $name ($pct%)..."
+            if ($script:ProgressBar) {
+                $script:ProgressBar.Value = [Math]::Min(100, [Math]::Max(0, [int]$pct))
+            }
+            [System.Windows.Forms.Application]::DoEvents()
+        }
 
-    Write-Status -Message ($d.StatusScanDone -f $games.Count) -Level "OK"
-    if ($games.Count -gt 0) {
-        $gameList.Items[0].Selected = $true
-    }
-})
+        $script:CurrentGameLibrary = $games
+        Refresh-GameLibraryUI -Games $games
+        if ($script:ProgressBar) { $script:ProgressBar.Visible = $false }
+        $form.Cursor = [System.Windows.Forms.Cursors]::Default
+
+        Write-Status -Message ($d.StatusScanDone -f $games.Count) -Level "OK"
+        if ($games.Count -gt 0) {
+            $gameList.Items[0].Selected = $true
+        }
+    })
 
 $btnBrowse.Add_Click({
-    $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
-    $fbd.Description = "Selecione a pasta onde o jogo esta instalado:"
-    if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-        try {
-            $resolved = Resolve-GameTarget -TargetPath $fbd.SelectedPath
-            $api = Detect-GameGraphicsApi -TargetExe $resolved.Executable -GameFolder $resolved.InstallFolder
-            $upscaler = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder -GameRoot $resolved.Root
-            $gObj = [pscustomobject]@{
-                Order = 1
-                Name = (Split-Path -Leaf $fbd.SelectedPath)
-                Path = $fbd.SelectedPath
-                Api = "$api ($($resolved.Architecture))"
-                Upscaler = $upscaler
-                Icon = $resolved.Icon
-                ExeName = $resolved.ExeName
+        $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+        $fbd.Description = "Selecione a pasta onde o jogo esta instalado:"
+        if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            try {
+                $resolved = Resolve-GameTarget -TargetPath $fbd.SelectedPath
+                $api = Detect-GameGraphicsApi -TargetExe $resolved.Executable -GameFolder $resolved.InstallFolder
+                $upscaler = Detect-GameUpscalerType -GameFolder $resolved.InstallFolder -GameRoot $resolved.Root
+                $gObj = [pscustomobject]@{
+                    Order    = 1
+                    Name     = (Split-Path -Leaf $fbd.SelectedPath)
+                    Path     = $fbd.SelectedPath
+                    Api      = "$api ($($resolved.Architecture))"
+                    Upscaler = $upscaler
+                    Icon     = $resolved.Icon
+                    ExeName  = $resolved.ExeName
+                }
+                $script:CurrentGameLibrary = @($gObj)
+                Refresh-GameLibraryUI -Games @($gObj)
+                Select-GameInInspector -GameObj $gObj
             }
-            $script:CurrentGameLibrary = @($gObj)
-            Refresh-GameLibraryUI -Games @($gObj)
-            Select-GameInInspector -GameObj $gObj
-        } catch {
-            Show-FriendlyErrorDialog -Ex $_.Exception -Context "Seleção de Pasta" -TargetPath $fbd.SelectedPath
+            catch {
+                Show-FriendlyErrorDialog -Ex $_.Exception -Context "Sele  o de Pasta" -TargetPath $fbd.SelectedPath
+            }
         }
-    }
-})
+    })
 
 $btnInstall.Add_Click({
-    if (-not $script:SelectedGameObj) {
-        [System.Windows.Forms.MessageBox]::Show("Por favor, selecione um jogo na biblioteca ou clique em 'PROCURAR JOGO' primeiro.", "1 Click DLSS 5", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-        return
-    }
-    try {
-        Install-Dlss5 -TargetPath $script:SelectedGameObj.Path -SelectedMode $script:SelectedMode
-        Select-GameInInspector -GameObj $script:SelectedGameObj
-    } catch {
-        Show-FriendlyErrorDialog -Ex $_.Exception -Context "Instalação do DLSS 5" -TargetPath $script:SelectedGameObj.Path -SelectedMode $script:SelectedMode
-    }
-})
+        if (-not $script:SelectedGameObj) {
+            [System.Windows.Forms.MessageBox]::Show("Por favor, selecione um jogo na biblioteca ou clique em 'PROCURAR JOGO' primeiro.", "1 Click DLSS 5", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+            return
+        }
+        try {
+            Install-Dlss5 -TargetPath $script:SelectedGameObj.Path -SelectedMode $script:SelectedMode
+            Select-GameInInspector -GameObj $script:SelectedGameObj
+        }
+        catch {
+            Show-FriendlyErrorDialog -Ex $_.Exception -Context "Instala  o do DLSS 5" -TargetPath $script:SelectedGameObj.Path -SelectedMode $script:SelectedMode
+        }
+    })
 
 $btnLaunch.Add_Click({
-    if (-not $script:SelectedGameObj) { return }
-    try {
-        $resolved = Resolve-GameTarget -TargetPath $script:SelectedGameObj.Path
-        Start-GameExecutable -ExecutablePath $resolved.Executable
-    } catch {
-        Show-FriendlyErrorDialog -Ex $_.Exception -Context "Inicialização do Jogo" -TargetPath $script:SelectedGameObj.Path
-    }
-})
+        if (-not $script:SelectedGameObj) { return }
+        try {
+            $resolved = Resolve-GameTarget -TargetPath $script:SelectedGameObj.Path
+            Start-GameExecutable -ExecutablePath $resolved.Executable
+        }
+        catch {
+            Show-FriendlyErrorDialog -Ex $_.Exception -Context "Inicializa  o do Jogo" -TargetPath $script:SelectedGameObj.Path
+        }
+    })
 
 $btnUninstall.Add_Click({
-    if (-not $script:SelectedGameObj) { return }
-    $res = [System.Windows.Forms.MessageBox]::Show("Deseja realmente remover todos os arquivos do DLSS 5 e restaurar o jogo ao estado original de fabrica?", "Confirmar Restauracao", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
-    if ($res -eq [System.Windows.Forms.DialogResult]::Yes) {
-        try {
-            Uninstall-Dlss5 -TargetPath $script:SelectedGameObj.Path
-            Select-GameInInspector -GameObj $script:SelectedGameObj
-        } catch {
-            Show-FriendlyErrorDialog -Ex $_.Exception -Context "Restauração de Fábrica" -TargetPath $script:SelectedGameObj.Path
+        if (-not $script:SelectedGameObj) { return }
+        $res = [System.Windows.Forms.MessageBox]::Show("Deseja realmente remover todos os arquivos do DLSS 5 e restaurar o jogo ao estado original de fabrica?", "Confirmar Restauracao", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($res -eq [System.Windows.Forms.DialogResult]::Yes) {
+            try {
+                Uninstall-Dlss5 -TargetPath $script:SelectedGameObj.Path
+                Select-GameInInspector -GameObj $script:SelectedGameObj
+            }
+            catch {
+                Show-FriendlyErrorDialog -Ex $_.Exception -Context "Restaura  o de F brica" -TargetPath $script:SelectedGameObj.Path
+            }
         }
-    }
-})
+    })
 
 $btnOpenFolder.Add_Click({
-    if ($script:SelectedGameObj -and (Test-Path -LiteralPath $script:SelectedGameObj.Path)) {
-        Start-Process "explorer.exe" -ArgumentList "`"$($script:SelectedGameObj.Path)`""
-    }
-})
+        if ($script:SelectedGameObj -and (Test-Path -LiteralPath $script:SelectedGameObj.Path)) {
+            Start-Process "explorer.exe" -ArgumentList "`"$($script:SelectedGameObj.Path)`""
+        }
+    })
 
 $txtSearch.Add_TextChanged({
-    $term = $txtSearch.Text.Trim().ToLower()
-    if ($null -eq $script:CurrentGameLibrary) { return }
-    if ([string]::IsNullOrWhiteSpace($term)) {
-        Refresh-GameLibraryUI -Games $script:CurrentGameLibrary
-    } else {
-        $filtered = @($script:CurrentGameLibrary | Where-Object { $_.Name.ToLower().Contains($term) -or $_.Api.ToLower().Contains($term) })
-        Refresh-GameLibraryUI -Games $filtered
-    }
-})
+        $term = $txtSearch.Text.Trim().ToLower()
+        if ($null -eq $script:CurrentGameLibrary) { return }
+        if ([string]::IsNullOrWhiteSpace($term)) {
+            Refresh-GameLibraryUI -Games $script:CurrentGameLibrary
+        }
+        else {
+            $filtered = @($script:CurrentGameLibrary | Where-Object { $_.Name.ToLower().Contains($term) -or $_.Api.ToLower().Contains($term) })
+            Refresh-GameLibraryUI -Games $filtered
+        }
+    })
 
-# --- AUTO-DESCOBERTA INSTANTÂNEA AO INICIAR ---
+# --- AUTO-DESCOBERTA INSTANT NEA AO INICIAR ---
 $form.Add_Shown({
-    $d = Get-Dict -Lang $script:CurrentLang
-    $lblStatus.Text = "● Carregando biblioteca de jogos instalados no PC..."
-    if ($script:ProgressBar) {
-        $script:ProgressBar.Value = 0
-        $script:ProgressBar.Visible = $true
-    }
-    [System.Windows.Forms.Application]::DoEvents()
-
-    $autoGames = Scan-DriveForGames -DriveLetter "ALL" -ProgressCallback {
-        param($pct, $name)
-        $lblStatus.Text = "● Carregando: $name ($pct%)..."
+        $d = Get-Dict -Lang $script:CurrentLang
+        $lblStatus.Text = "  Carregando biblioteca de jogos instalados no PC..."
         if ($script:ProgressBar) {
-            $script:ProgressBar.Value = [Math]::Min(100, [Math]::Max(0, [int]$pct))
+            $script:ProgressBar.Value = 0
+            $script:ProgressBar.Visible = $true
         }
         [System.Windows.Forms.Application]::DoEvents()
-    }
-    if ($script:ProgressBar) { $script:ProgressBar.Visible = $false }
 
-    if ($autoGames.Count -gt 0) {
-        $script:CurrentGameLibrary = $autoGames
-        Refresh-GameLibraryUI -Games $autoGames
-        $lblStatus.Text = "● " + ($d.StatusScanDone -f $autoGames.Count)
-        $gameList.Items[0].Selected = $true
-    } else {
-        $lblStatus.Text = "● " + $d.StatusReady
-    }
-})
+        $autoGames = Scan-DriveForGames -DriveLetter "ALL" -ProgressCallback {
+            param($pct, $name)
+            $lblStatus.Text = "  Carregando: $name ($pct%)..."
+            if ($script:ProgressBar) {
+                $script:ProgressBar.Value = [Math]::Min(100, [Math]::Max(0, [int]$pct))
+            }
+            [System.Windows.Forms.Application]::DoEvents()
+        }
+        if ($script:ProgressBar) { $script:ProgressBar.Visible = $false }
 
-# Inicialização
+        if ($autoGames.Count -gt 0) {
+            $script:CurrentGameLibrary = $autoGames
+            Refresh-GameLibraryUI -Games $autoGames
+            $lblStatus.Text = "  " + ($d.StatusScanDone -f $autoGames.Count)
+            $gameList.Items[0].Selected = $true
+        }
+        else {
+            $lblStatus.Text = "  " + $d.StatusReady
+        }
+    })
+
+# Inicializa  o
 Write-Status -Message "1 Click DLSS 5 v$($script:Version) pronto e operacional." -Level "OK"
 if (-not $env:DLSS5_HEADLESS) {
     [void][System.Windows.Forms.Application]::EnableVisualStyles()
