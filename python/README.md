@@ -213,4 +213,11 @@ still detected automatically, so either checkout works.
 `streamline.zip` is the one piece not committed to the repository (excluded for
 size). Drop it into `core/payload/` and it is found on startup — the launcher
 also probes the repository root and the current working directory. Without it,
-Direct and Feeder modes report a missing package.
+no mode can install: all three need the neural runtime the ZIP carries. An
+extracted copy left in the cache by an earlier run is reused, so a machine that
+has installed once before keeps working without it.
+
+The rest of the folder is live input, not decoration: the RenoDX add-on,
+OptiScaler, the ReShade installer, and the Feeder's addons, shaders and textures
+are all read from here and copied into the game. Pulling a newer payload from
+upstream changes what gets installed with no code change on this side.

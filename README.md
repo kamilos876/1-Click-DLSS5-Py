@@ -120,8 +120,14 @@ The port reads the same payload folder as the PowerShell edition —
 automatically.
 
 `streamline.zip` is the one piece not committed here (excluded for size). Drop it
-into `core/payload/` and it is picked up on startup. Without it, Direct and
-Feeder modes report a missing package.
+into `core/payload/` and it is picked up on startup. Without it — and without an
+extracted copy left in the cache by an earlier run, which is reused — no mode can
+install: every one of them needs the neural runtime the ZIP carries.
+
+Everything else in that folder — the RenoDX add-on, OptiScaler, the ReShade
+installer, and the Feeder's addons, shaders and textures — is read straight from
+`core/payload/` and copied into the game. Merging a newer payload from upstream
+therefore updates what the port installs, without touching the port's own code.
 
 ---
 
