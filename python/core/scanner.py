@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Callable
 
 from . import constants as C
-from .detection import DetectionError, resolve_game_target
+from .detection import DetectionError, detect_graphics_api, resolve_game_target
 from .gameinfo import GameIdentity, identify_game
 from .installer import is_installed
-from .utils import fixed_drives
+from .utils import fixed_drives, pe_architecture
 
 # Called with (percent, current_game_name); return False to abort the scan.
 ProgressFn = Callable[[int, str], bool]
@@ -35,6 +35,9 @@ class DiscoveredGame:
     folder_name: str = ""
     # Which injection mode is already installed here, if any.
     installed_mode: str = ""
+    # Renderer and bitness of the resolved executable.
+    graphics_api: str = ""
+    arch: str = ""
 
     @property
     def is_game(self) -> bool:
@@ -305,11 +308,15 @@ def scan_folders(
         icon_source: Path | None = None
         executable = None
         installed_mode = ""
+        graphics_api = ""
+        arch = ""
         try:
             resolved = resolve_game_target(str(game_path))
             exe_name = resolved.exe_name
             icon_source = resolved.executable
             executable = resolved.executable
+            graphics_api = detect_graphics_api(resolved.executable, resolved.install_folder)
+            arch = pe_architecture(resolved.executable)
             state = is_installed(resolved.install_folder)
             if state is not None:
                 installed_mode = state.mode
@@ -332,6 +339,8 @@ def scan_folders(
                 identity_source=identity.source,
                 folder_name=game_path.name,
                 installed_mode=installed_mode,
+                graphics_api=graphics_api,
+                arch=arch,
             )
         )
 

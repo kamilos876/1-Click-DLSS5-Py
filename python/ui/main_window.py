@@ -287,7 +287,7 @@ class MainWindow(QWidget):
         layout.addLayout(heading_row)
 
         self.tree = QTreeWidget()
-        self.tree.setColumnCount(4)
+        self.tree.setColumnCount(5)
         self.tree.setRootIsDecorated(False)
         # A flat list: without this every row is indented for absent children.
         self.tree.setIndentation(0)
@@ -295,13 +295,17 @@ class MainWindow(QWidget):
         self.tree.setIconSize(QSize(22, 22))
         self.tree.setUniformRowHeights(True)
         header = self.tree.header()
-        for column in range(3):
-            header.setSectionResizeMode(column, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        # API, compatibility and status size themselves to their content: the
+        # badge runs to ~48 characters and used to be elided mid-word, while a
+        # fixed width wide enough for it pushed the later columns off screen.
+        # Title and path stay flexible, and the path stretches into whatever is
+        # left -- it is elided in the middle and carries a tooltip anyway.
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        for column in (1, 2, 3):
+            header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         header.setStretchLastSection(True)
-        self.tree.setColumnWidth(0, 240)
-        self.tree.setColumnWidth(1, 185)
-        self.tree.setColumnWidth(2, 190)
+        self.tree.setColumnWidth(0, 210)
         # Paths are long; let the user read them without resizing columns.
         self.tree.setTextElideMode(Qt.TextElideMode.ElideMiddle)
         self.tree.setMinimumHeight(180)
@@ -608,7 +612,13 @@ class MainWindow(QWidget):
         self.lbl_log.setText(d["StatusHeading"])
         self.lbl_footer.setText(d["Footer"])
         self.tree.setHeaderLabels(
-            [d["ColGame"], d["ColStatus"], d["ColState"], d["ColPathShort"]]
+            [
+                d["ColGame"],
+                d["ColApi"],
+                d["ColStatus"],
+                d["ColState"],
+                d["ColPathShort"],
+            ]
         )
 
         self._select_language_in_combo()
@@ -852,6 +862,8 @@ class MainWindow(QWidget):
                     identity_source=game.identity_source,
                     folder_name=game.folder_name,
                     installed_mode=game.installed_mode,
+                    graphics_api=game.graphics_api,
+                    arch=game.arch,
                 )
             )
         self.library.save()
@@ -942,7 +954,12 @@ class MainWindow(QWidget):
             if needle and needle not in entry.name.lower() and needle not in entry.path.lower():
                 continue
 
-            badge = d["BadgeMissing"] if entry.missing else d.get(entry.badge_key, entry.badge_key)
+            # The list is narrow and the inspector already spells the verdict
+            # out in full, so rows carry a short label with the long form on
+            # hover.
+            badge_key = "BadgeMissing" if entry.missing else entry.badge_key
+            badge = d.get(badge_key + "Short", d.get(badge_key, badge_key))
+            badge_full = d.get(badge_key, badge_key)
             # No installed tag here: the Status column already names the mode,
             # and prefixing the badge only pushed the compatibility text out of
             # view on the one row where it mattered most.
@@ -950,15 +967,19 @@ class MainWindow(QWidget):
                 badge = f"{d['TagUncertain']} {badge}"
 
             state_text, state_color = self._entry_state(entry, d)
-            item = QTreeWidgetItem([entry.name, badge, state_text, entry.path])
-            item.setForeground(2, QBrush(QColor(state_color)))
+            item = QTreeWidgetItem(
+                [entry.name, self._entry_api(entry), badge, state_text, entry.path]
+            )
+            item.setForeground(1, QBrush(QColor(theme.FG_MUTED)))
+            item.setForeground(3, QBrush(QColor(state_color)))
             item.setData(0, Qt.ItemDataRole.UserRole, self._entry_to_game(entry, d))
             item.setToolTip(0, entry.path)
-            item.setToolTip(3, entry.path)
-            item.setForeground(1, self._badge_brush(9 if entry.missing else entry.order))
+            item.setToolTip(2, badge_full)
+            item.setToolTip(4, entry.path)
+            item.setForeground(2, self._badge_brush(9 if entry.missing else entry.order))
             item.setIcon(0, self._entry_icon(entry))
             if not entry.is_game:
-                item.setToolTip(1, entry.confidence)
+                item.setToolTip(2, entry.confidence)
             self.tree.addTopLevelItem(item)
 
         self.tree.blockSignals(False)
@@ -967,6 +988,19 @@ class MainWindow(QWidget):
         if hidden and hidden != self._last_hidden_reported:
             self.write_status(d["UncertainHidden"].format(hidden), "INFO")
         self._last_hidden_reported = hidden
+
+    @staticmethod
+    def _entry_api(entry: LibraryEntry) -> str:
+        """The API / Arch cell: which renderer the injection will hook.
+
+        Blank until a scan has resolved the executable, since neither value can
+        be known without reading its PE header.
+        """
+        if not entry.graphics_api:
+            return ""
+        if not entry.arch or entry.arch == "UNKNOWN":
+            return entry.graphics_api
+        return f"{entry.graphics_api} ({entry.arch})"
 
     def _entry_state(self, entry: LibraryEntry, d: dict[str, str]) -> tuple[str, str]:
         """The Status cell: what the app knows about this entry right now.
@@ -1005,6 +1039,8 @@ class MainWindow(QWidget):
             icon_source=Path(entry.exe_path) if entry.exe_path else None,
             badge_key=entry.badge_key,
             source_folder=entry.source_folder,
+            graphics_api=entry.graphics_api,
+            arch=entry.arch,
         )
 
     def _entry_icon(self, entry: LibraryEntry) -> QIcon:

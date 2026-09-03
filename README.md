@@ -109,7 +109,7 @@ python tests/run_all.py
 
 13 modules covering executable and graphics-API detection, install/restore round
 trips against synthetic game folders, `ReShade.ini` rewriting, translation-table
-integrity (62 log keys × 3 languages), and Qt layout at several window sizes.
+integrity (66 log keys × 3 languages), and Qt layout at several window sizes.
 
 ---
 
@@ -151,9 +151,15 @@ the core emits message keys instead of sentences, adding a language is a table,
 not a rewrite — and a test asserts all three stay in sync.
 
 **A library you can navigate.** Live search, games ordered by how well they will
-take the injection, a switchable side-by-side / stacked layout, and folders that
-are only guesses kept behind a *show items not recognised as games* toggle
-instead of cluttering the list.
+take the injection, an API / Arch column naming the renderer each injection will
+hook, a switchable side-by-side / stacked layout, and folders that are only
+guesses kept behind a *show items not recognised as games* toggle instead of
+cluttering the list.
+
+**A pre-flight check that runs before anything is written.** GPU and driver,
+write permission on the install folder, whether the game is running, and the
+payload itself — all reported into the log rather than a popup, since on Qt
+6.11.1 opening a window while a worker thread runs takes the process down.
 
 **Real game icons.** Icons are extracted from the executables themselves. Two
 Win32 details are handled that otherwise silently cost a game its icon: icon

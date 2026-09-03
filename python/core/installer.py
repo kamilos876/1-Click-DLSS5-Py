@@ -24,6 +24,8 @@ from .reshade_ini import write_dlss5_reshade_ini, write_feeder_preset
 from .utils import (
     driver_versions,
     gpu_names,
+    is_process_running,
+    is_writable,
     is_x64_pe,
     iter_files,
     pe_imported_dlls,
@@ -158,6 +160,18 @@ def check_compatibility(
     drivers = driver_versions()
     if drivers:
         report.info.append(msg("DriverVersion", ", ".join(drivers)))
+
+    # Both of these fail an install halfway through rather than up front, which
+    # is exactly the kind of thing a pre-flight check exists to catch.
+    if is_writable(target.install_folder):
+        report.info.append(msg("FolderWritable"))
+    else:
+        report.fatal.append(msg("FolderNotWritable", target.install_folder))
+
+    if is_process_running(target.exe_name):
+        report.fatal.append(msg("GameIsRunning", target.exe_name))
+    else:
+        report.info.append(msg("GameNotRunning"))
 
     try:
         payload = prepare_payload(dlss_zip_path, log)

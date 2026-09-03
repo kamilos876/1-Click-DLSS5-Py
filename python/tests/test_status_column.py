@@ -17,8 +17,11 @@ from core.library import Library, LibraryEntry
 from ui import theme
 from ui.main_window import MainWindow
 
-STATE_COLUMN = 2
-BADGE_COLUMN = 1
+# Columns: 0 game, 1 API/Arch, 2 compatibility, 3 status, 4 path.
+API_COLUMN = 1
+BADGE_COLUMN = 2
+STATE_COLUMN = 3
+PATH_COLUMN = 4
 
 
 def _entry(**kwargs) -> LibraryEntry:
@@ -32,6 +35,13 @@ def _entry(**kwargs) -> LibraryEntry:
     )
     base.update(kwargs)
     return LibraryEntry(**base)
+
+
+def headers_of(window) -> list[str]:
+    return [
+        window.tree.headerItem().text(column)
+        for column in range(window.tree.columnCount())
+    ]
 
 
 def main() -> int:
@@ -72,8 +82,33 @@ def main() -> int:
         ),
     ]
 
+    api_cases = [
+        (
+            "api with arch",
+            _entry(path=r"D:\Games\Api1", graphics_api="DXGI", arch="X64"),
+            "DXGI (X64)",
+        ),
+        (
+            "32-bit title",
+            _entry(path=r"D:\Games\Api2", graphics_api="D3D9", arch="X86"),
+            "D3D9 (X86)",
+        ),
+        (
+            "arch unknown",
+            _entry(path=r"D:\Games\Api3", graphics_api="OPENGL", arch="UNKNOWN"),
+            "OPENGL",
+        ),
+        (
+            "never scanned",
+            _entry(path=r"D:\Games\Api4"),
+            "",
+        ),
+    ]
+
     library = Library()
     for _label, entry, _expected in cases:
+        library.upsert(entry)
+    for _label, entry, _expected in api_cases:
         library.upsert(entry)
 
     missing = _entry(path=r"D:\Games\Gone")
@@ -92,7 +127,7 @@ def main() -> int:
         rows = {}
         for index in range(window.tree.topLevelItemCount()):
             item = window.tree.topLevelItem(index)
-            rows[item.text(0) + "|" + item.text(3)] = item.text(STATE_COLUMN)
+            rows[item.text(0) + "|" + item.text(PATH_COLUMN)] = item.text(STATE_COLUMN)
 
         for label, entry, expected in cases:
             key = entry.name + "|" + entry.path
@@ -111,13 +146,28 @@ def main() -> int:
             key = entry.name + "|" + entry.path
             for index in range(window.tree.topLevelItemCount()):
                 item = window.tree.topLevelItem(index)
-                if item.text(0) + "|" + item.text(3) != key:
+                if item.text(0) + "|" + item.text(PATH_COLUMN) != key:
                     continue
                 badge = item.text(BADGE_COLUMN)
                 if d["InstalledTag"] in badge:
                     problems.append(
                         f"{label}: badge repeats the install state: {badge!r}"
                     )
+
+        # The API column names the renderer the injection will hook.
+        api_rows = {}
+        for index in range(window.tree.topLevelItemCount()):
+            item = window.tree.topLevelItem(index)
+            api_rows[item.text(0) + "|" + item.text(PATH_COLUMN)] = item.text(API_COLUMN)
+
+        for label, entry, expected_api in api_cases:
+            key = entry.name + "|" + entry.path
+            got = api_rows.get(key)
+            if got != expected_api:
+                problems.append(f"{label}: API {got!r} != {expected_api!r}")
+
+        if headers_of(window)[API_COLUMN] != d["ColApi"]:
+            problems.append("API header is not ColApi")
 
         headers = [
             window.tree.headerItem().text(column)

@@ -245,6 +245,49 @@ def _glob_to_regex(pattern: str) -> str:
     return "".join(out)
 
 
+def is_writable(folder: str | Path) -> bool:
+    """Whether a file can actually be created in ``folder``.
+
+    Games under Program Files need elevation, and finding that out mid-install
+    leaves a half-injected folder behind.
+    """
+    folder = Path(folder)
+    if not folder.is_dir():
+        return False
+    probe = folder / ".dlss5_write_probe.tmp"
+    try:
+        probe.touch(exist_ok=False)
+    except OSError:
+        return False
+    try:
+        probe.unlink()
+    except OSError:
+        pass
+    return True
+
+
+def is_process_running(exe_name: str) -> bool:
+    """Whether a process with this executable name is running right now.
+
+    Injecting into a running game silently fails: Windows holds the DLLs open,
+    so the copies never land.
+    """
+    if sys.platform != "win32" or not exe_name:
+        return False
+    try:
+        completed = subprocess.run(
+            ["tasklist.exe", "/FI", f"IMAGENAME eq {exe_name}", "/NH"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    # tasklist prints an "INFO: No tasks..." line when nothing matched.
+    return exe_name.lower() in completed.stdout.lower()
+
+
 def fixed_drives() -> list[str]:
     """Root paths of ready, fixed local drives (e.g. ``C:\``)."""
     if sys.platform != "win32":

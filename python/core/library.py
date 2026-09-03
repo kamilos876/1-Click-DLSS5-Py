@@ -41,6 +41,10 @@ class LibraryEntry:
     # install mode is saved so the list shows it before the first refresh.
     missing: bool = False
     installed_mode: str = ""
+    # Renderer and bitness, shown in the list so the injection ReShade will use
+    # is visible before the game is even selected.
+    graphics_api: str = ""
+    arch: str = ""
 
     def exists(self) -> bool:
         return Path(self.path).is_dir()
@@ -64,6 +68,8 @@ class LibraryEntry:
             "identity_source": self.identity_source,
             "folder_name": self.folder_name,
             "installed_mode": self.installed_mode,
+            "graphics_api": self.graphics_api,
+            "arch": self.arch,
         }
 
     @staticmethod
@@ -81,6 +87,8 @@ class LibraryEntry:
             identity_source=str(data.get("identity_source", "folder")),
             folder_name=str(data.get("folder_name", "")),
             installed_mode=str(data.get("installed_mode", "")),
+            graphics_api=str(data.get("graphics_api", "")),
+            arch=str(data.get("arch", "")),
         )
 
 

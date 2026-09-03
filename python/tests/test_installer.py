@@ -9,7 +9,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from core import constants as C
 from core import installer
-from core.installer import InstallState, install_dlss5, is_installed, uninstall_dlss5
+from core.installer import (
+    InstallState,
+    check_compatibility,
+    install_dlss5,
+    is_installed,
+    uninstall_dlss5,
+)
 
 _PE64 = bytearray(512)
 _PE64[0:2] = b"MZ"
@@ -282,6 +288,41 @@ def test_restore_spares_a_game_s_own_streamline(tmp: Path) -> None:
         assert (game / name).read_bytes() == b"GAME-OWN", name
 
 
+def test_preflight_flags_a_running_game_and_an_unwritable_folder(tmp: Path) -> None:
+    """Both conditions fail an install midway, so the check must catch them.
+
+    A running game holds its DLLs open, and a folder needing elevation refuses
+    the copy -- either way the injection stops with the folder half written.
+    """
+    import core.installer as installer_mod
+
+    _isolate_cache(tmp)
+    zip_path = _make_payload_zip(tmp)
+    game = tmp / "PreflightGame"
+    _write_exe(game / "PreflightGame.exe")
+
+    # Healthy baseline: a real temp folder, nothing running.
+    report = check_compatibility(str(game), str(zip_path))
+    assert report.can_install, [m.key for m in report.fatal]
+
+    original_writable = installer_mod.is_writable
+    original_running = installer_mod.is_process_running
+    try:
+        installer_mod.is_writable = lambda folder: False
+        report = check_compatibility(str(game), str(zip_path))
+        assert not report.can_install
+        assert any(m.key == "FolderNotWritable" for m in report.fatal), report.fatal
+
+        installer_mod.is_writable = original_writable
+        installer_mod.is_process_running = lambda name: True
+        report = check_compatibility(str(game), str(zip_path))
+        assert not report.can_install
+        assert any(m.key == "GameIsRunning" for m in report.fatal), report.fatal
+    finally:
+        installer_mod.is_writable = original_writable
+        installer_mod.is_process_running = original_running
+
+
 if __name__ == "__main__":
     tests = [
         test_feeder_install_and_restore,
@@ -293,6 +334,7 @@ if __name__ == "__main__":
         test_backup_is_not_treated_as_a_plugin_folder,
         test_restore_removes_injected_dlls_but_spares_the_game_s_own,
         test_restore_spares_a_game_s_own_streamline,
+        test_preflight_flags_a_running_game_and_an_unwritable_folder,
     ]
     original_cache = C.CACHE_ROOT
     for func in tests:
