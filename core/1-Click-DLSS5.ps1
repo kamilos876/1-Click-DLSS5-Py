@@ -662,7 +662,10 @@ function Resolve-IssueInOneClick {
             Start-Process -FilePath "cmd.exe" -ArgumentList "/c attrib -r `"$folder\*.*`" /s /d" -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
         }
 
-        # 3. Executa a instala  o
+        # 3. Autocura preventiva de dependencias do executavel (libxess.dll, nvngx_dlss.dll, etc.)
+        Repair-GameCriticalDependencies -TargetFolder $folder -TargetExe $resolved.Executable
+
+        # 4. Executa a instalacao
         Install-Dlss5 -TargetPath $TargetPath -SelectedMode $SelectedMode
         Write-Status -Message $d.AutoFixDone -Level "OK"
         return $true
@@ -1213,7 +1216,55 @@ Subpix=0.750000
     [System.IO.File]::WriteAllText($PresetPath, $presetContent, $utf8NoBom)
 }
 
-# --- MOTOR DE INSTALA  O UNIVERSAL ---
+# --- MOTOR DE AUTOCURA E PROTECAO DE DEPENDENCIAS NATIVAS DO JOGO ---
+function Repair-GameCriticalDependencies {
+    param(
+        [Parameter(Mandatory = $true)][string]$TargetFolder,
+        [Parameter(Mandatory = $true)][string]$TargetExe
+    )
+    if (-not (Test-Path -LiteralPath $TargetExe -PathType Leaf)) { return }
+    if (-not (Test-Path -LiteralPath $TargetFolder -PathType Container)) { return }
+
+    try {
+        # 1. Inspeciona o binario do executavel para descobrir dependencias de upscalers nativos
+        $stream = [System.IO.File]::OpenRead($TargetExe)
+        $reader = New-Object System.IO.BinaryReader($stream)
+        $readLen = [Math]::Min(150MB, $stream.Length)
+        $exeBytes = $reader.ReadBytes($readLen)
+        $reader.Close()
+        $stream.Close()
+        $exeAscii = [System.Text.Encoding]::ASCII.GetString($exeBytes)
+
+        # 2. Intel XeSS (libxess.dll)
+        if ($exeAscii -match 'libxess\.dll') {
+            $xessTarget = Join-Path $TargetFolder "libxess.dll"
+            if (-not (Test-Path -LiteralPath $xessTarget -PathType Leaf)) {
+                $xessPayload = Join-Path (Get-DLSS5PayloadDirectory) "optiscaler\libxess.dll"
+                if (Test-Path -LiteralPath $xessPayload -PathType Leaf) {
+                    Copy-Item -LiteralPath $xessPayload -Destination $xessTarget -Force
+                    Write-Status -Message "Autocura Ativa: libxess.dll exigida pelo executavel restaurada automaticamente!" -Level "OK"
+                }
+            }
+        }
+
+        # 3. NVIDIA DLSS (nvngx_dlss.dll)
+        if ($exeAscii -match 'nvngx_dlss\.dll') {
+            $dlssTarget = Join-Path $TargetFolder "nvngx_dlss.dll"
+            if (-not (Test-Path -LiteralPath $dlssTarget -PathType Leaf)) {
+                $dlssPayload = Join-Path (Get-DLSS5PayloadDirectory) "nvngx_dlss.dll"
+                if (Test-Path -LiteralPath $dlssPayload -PathType Leaf) {
+                    Copy-Item -LiteralPath $dlssPayload -Destination $dlssTarget -Force
+                    Write-Status -Message "Autocura Ativa: nvngx_dlss.dll exigida pelo executavel restaurada automaticamente!" -Level "OK"
+                }
+            }
+        }
+    }
+    catch {
+        Write-Status -Message "Aviso no scanner de dependencias: $($_.Exception.Message)" -Level "WARN"
+    }
+}
+
+# --- MOTOR DE INSTALACAO UNIVERSAL ---
 function Install-Dlss5 {
     param(
         [Parameter(Mandatory = $true)][string]$TargetPath,
@@ -1515,6 +1566,9 @@ function Install-Dlss5 {
         if ($state.InjectedFiles -notcontains "ReShade.ini") { $state.InjectedFiles += "ReShade.ini" }
     }
 
+    # Autocura preventiva final pos-instalacao: garante que dependencias nativas exigidas estejam presentes
+    Repair-GameCriticalDependencies -TargetFolder $targetFolder -TargetExe $target.Executable
+
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText($stateFile, ($state | ConvertTo-Json -Depth 4), $utf8NoBom)
     
@@ -1567,37 +1621,26 @@ function Uninstall-Dlss5 {
         Remove-Item -LiteralPath $backupFolder -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    # Lista de purga cir rgica incondicional (arquivos exclusivos do DLSS 5 / ReShade / OptiScaler / Feeder)
-    # ATEN  O: NUNCA incluir DLLs nativas de jogos (sl.interposer.dll, sl.common.dll, sl.dlss.dll, nvngx_dlss.dll)
-    # pois em t tulos com DLSS/Streamline de f brica eles n o s o substitu dos e apag -los quebra o jogo!
+    # Lista de purga cirurgica estrita (ARQUIVOS EXCLUSIVOS do DLSS 5 / Feeder / ReShade / OptiScaler)
+    # NUNCA incluir ou purgar bibliotecas originais de jogos (XeSS, DLSS, Streamline, FSR, Bink, Steam)
     $purgeList = @(
-        "dxgi.dll", "d3d12.dll", "d3d9.dll", "opengl32.dll",
         "renodx-dlss5.addon64", "renodx-dlss5++.addon64", "renodx-dlss5-v3.addon64",
         "dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed.cfg", "dlss5-feed.log", "dlss5-feed.ini",
         "dlss5-feed-host.log", "dlss5-feed-crash.dmp",
         "VkLayer_feed_vk.dll", "VkLayer_feed_vk.json", "run-with-feed-layer.bat",
         "VkLayer_feed_vk32.dll", "VkLayer_feed_vk32.json", "run-with-feed-layer32.bat",
         "nvngx_dlssnr.dll", "sl.dlss_nr.dll",
-        "version.dll", "OptiScaler.ini", "OptiScaler.log",
+        "OptiScaler.ini", "OptiScaler.log",
         "ReShade.ini", "ReShadePreset.ini", "ReShade.log",
         $script:StateName, "_1Click_DLSS5_State.json", "_DLSS5_Easy_Installer_State.json", "dlss5_backup_manifest.json"
     )
 
-    # Protecao: Nunca purgar libxess.dll se o executavel do jogo possuir dependencia nativa dele!
-    $exeFile = $target.Executable
-    if (Test-Path -LiteralPath $exeFile -PathType Leaf) {
-        try {
-            $stream = [System.IO.File]::OpenRead($exeFile)
-            $reader = New-Object System.IO.BinaryReader($stream)
-            $readLen = [Math]::Min(100MB, $stream.Length)
-            $exeBytes = $reader.ReadBytes($readLen)
-            $reader.Close()
-            $stream.Close()
-            $exeAscii = [System.Text.Encoding]::ASCII.GetString($exeBytes)
-            if ($exeAscii -match 'libxess\.dll') {
-                $purgeList = @($purgeList | Where-Object { $_ -ne "libxess.dll" })
-            }
-        } catch {}
+    # Adiciona proxies a lista de purga APENAS se foram injetados pelo DLSS 5 e nao pertenciam ao jogo
+    $proxyCandidates = @("dxgi.dll", "d3d12.dll", "d3d9.dll", "opengl32.dll", "version.dll")
+    foreach ($px in $proxyCandidates) {
+        if ($savedInjected -contains $px -and ($savedBacked -notcontains $px)) {
+            $purgeList += $px
+        }
     }
 
     foreach ($inj in $savedInjected) {
@@ -1605,6 +1648,16 @@ function Uninstall-Dlss5 {
             $purgeList += $inj
         }
     }
+
+    # FILTRO ABSOLUTO DE SEGURANCA: NUNCA PURGAR RUNTIMES NATIVOS DE FABRICA DE NENHUM JOGO
+    $purgeList = @($purgeList | Where-Object {
+        $fn = $_.ToLower()
+        if ($fn -match '^(libxess.*\.dll|.*xess.*\.dll|.*xell.*\.dll)$') { return $false }
+        if ($fn -match '^nvngx_dlss(?!nr).*') { return $false } # Preserva nvngx_dlss.dll, dlssd, dlssg, deepdvc
+        if ($fn -match '^sl\.(?!dlss_nr).*') { return $false } # Preserva sl.interposer, sl.common, sl.dlss etc.
+        if ($fn -match '^(amd_.*|ffx_.*|dxcompiler\.dll|d3d12core\.dll|bink2.*|steam_api.*|onlinefix.*|xgameruntime.*)$') { return $false }
+        return $true
+    })
 
     foreach ($pf in $purgeList) {
         if ($savedBacked -contains $pf) { continue }
@@ -1635,6 +1688,9 @@ function Uninstall-Dlss5 {
         }
     }
 
+    # Autocura preventiva final pos-restauracao: garante que dependencias nativas exigidas estejam presentes
+    Repair-GameCriticalDependencies -TargetFolder $targetFolder -TargetExe $target.Executable
+
     Write-Status -Message "Jogo 100% restaurado ao estado original de fabrica!" -Level "OK"
     if (-not $env:DLSS5_HEADLESS) { [System.Windows.Forms.MessageBox]::Show($d.RestoreMsg, $d.RestoreTitle, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information) }
 }
@@ -1645,6 +1701,10 @@ function Start-GameExecutable {
         throw "ERR_EXE_NOT_FOUND: Executavel do jogo nao encontrado: $ExecutablePath"
     }
     $folder = (Split-Path -Parent $ExecutablePath)
+
+    # Autocura preventiva antes de inicializar o jogo
+    Repair-GameCriticalDependencies -TargetFolder $folder -TargetExe $ExecutablePath
+
     Write-Status -Message "Iniciando jogo: $(Split-Path -Leaf $ExecutablePath)..." -Level "INFO"
 
     $oldVkPath = $env:VK_LAYER_PATH
@@ -2542,6 +2602,12 @@ function Select-GameInInspector {
 
     $lblGameTitle.Text = $GameObj.Name
     $txtFolderPath.Text = $GameObj.Path
+
+    try {
+        $resolved = Resolve-GameTarget -TargetPath $GameObj.Path
+        Repair-GameCriticalDependencies -TargetFolder $resolved.InstallFolder -TargetExe $resolved.Executable
+    }
+    catch {}
 
     if ($GameObj.Icon) {
         $picIcon.Image = $GameObj.Icon.ToBitmap()
