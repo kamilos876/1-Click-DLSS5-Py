@@ -55,7 +55,7 @@ $script:LogFilePath = Join-Path $PSScriptRoot "1-Click-DLSS5.log"
 $script:Translations = $null
 if (Test-Path -LiteralPath $script:TranslationsPath -PathType Leaf) {
     try {
-        $jsonRaw = Get-Content -LiteralPath $script:TranslationsPath -Raw -Encoding UTF8
+        $jsonRaw = [System.IO.File]::ReadAllText($script:TranslationsPath, [System.Text.Encoding]::UTF8)
         $script:Translations = $jsonRaw | ConvertFrom-Json
     }
     catch {}
@@ -444,63 +444,63 @@ function Get-Dict {
     }
     return [pscustomobject]@{
         "Title"             = "1 CLICK DLSS 5"
-        "Tagline"           = "NEURAL CONTROL CENTER   RTX 20/30/40/50"
-        "SubBadge"          = "DirectX 9 / 10 / 11 / 12   Vulkan   OpenGL   32 & 64-bit"
+        "Tagline"           = "NEURAL CONTROL CENTER - RTX 20/30/40/50"
+        "SubBadge"          = "DirectX 9 / 10 / 11 / 12 - Vulkan - OpenGL - 32 & 64-bit"
         "Step1"             = "[1] Escolha o Jogo"
         "Step2"             = "[2] Clique em Instalar"
         "Step3"             = "[3] Inicie e Aproveite!"
-        "SearchPlaceholder" = "Pesquisar jogos..."
+        "SearchPlaceholder" = "Pesquisar jogos instalados..."
         "BtnScan"           = "ESCANEAR DISCOS"
         "BtnBrowse"         = "PROCURAR JOGO"
         "BtnDiagnose"       = "DIAGNOSTICO DO SISTEMA"
-        "BtnAutoFix"        = "[ ] RESOLVER PROBLEMA EM 1 CLIQUE"
-        "AutoFixDone"       = "Problema resolvido com sucesso e DLSS 5 instalado!"
-        "AutoFixProgress"   = "Executando correcao em 1 clique..."
+        "BtnAutoFix"        = "[RESOLVER] CORRECAO AUTOMATICA EM 1 CLIQUE"
+        "AutoFixDone"       = "Problema corrigido com sucesso! DLSS 5 instalado e pronto para jogar."
+        "AutoFixProgress"   = "Executando correcao automatica em 1 clique..."
         "LibraryTitle"      = "BIBLIOTECA DE JOGOS DETECTADOS"
         "ColGame"           = "Jogo"
         "ColApi"            = "API / Arq"
         "ColMode"           = "Modo / Status"
-        "InspectorTitle"    = "PAINEL DE CONTROLE DE INJE  O"
-        "NoGameSelected"    = "Selecione um jogo na biblioteca."
-        "FolderLabel"       = "DIRET RIO DE INSTALA  O DO JOGO:"
-        "ModeSectionTitle"  = "ESCOLHA O MODO DE INJE  O DLSS 5:"
+        "InspectorTitle"    = "PAINEL DE CONTROLE DE INJECAO"
+        "NoGameSelected"    = "Selecione um jogo na biblioteca ou procure uma pasta."
+        "FolderLabel"       = "DIRETORIO DE INSTALACAO DO JOGO:"
+        "ModeSectionTitle"  = "ESCOLHA O MODO DE INJECAO DLSS 5:"
         "AutoModeNotice"    = "O modo ideal para este jogo ja foi selecionado automaticamente!"
         "Mode1Title"        = "MODO 1: DIRETO (DLSS Nativo)"
-        "Mode1Desc"         = "Para jogos com DLSS nativo. Ativa Streamline + IA."
+        "Mode1Desc"         = "Para jogos com DLSS nativo. Ativa Streamline + IA com ganho massivo de FPS."
         "Mode2Title"        = "MODO 2: PONTE OPTISCALER (FSR2/XeSS)"
-        "Mode2Desc"         = "Redireciona chamadas FSR2/XeSS para DLSS 5."
+        "Mode2Desc"         = "Redireciona chamadas FSR2/XeSS para o modelo neural DLSS 5."
         "Mode3Title"        = "MODO 3: FEEDER UNIVERSAL (DLAA 100% Nativo)"
-        "Mode3Desc"         = "Para qualquer jogo. 100% nativo sem perda de nitidez."
+        "Mode3Desc"         = "Para qualquer jogo. Reconstrucao 100% limpa e sem perda de nitidez."
         "RequirementTitle"  = "REQUISITO NO JOGO:"
-        "ReqMode1"          = "No menu do jogo: ATIVE o DLSS (Qualidade/Desempenho)."
-        "ReqMode2"          = "No menu do jogo: ATIVE o FSR2 ou XeSS (Qualidade)."
-        "ReqMode3"          = "No menu do jogo: Deixe o DLSS/Upscaling DESLIGADO."
-        "BtnInstall"        = "[ ] 1-CLIQUE: INSTALAR DLSS 5"
-        "BtnReinstall"      = "[ ] REINSTALAR / ATUALIZAR DLSS 5"
-        "BtnLaunch"         = "[ ] INICIAR JOGO"
-        "BtnLaunchNow"      = "[ ] INICIAR JOGO AGORA"
-        "BtnUninstall"      = "[ ] RESTAURAR DE F BRICA"
+        "ReqMode1"          = "No menu de video do jogo: ATIVE o 'NVIDIA DLSS' (Qualidade/Desempenho)."
+        "ReqMode2"          = "No menu de video do jogo: ATIVE o FSR 2 ou XeSS no modo Qualidade."
+        "ReqMode3"          = "No menu de video do jogo: Deixe o DLSS/Upscaling DESLIGADO (resolucao 100% nativa)."
+        "BtnInstall"        = "[1-CLIQUE] INSTALAR DLSS 5"
+        "BtnReinstall"      = "[ATUALIZAR] REINSTALAR DLSS 5"
+        "BtnLaunch"         = "[INICIAR] INICIAR JOGO"
+        "BtnLaunchNow"      = "[INICIAR] INICIAR JOGO AGORA"
+        "BtnUninstall"      = "[RESTAURAR] RESTAURAR ORIGINAL"
         "BtnOpenFolder"     = "[PASTA] ABRIR PASTA"
         "BtnOpenLog"        = "VER LOG COMPLETO"
         "BtnClose"          = "Fechar"
         "StatusReady"       = "Pronto. Selecione um jogo para comecar."
-        "StatusScanning"    = "Escaneando discos..."
-        "StatusScanDone"    = "Varredura concluida! {0} jogos carregados."
-        "StatusInstalled"   = "[  DLSS 5 INSTALADO]"
-        "SuccessTitle"      = "Instala  o Conclu da com Sucesso"
-        "SuccessMsg"        = "O DLSS 5 foi injetado com sucesso no jogo!\n\nModo aplicado: {0}\n\nVoc  j  pode iniciar o jogo e aproveitar a qualidade m xima."
-        "RestoreTitle"      = "Restaura  o Completa"
-        "RestoreMsg"        = "Jogo restaurado ao estado original de fabrica!"
+        "StatusScanning"    = "Escaneando discos e analisando compatibilidade de jogos..."
+        "StatusScanDone"    = "Varredura concluida! {0} jogos carregados na biblioteca."
+        "StatusInstalled"   = "[DLSS 5 INSTALADO]"
+        "SuccessTitle"      = "Instalacao Concluida com Sucesso"
+        "SuccessMsg"        = "O DLSS 5 foi injetado com sucesso no jogo!`n`nModo aplicado: {0}`n`nVoce ja pode iniciar o jogo e aproveitar a qualidade maxima."
+        "RestoreTitle"      = "Restauracao Completa"
+        "RestoreMsg"        = "Jogo restaurado com 100% de integridade original de fabrica!"
         "ErrDialogTitle"    = "Assistente de Diagnostico e Resolucao"
         "ErrWhatHappened"   = "O QUE ACONTECEU:"
         "ErrProbableCause"  = "CAUSA PROVAVEL:"
         "ErrHowToFix"       = "COMO RESOLVER:"
-        "DiagTitle"         = "Diagnostico do Sistema"
+        "DiagTitle"         = "Diagnostico de Compatibilidade"
         "DiagGpuOk"         = "Placa de Video RTX detectada."
         "DiagPermsOk"       = "Permissoes de gravacao liberadas."
-        "DiagProcOk"        = "Jogo nao esta em execucao."
-        "DiagRuntimeOk"     = "Runtimes neurais DLSS 5 integros."
-        "DiagAllPass"       = "Computador e jogo 100% prontos!"
+        "DiagProcOk"        = "O jogo nao esta em execucao em segundo plano."
+        "DiagRuntimeOk"     = "Runtimes neurais e modelos DLSS 5 integros."
+        "DiagAllPass"       = "Computador e jogo 100% prontos para rodar o DLSS 5!"
     }
 }
 
@@ -1983,7 +1983,7 @@ $comboLang.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
 $comboLang.BackColor = [System.Drawing.Color]::FromArgb(22, 32, 54)
 $comboLang.ForeColor = [System.Drawing.Color]::White
 $comboLang.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 9)
-[void]$comboLang.Items.AddRange(@("Portugu s", "English", "Espa ol", "Deutsch", "Fran ais", "Italiano", "   ", "    ", "       ", "   "))
+[void]$comboLang.Items.AddRange(@("Português (Brasil)", "English (US)", "Español", "Deutsch", "Français", "Italiano", "日本語", "简体中文", "Русский", "한국어"))
 $comboLang.SelectedIndex = 0
 [void]$header.Controls.Add($comboLang)
 
@@ -2049,9 +2049,21 @@ $gameList.ForeColor = [System.Drawing.Color]::White
 $gameList.BorderStyle = "FixedSingle"
 $gameList.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
 $gameList.SmallImageList = $imageList
-[void]$gameList.Columns.Add("Jogo", 210)
-[void]$gameList.Columns.Add("API / Arq", 95)
-[void]$gameList.Columns.Add("Modo / Status", 135)
+[void]$gameList.Columns.Add("Jogo", 185)
+[void]$gameList.Columns.Add("API / Arq", 90)
+[void]$gameList.Columns.Add("Modo / Status", 130)
+$gameList.Add_Resize({
+    $avail = $gameList.ClientSize.Width
+    if ($avail -gt 320) {
+        $gameList.Columns[1].Width = 90
+        $gameList.Columns[2].Width = 130
+        $gameList.Columns[0].Width = [Math]::Max(140, $avail - 225)
+    }
+})
+try {
+    $null = Add-Type -MemberDefinition '[DllImport("uxtheme.dll", CharSet=CharSet.Unicode)] public static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);' -Name "UxThemeListView" -Namespace "Win32" -PassThru -ErrorAction SilentlyContinue
+    [Win32.UxThemeListView]::SetWindowTheme($gameList.Handle, "Explorer", $null)
+} catch {}
 [void]$leftPanel.Controls.Add($gameList)
 
 # --- COLUNA DIREITA: INSPETOR E SELETOR DE MODOS ---
@@ -2315,6 +2327,68 @@ $btnOpenFolder.Size = New-Object System.Drawing.Size(355, 38)
 Style-Button -Button $btnOpenFolder -BaseColor ([System.Drawing.Color]::FromArgb(35, 55, 90)) -HoverColor ([System.Drawing.Color]::FromArgb(50, 75, 125)) -TextColor ([System.Drawing.Color]::White)
 [void]$actionPanel.Controls.Add($btnOpenFolder)
 
+# Painel de Dica Informativa (Exibido enquanto ocioso)
+$tipPanel = New-Object System.Windows.Forms.Panel
+$tipPanel.Location = New-Object System.Drawing.Point(0, 108)
+$tipPanel.Size = New-Object System.Drawing.Size(722, 68)
+$tipPanel.BackColor = [System.Drawing.Color]::FromArgb(14, 22, 38)
+$tipPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+[void]$actionPanel.Controls.Add($tipPanel)
+$script:TipPanel = $tipPanel
+
+$lblTipBadge = New-Object System.Windows.Forms.Label
+$lblTipBadge.Text = "[DICA]"
+$lblTipBadge.Location = New-Object System.Drawing.Point(12, 12)
+$lblTipBadge.Size = New-Object System.Drawing.Size(60, 20)
+$lblTipBadge.Font = New-Object System.Drawing.Font("Segoe UI Bold", 9.5)
+$lblTipBadge.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 90)
+[void]$tipPanel.Controls.Add($lblTipBadge)
+
+$lblTipDesc = New-Object System.Windows.Forms.Label
+$lblTipDesc.Text = "Pressione a tecla [End] no jogo para alternar instantaneamente todos os efeitos ReShade (CAS, Vibrance, SMAA) e conferir a diferenca visual em tempo real!"
+$lblTipDesc.Location = New-Object System.Drawing.Point(75, 10)
+$lblTipDesc.Size = New-Object System.Drawing.Size(635, 48)
+$lblTipDesc.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+$lblTipDesc.ForeColor = [System.Drawing.Color]::FromArgb(190, 215, 245)
+[void]$tipPanel.Controls.Add($lblTipDesc)
+
+# Painel de Progresso de Instalacao em Destaque
+$progressPanel = New-Object System.Windows.Forms.Panel
+$progressPanel.Location = New-Object System.Drawing.Point(0, 108)
+$progressPanel.Size = New-Object System.Drawing.Size(722, 68)
+$progressPanel.BackColor = [System.Drawing.Color]::FromArgb(20, 30, 52)
+$progressPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+$progressPanel.Visible = $false
+[void]$actionPanel.Controls.Add($progressPanel)
+$script:ProgressPanel = $progressPanel
+
+$lblProgressStep = New-Object System.Windows.Forms.Label
+$lblProgressStep.Text = "Iniciando instalacao do DLSS 5..."
+$lblProgressStep.Location = New-Object System.Drawing.Point(14, 8)
+$lblProgressStep.Size = New-Object System.Drawing.Size(590, 20)
+$lblProgressStep.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 9.5)
+$lblProgressStep.ForeColor = [System.Drawing.Color]::FromArgb(130, 205, 255)
+[void]$progressPanel.Controls.Add($lblProgressStep)
+$script:LblProgressStep = $lblProgressStep
+
+$lblProgressPct = New-Object System.Windows.Forms.Label
+$lblProgressPct.Text = "0%"
+$lblProgressPct.Location = New-Object System.Drawing.Point(610, 8)
+$lblProgressPct.Size = New-Object System.Drawing.Size(95, 20)
+$lblProgressPct.Font = New-Object System.Drawing.Font("Segoe UI Bold", 10.5)
+$lblProgressPct.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
+$lblProgressPct.TextAlign = [System.Drawing.ContentAlignment]::MiddleRight
+[void]$progressPanel.Controls.Add($lblProgressPct)
+$script:LblProgressPct = $lblProgressPct
+
+$mainProgressBar = New-Object System.Windows.Forms.ProgressBar
+$mainProgressBar.Location = New-Object System.Drawing.Point(14, 34)
+$mainProgressBar.Size = New-Object System.Drawing.Size(692, 22)
+$mainProgressBar.Style = [System.Windows.Forms.ProgressBarStyle]::Continuous
+$mainProgressBar.Value = 0
+[void]$progressPanel.Controls.Add($mainProgressBar)
+$script:MainProgressBar = $mainProgressBar
+
 # --- RODAP  MINIMALISTA COM LOG E STATUS ---
 $footer = New-Object System.Windows.Forms.Panel
 $footer.Location = New-Object System.Drawing.Point(0, 790)
@@ -2382,7 +2456,7 @@ function Update-UiLanguage {
     $btnOpenLog.Text = $d.BtnOpenLog
 
     $btnInstallText = $d.BtnInstall
-    if ([string]::IsNullOrWhiteSpace($btnInstallText)) { $btnInstallText = "[ ] 1-CLIQUE: INSTALAR DLSS 5" }
+    if ([string]::IsNullOrWhiteSpace($btnInstallText)) { $btnInstallText = "[⚡] 1-CLIQUE: INSTALAR DLSS 5" }
     $btnInstall.Text = $btnInstallText
 
     $gameList.Columns[0].Text = $d.ColGame
@@ -2405,7 +2479,7 @@ $comboLang.Add_SelectedIndexChanged({
         }
     })
 
-# --- EVENTOS E LOGICA DE INSPE  O ---
+# --- EVENTOS E LOGICA DE INSPEC AO ---
 function Select-GameInInspector {
     param([pscustomobject]$GameObj)
     if ($null -eq $GameObj) { return }
@@ -2448,16 +2522,18 @@ function Select-GameInInspector {
         $lblGameStatus.ForeColor = [System.Drawing.Color]::FromArgb(255, 205, 90)
         
         $btnText = $d.BtnReinstall
-        if ([string]::IsNullOrWhiteSpace($btnText)) { $btnText = "[ ] REINSTALAR / ATUALIZAR DLSS 5" }
+        if ([string]::IsNullOrWhiteSpace($btnText)) { $btnText = "[⚡] REINSTALAR / ATUALIZAR DLSS 5" }
         $btnInstall.Text = $btnText
+        Style-Button -Button $btnInstall -BaseColor ([System.Drawing.Color]::FromArgb(65, 140, 45)) -HoverColor ([System.Drawing.Color]::FromArgb(85, 175, 55)) -TextColor ([System.Drawing.Color]::White)
     }
     else {
         $lblGameStatus.Text = "API: " + $GameObj.Api + "   Modo Ideal: " + $modeText
         $lblGameStatus.ForeColor = [System.Drawing.Color]::FromArgb(118, 225, 125)
         
         $btnText = $d.BtnInstall
-        if ([string]::IsNullOrWhiteSpace($btnText)) { $btnText = "[ ] 1-CLIQUE: INSTALAR DLSS 5" }
+        if ([string]::IsNullOrWhiteSpace($btnText)) { $btnText = "[⚡] 1-CLIQUE: INSTALAR DLSS 5" }
         $btnInstall.Text = $btnText
+        Style-Button -Button $btnInstall -BaseColor ([System.Drawing.Color]::FromArgb(118, 185, 0)) -HoverColor ([System.Drawing.Color]::FromArgb(140, 220, 0)) -TextColor ([System.Drawing.Color]::Black)
     }
 
     Write-Status -Message "Jogo selecionado: $($GameObj.Name) [$($GameObj.Api)]" -Level "INFO"
@@ -2493,7 +2569,7 @@ function Refresh-GameLibraryUI {
         $isInst = Test-GameDlss5Installed -GameFolder $g.Path
         $modeLabel = ""
         if ($isInst) {
-            $modeLabel = "[ ] DLSS 5 Ativo"
+            $modeLabel = "[✓] DLSS 5 Ativo"
         }
         else {
             if ($g.Upscaler -eq "NATIVE_DLSS") {
@@ -2579,10 +2655,23 @@ $btnInstall.Add_Click({
 
         $oldText = $btnInstall.Text
         $btnInstall.Enabled = $false
-        $btnInstall.Text = "INSTALANDO DLSS 5..."
+        $btnLaunch.Enabled = $false
+        $btnUninstall.Enabled = $false
+        $btnBrowse.Enabled = $false
+        $btnScan.Enabled = $false
+        $btnInstall.Text = "⏳ INSTALANDO DLSS 5..."
         $form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
+
+        if ($script:TipPanel) { $script:TipPanel.Visible = $false }
+        if ($script:ProgressPanel) {
+            $script:ProgressPanel.Visible = $true
+            $script:MainProgressBar.Value = 5
+            $script:LblProgressPct.Text = "5%"
+            $script:LblProgressStep.Text = "Validando jogo e permissoes de escrita..."
+            [System.Windows.Forms.Application]::DoEvents()
+        }
         if ($script:ProgressBar) {
-            $script:ProgressBar.Value = 0
+            $script:ProgressBar.Value = 5
             $script:ProgressBar.Visible = $true
         }
 
@@ -2590,11 +2679,17 @@ $btnInstall.Add_Click({
             Install-Dlss5 -TargetPath $script:SelectedGameObj.Path -SelectedMode $script:SelectedMode -ProgressCallback {
                 param($pct, $msg)
                 Write-Status -Message $msg -Level "INFO"
+                if ($script:ProgressPanel) {
+                    $clamped = [Math]::Min(100, [Math]::Max(0, [int]$pct))
+                    $script:MainProgressBar.Value = $clamped
+                    $script:LblProgressPct.Text = "$clamped%"
+                    $script:LblProgressStep.Text = $msg
+                }
                 if ($script:ProgressBar) {
                     $script:ProgressBar.Value = [Math]::Min(100, [Math]::Max(0, [int]$pct))
                 }
                 [System.Windows.Forms.Application]::DoEvents()
-                Start-Sleep -Milliseconds 120
+                Start-Sleep -Milliseconds 180
             }
             Select-GameInInspector -GameObj $script:SelectedGameObj
         }
@@ -2602,9 +2697,16 @@ $btnInstall.Add_Click({
             Show-FriendlyErrorDialog -Ex $_.Exception -Context "Instalacao do DLSS 5" -TargetPath $script:SelectedGameObj.Path -SelectedMode $script:SelectedMode
         }
         finally {
+            Start-Sleep -Milliseconds 250
+            if ($script:ProgressPanel) { $script:ProgressPanel.Visible = $false }
+            if ($script:TipPanel) { $script:TipPanel.Visible = $true }
             if ($script:ProgressBar) { $script:ProgressBar.Visible = $false }
             $form.Cursor = [System.Windows.Forms.Cursors]::Default
             $btnInstall.Enabled = $true
+            $btnLaunch.Enabled = $true
+            $btnUninstall.Enabled = $true
+            $btnBrowse.Enabled = $true
+            $btnScan.Enabled = $true
             $btnInstall.Text = $oldText
         }
     })
