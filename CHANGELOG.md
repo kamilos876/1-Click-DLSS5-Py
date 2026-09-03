@@ -2,6 +2,60 @@
 
 All notable changes, architectural overhauls, and bug fixes for the **1 Click DLSS 5** project are documented in this file.
 
+## [v2.6.0-release] - 2026-09-03
+
+### 🛡️ Vigilant Game Integrity Engine & Universal Runtime Auto-Healing
+- **Permanent Vendor Runtime Protection (`libxess.dll`, `nvngx_dlss.dll`, etc.):**
+  - Resolved a critical bug where `Uninstall-Dlss5` or mode transitions could purge `libxess.dll` (Intel XeSS) in titles that natively depend on it (*Forza Horizon 5/6*, *Cyberpunk 2077*, *Shadow of the Tomb Raider*, *Deathloop*).
+  - Implemented an absolute deletion blacklist protecting all vendor runtime libraries: `libxess*.dll`, `*xess*.dll`, `*xell*.dll`, `nvngx_dlss*.dll` (except DLSS-NR model), `sl.*.dll` (except DLSS-NR plugin), `amd_fidelityfx_*.dll`, `ffx_*.dll`, `amd_ags_*.dll`, `dxcompiler.dll`, `d3d12core.dll`, `bink2*.dll`, and `steam_api*.dll`.
+- **Proactive PE Dependency Scanner & Auto-Healing Engine (`Repair-GameCriticalDependencies`):**
+  - Added binary PE Import Table inspection that scans the target game executable for upscaler dependencies.
+  - If a game imports `libxess.dll` or `nvngx_dlss.dll` but the library is missing from the directory, the engine automatically restores it from the embedded high-performance payload before any Windows "DLL not found" error can occur.
+  - Auto-healing hooks integrated at 4 key points: during installation (`Install-Dlss5`), during uninstallation (`Uninstall-Dlss5`), upon library item selection (`Select-GameInInspector`), and immediately before game boot (`Start-GameExecutable` / `[▶] INICIAR JOGO`).
+- **Bidirectional Backup Restoration on Mode Switch:**
+  - Cross-mode switching now guarantees that any native file previously replaced by another mode is restored from `_DLSS5_Backup` before installing the new mode.
+
+### 🎨 Prominent Installation Progress Bar & Status Engine
+- **In-Line Visual Progress Panel:**
+  - Integrated a dedicated, high-visibility 692px progress bar and status panel directly within `$actionPanel` (in the user's primary line of sight).
+  - Granular 6-stage milestone tracker (15% -> 35% -> 55% -> 70% -> 85% -> 95% -> 100%) displaying descriptive, real-time operation steps and a high-contrast percentage badge.
+  - Interactive button locking (`⏳ INSTALANDO DLSS 5...`) preventing duplicate clicks during deployment.
+- **Enhanced Installation Success Modal Dialog (`Show-InstallationSuccessDialog`):**
+  - Added modern modal window reporting deployment status, active mode, game executable, and hotkey guide.
+  - Dedicated `[▶] Iniciar Jogo Agora` button to launch the game directly from the dialog.
+
+### 🎮 ReShade Shader Suite Integration (Modes 1 & 3)
+- **Turnkey Post-Processing Filters:**
+  - Replicated battle-tested shaders across Mode 1 (Direct) and Mode 3 (Universal Feeder):
+    - **AMD FidelityFX Contrast Adaptive Sharpening (CAS):** Crystal-clear texture acuity and fine edge definition.
+    - **Vibrance:** Dynamic, natural color saturation enhancement.
+    - **Subpixel Morphological Anti-Aliasing (SMAA) & FXAA:** Ultra-clean edge anti-aliasing.
+  - Shaders are deployed pre-configured but default-disabled in `ReShadePreset.ini`, allowing immediate toggle without visual disruption.
+- **Global Hotkey Architecture:**
+  - `[End]` key: Master toggle to instantly turn all ReShade shaders ON/OFF for real-time A/B visual comparisons.
+  - `[Home]` key: Opens the in-game ReShade configuration overlay menu.
+
+### 🌐 UTF-8 BOM Stabilization & Multi-Language Typography
+- **Encoding Corruption Fix:**
+  - Re-encoded `core/assets/translations.json` and `core/1-Click-DLSS5.ps1` with UTF-8 BOM (`0xEF, 0xBB, 0xBF`), eliminating Windows-1252 code page collisions and corrupted accented characters (`Português`, `Español`, `Français`, `DIRETÓRIO`, `INJEÇÃO`).
+  - Switched dictionary loading to `[System.IO.File]::ReadAllText(..., [System.Text.Encoding]::UTF8)`.
+  - Restored clean, crisp symbol glyphs across all interactive buttons (`[⚡]`, `[✓]`, `[▶]`, `[↩]`, `[📁]`).
+
+### 🖥️ UI & Dark Theme Polish
+- **Eliminated White Horizontal Scrollbar:**
+  - Optimized ListView column widths (185px, 90px, 130px = 405px < 432px usable width), completely eliminating the bright white Win32 system scrollbar glitch on dark mode.
+  - Hooked `Add_Resize` dynamic autosizing event to seamlessly adjust column widths on window resize and maximize.
+  - Applied `uxtheme.dll` `SetWindowTheme("Explorer")` to render sleek dark scrollbars.
+- **Streamlined Single-Executable Distribution:**
+  - Removed redundant `.bat` and `.vbs` launchers.
+  - Unified deployment around the standalone native 64-bit binary `1-Click-DLSS5.exe` with embedded high-res icon and DPI awareness.
+
+### 🧪 Automated Quality Assurance
+- **Comprehensive Audit Suite Expanded to 29 Tests (100% PASS):**
+  - Added **Test 29**: Validates native runtime integrity, ensuring `libxess.dll` is preserved across Mode 1 installation, uninstallation, and simulated external deletion with auto-healing.
+
+---
+
 ## [v2.5.3-release] - 2026-09-02
 
 ### 🛡️ Critical Engine Bug Fixes & Architecture Hardening

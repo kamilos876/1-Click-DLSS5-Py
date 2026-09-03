@@ -1,7 +1,7 @@
 ﻿<#
 .SYNOPSIS
-    1 Click DLSS 5 v2.5.2-beta   Universal Neural Control Center
-    Auto-Descoberta Instant nea de Jogos (Steam, Epic, GOG, Xbox, EA), Motor de Resolu  o em 1 Clique (Auto-Fix),
+    1 Click DLSS 5 v2.6.0-release — Universal Neural Control Center
+    Auto-Descoberta Instantânea de Jogos (Steam, Epic, GOG, Xbox, EA), Motor de Resolução em 1 Clique (Auto-Fix),
     Suporte Universal a APIs (DirectX 9/10/11/12, Vulkan, OpenGL), 32 e 64-bit, 10 Idiomas Nativos.
 #>
 
@@ -14,15 +14,17 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
-# --- ATIVA  O DE HIGH-DPI PER-MONITOR V2 (CRISTAL CLEAR EM 1080P/1440P/4K) ---
+# --- ATIVACAO DE HIGH-DPI PER-MONITOR V2 (CRISTAL CLEAR EM 1080P/1440P/4K) ---
 try {
     if (-not ([System.Management.Automation.PSTypeName]'DLSS5DpiHelper').Type) {
         Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
 public class DLSS5DpiHelper {
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", SetLastError = true)]
     public static extern bool SetProcessDpiAwarenessContext(int dpiFlag);
+    [DllImport("uxtheme.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
+    public static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
     public static void EnableHighDpi() {
         try { SetProcessDpiAwarenessContext(-4); } catch {}
     }
@@ -33,8 +35,8 @@ public class DLSS5DpiHelper {
 }
 catch {}
 
-# --- CONFIGURA  ES GLOBAIS ---
-$script:Version = "2.5.3-release"
+# --- CONFIGURACOES GLOBAIS ---
+$script:Version = "2.6.0-release"
 $script:CurrentLang = "PT"
 $script:AddOnName = "renodx-dlss5.addon64"
 $script:StateName = "_dlss5_install_state.json"
