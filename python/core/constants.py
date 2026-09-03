@@ -150,15 +150,48 @@ PURGE_LIST = [
     "_DLSS5_Easy_Installer_State.json", "dlss5_backup_manifest.json",
 ]
 
+# Streamline modules that are versioned together with sl.interposer.dll. When a
+# game ships its own Streamline these must not be replaced: the interposer
+# resolves entry points against its matching build, and a mismatched set makes
+# the game fail to start.
+NATIVE_STREAMLINE_FILES = {
+    "sl.interposer.dll",
+    "sl.common.dll",
+    "sl.dlss.dll",
+    "sl.dlss_d.dll",
+    "sl.dlss_g.dll",
+    "sl.deepdvc.dll",
+    "sl.nis.dll",
+    "sl.pcl.dll",
+    "sl.reflex.dll",
+}
+
 # Names a game may legitimately ship itself. A restore only deletes one of these
 # when this install is recorded as having injected it -- otherwise a game that
 # shipped its own copy, and was installed over without a backup being taken,
 # would lose the file for good.
+#
+# The whole Streamline family belongs here: titles like The Witcher 3, Cyberpunk
+# 2077 and STALKER 2 ship their own sl.*.dll, and a minimal install never copies
+# those, so it never backs them up either.
 GAME_OWNED_FILES = {
     "nvngx_dlss.dll",
     "nvngx_dlssd.dll",
     "nvngx_dlssg.dll",
+    "nvngx_dlssn.dll",
     "libxess.dll",
+    "libxell.dll",
+    "xess.dll",
+    "sl.common.dll",
+    "sl.interposer.dll",
+    "sl.deepdvc.dll",
+    "sl.dlss.dll",
+    "sl.dlss_d.dll",
+    "sl.dlss_g.dll",
+    "sl.nis.dll",
+    "sl.pcl.dll",
+    "sl.reflex.dll",
+    "sl.config.json",
 }
 
 # Files removed before a Direct-mode install so Feeder/OptiScaler hooks cannot clash.

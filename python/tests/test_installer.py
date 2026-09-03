@@ -250,6 +250,38 @@ def test_restore_removes_injected_dlls_but_spares_the_game_s_own(tmp: Path) -> N
         assert not (full / leftover).exists(), f"{leftover} survived the restore"
 
 
+def test_restore_spares_a_game_s_own_streamline(tmp: Path) -> None:
+    """Titles that ship their own sl.*.dll must not lose it to a restore.
+
+    The Witcher 3, Cyberpunk 2077 and STALKER 2 all ship Streamline. A minimal
+    install never copies those files, so it never backs them up -- and the purge
+    list names every one of them. Without GAME_OWNED_FILES covering the family,
+    installing and then restoring deleted the game's own runtime for good.
+    """
+    _isolate_cache(tmp)
+    zip_path = _make_payload_zip(tmp)
+    shipped = ("sl.interposer.dll", "sl.common.dll", "sl.dlss.dll", "libxess.dll")
+
+    game = tmp / "StreamlineGame"
+    _write_exe(game / "StreamlineGame.exe")
+    for name in shipped:
+        (game / name).write_bytes(b"GAME-OWN")
+
+    # Minimal: these are never touched, so they must simply survive.
+    install_dlss5(str(game), str(zip_path), False, False, C.MODE_DIRECT)
+    uninstall_dlss5(str(game))
+    for name in shipped:
+        assert (game / name).read_bytes() == b"GAME-OWN", name
+
+    # Full: these are overwritten, so the backup must put the originals back.
+    for name in shipped:
+        (game / name).write_bytes(b"GAME-OWN")
+    install_dlss5(str(game), str(zip_path), False, True, C.MODE_DIRECT)
+    uninstall_dlss5(str(game))
+    for name in shipped:
+        assert (game / name).read_bytes() == b"GAME-OWN", name
+
+
 if __name__ == "__main__":
     tests = [
         test_feeder_install_and_restore,
@@ -260,6 +292,7 @@ if __name__ == "__main__":
         test_payload_falls_back_to_extracted_cache,
         test_backup_is_not_treated_as_a_plugin_folder,
         test_restore_removes_injected_dlls_but_spares_the_game_s_own,
+        test_restore_spares_a_game_s_own_streamline,
     ]
     original_cache = C.CACHE_ROOT
     for func in tests:

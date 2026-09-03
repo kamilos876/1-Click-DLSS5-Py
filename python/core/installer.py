@@ -21,7 +21,13 @@ from .detection import (
 from .messages import Message, msg
 from .payload import LogFn, PayloadError, get_reshade_setup, install_reshade, prepare_payload, _noop
 from .reshade_ini import write_dlss5_reshade_ini, write_feeder_preset
-from .utils import driver_versions, gpu_names, is_x64_pe, iter_files
+from .utils import (
+    driver_versions,
+    gpu_names,
+    is_x64_pe,
+    iter_files,
+    pe_imported_dlls,
+)
 
 
 class InstallError(Exception):
@@ -212,6 +218,8 @@ def install_dlss5(
     graphics_api = detect_graphics_api(target.executable, folder)
     log(msg("GraphicsApiDetected", graphics_api), "INFO")
 
+    _repair_missing_dependencies(target, folder, log)
+
     injected_dll = ""
     if install_reshade_runtime:
         setup = get_reshade_setup(log)
@@ -297,6 +305,34 @@ def _copy_with_backup(
         state.injected_files.append(track_name)
 
 
+def _repair_missing_dependencies(
+    target: GameTarget, folder: Path, log: LogFn
+) -> None:
+    """Restore an upscaler runtime the executable imports but no longer has.
+
+    Forza Horizon links libxess.dll straight into the executable, so a copy lost
+    to an older uninstall leaves Windows refusing to start the game at all. The
+    import table says exactly what the binary needs, so a missing one can be put
+    back from the payload.
+    """
+    imported = pe_imported_dlls(target.executable)
+    if not imported:
+        return
+
+    for name, source in (
+        ("libxess.dll", C.PAYLOAD_ROOT / "optiscaler" / "libxess.dll"),
+        ("nvngx_dlss.dll", C.PAYLOAD_ROOT / "nvngx_dlss.dll"),
+    ):
+        if name not in imported:
+            continue
+        if (folder / name).is_file():
+            continue
+        if not source.is_file():
+            continue
+        shutil.copy2(source, folder / name)
+        log(msg("DependencyRestored", name), "OK")
+
+
 def _install_direct(
     target: GameTarget,
     folder: Path,
@@ -316,6 +352,18 @@ def _install_direct(
         state.injected_files.append("ReShade.ini")
 
     files = C.FULL_FILES if full_package else C.MINIMAL_FILES
+
+    # A game that ships its own Streamline has an interposer matched to the
+    # exact runtime it was built against. Overwriting it with ours makes the
+    # game fail at startup on a missing entry point (The Witcher 3 is the
+    # known case), so the game's own Streamline is left in place and only the
+    # neural plugin is added beside it.
+    if (folder / "sl.interposer.dll").is_file():
+        skipped = [name for name in files if name in C.NATIVE_STREAMLINE_FILES]
+        if skipped:
+            files = [name for name in files if name not in C.NATIVE_STREAMLINE_FILES]
+            log(msg("NativeStreamlineKept", len(skipped)), "INFO")
+
     for name in files:
         _copy_with_backup(payload_folder / name, folder / name, backup_folder, state, name)
 
@@ -531,7 +579,10 @@ def uninstall_dlss5(target_path: str, log: LogFn = _noop) -> None:
 
     state_file.unlink(missing_ok=True)
 
-    for directory in ("host64", "reshade-shaders"):
+    # layer-x64/layer-x86 hold the Feeder's Vulkan layer, shipped since the
+    # v2.x payloads; they are listed here so a restore leaves nothing behind
+    # when the newer payload is dropped in.
+    for directory in ("host64", "reshade-shaders", "layer-x64", "layer-x86"):
         path = folder / directory
         if path.is_dir():
             shutil.rmtree(path, ignore_errors=True)

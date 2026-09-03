@@ -13,7 +13,7 @@ from core.detection import (
     resolve_game_target,
 )
 from core.messages import render
-from core.utils import is_x64_pe
+from core.utils import is_x64_pe, pe_imported_dlls
 from core.scanner import candidate_dirs, classify
 
 # Minimal 64-bit PE: MZ header, e_lfanew at 0x40, PE signature, AMD64 machine.
@@ -279,6 +279,63 @@ def test_game_named_after_an_ignored_keyword_survives(tmp: Path) -> None:
     assert target.exe_name == "Tools Up.exe", target.exe_name
 
 
+def _write_importing_exe(path: Path, dll_names: list[str]) -> None:
+    """Write a real PE image whose import directory names ``dll_names``."""
+    import struct
+
+    section_rva, section_raw = 0x1000, 0x400
+    blob = bytearray()
+    offsets: dict[str, int] = {}
+    for name in dll_names:
+        offsets[name] = len(blob)
+        blob += name.encode() + b"\0"
+    descriptors = len(blob) + (-len(blob)) % 4
+    blob += b"\0" * (descriptors - len(blob))
+    for name in dll_names:
+        blob += struct.pack("<IIIII", 0, 0, 0, section_rva + offsets[name], 0)
+    blob += b"\0" * 20   # terminating descriptor
+
+    data = bytearray(section_raw + len(blob) + 16)
+    data[0:2] = b"MZ"
+    struct.pack_into("<i", data, 60, 0x80)
+    pe = 0x80
+    data[pe:pe + 4] = b"PE\0\0"
+    struct.pack_into("<H", data, pe + 4, 0x8664)
+    struct.pack_into("<H", data, pe + 6, 1)
+    struct.pack_into("<H", data, pe + 20, 240)
+    optional = pe + 24
+    struct.pack_into("<H", data, optional, 0x20B)
+    struct.pack_into("<I", data, optional + 112 + 8, section_rva + descriptors)
+    section = optional + 240
+    data[section:section + 8] = b".text\0\0\0"
+    struct.pack_into("<IIII", data, section + 8, len(blob), section_rva, len(blob), section_raw)
+    data[section_raw:section_raw + len(blob)] = blob
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(bytes(data))
+
+
+def test_pe_imports_are_read_from_the_import_table(tmp: Path) -> None:
+    """Dependencies come from the import directory, not from a string search."""
+    exe = tmp / "forza.exe"
+    _write_importing_exe(exe, ["libxess.dll", "kernel32.dll"])
+    assert pe_imported_dlls(exe) == {"libxess.dll", "kernel32.dll"}
+
+
+def test_a_mention_is_not_an_import(tmp: Path) -> None:
+    """A binary that merely contains the text must not count as importing it."""
+    exe = tmp / "mentions.exe"
+    _write_importing_exe(exe, ["kernel32.dll"])
+    exe.write_bytes(exe.read_bytes() + b"log: libxess.dll not found\0")
+    assert "libxess.dll" not in pe_imported_dlls(exe)
+
+
+def test_imports_of_a_non_pe_file_are_empty(tmp: Path) -> None:
+    junk = tmp / "junk.exe"
+    junk.write_bytes(b"not a PE at all")
+    assert pe_imported_dlls(junk) == set()
+
+
 def _run_synthetic() -> None:
     import tempfile
 
@@ -290,6 +347,9 @@ def _run_synthetic() -> None:
         test_non_executable_is_rejected,
         test_64bit_outranks_32bit_when_both_ship,
         test_game_named_after_an_ignored_keyword_survives,
+        test_pe_imports_are_read_from_the_import_table,
+        test_a_mention_is_not_an_import,
+        test_imports_of_a_non_pe_file_are_empty,
         test_missing_path_raises,
         test_upscaler_priority,
         test_own_injected_files_are_not_counted,

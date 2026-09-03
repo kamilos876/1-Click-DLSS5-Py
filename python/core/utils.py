@@ -64,6 +64,103 @@ def pe_architecture(path: str | Path) -> str:
     return ARCH_PE
 
 
+def pe_imported_dlls(path: str | Path) -> set[str]:
+    """Names of the DLLs an executable imports, lowercased.
+
+    Read from the PE import directory rather than by scanning the file for
+    strings: a game that merely mentions "libxess.dll" in a log format or a
+    config parser does not depend on it, and treating that as a dependency
+    would restore files a game never wanted.
+
+    Returns an empty set for anything that is not a readable PE image.
+    """
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read()
+    except OSError:
+        return set()
+
+    try:
+        return _parse_imports(data)
+    except (struct.error, IndexError, ValueError):
+        # A malformed or packed header is not worth a traceback; it just means
+        # we cannot tell what the file needs.
+        return set()
+
+
+def _parse_imports(data: bytes) -> set[str]:
+    """Walk a PE image's import directory. Raises on a malformed header."""
+    if len(data) < 64 or data[:2] != b"MZ":
+        return set()
+
+    pe_offset = struct.unpack_from("<i", data, 60)[0]
+    if pe_offset < 0 or pe_offset + 24 > len(data):
+        return set()
+    if data[pe_offset:pe_offset + 4] != b"PE\0\0":
+        return set()
+
+    number_of_sections = struct.unpack_from("<H", data, pe_offset + 6)[0]
+    optional_size = struct.unpack_from("<H", data, pe_offset + 20)[0]
+    optional_offset = pe_offset + 24
+    if optional_offset + optional_size > len(data):
+        return set()
+
+    magic = struct.unpack_from("<H", data, optional_offset)[0]
+    if magic == 0x20B:      # PE32+
+        directories_offset = optional_offset + 112
+    elif magic == 0x10B:    # PE32
+        directories_offset = optional_offset + 96
+    else:
+        return set()
+
+    # Data directory 1 is the import table.
+    import_rva = struct.unpack_from("<I", data, directories_offset + 8)[0]
+    if not import_rva:
+        return set()
+
+    sections = _pe_sections(data, optional_offset + optional_size, number_of_sections)
+    table_offset = _rva_to_offset(import_rva, sections)
+    if table_offset is None:
+        return set()
+
+    names: set[str] = set()
+    # Descriptors are 20 bytes each, terminated by an all-zero one.
+    while table_offset + 20 <= len(data):
+        name_rva = struct.unpack_from("<I", data, table_offset + 12)[0]
+        if name_rva == 0:
+            break
+        name_offset = _rva_to_offset(name_rva, sections)
+        if name_offset is not None and name_offset < len(data):
+            end = data.find(b"\0", name_offset)
+            if end != -1:
+                names.add(data[name_offset:end].decode("ascii", "ignore").lower())
+        table_offset += 20
+
+    return names
+
+
+def _pe_sections(data: bytes, offset: int, count: int) -> list[tuple[int, int, int]]:
+    """Section headers as (virtual_address, virtual_size, raw_offset) triples."""
+    sections: list[tuple[int, int, int]] = []
+    for index in range(count):
+        header = offset + index * 40
+        if header + 40 > len(data):
+            break
+        virtual_size, virtual_address, _raw_size, raw_offset = struct.unpack_from(
+            "<IIII", data, header + 8
+        )
+        sections.append((virtual_address, virtual_size, raw_offset))
+    return sections
+
+
+def _rva_to_offset(rva: int, sections: list[tuple[int, int, int]]) -> int | None:
+    """Map a relative virtual address onto a file offset."""
+    for virtual_address, virtual_size, raw_offset in sections:
+        if virtual_address <= rva < virtual_address + max(virtual_size, 1):
+            return raw_offset + (rva - virtual_address)
+    return None
+
+
 def is_valid_pe(path: str | Path) -> bool:
     """True for any Windows executable image, whatever its architecture."""
     return pe_architecture(path) in (ARCH_X64, ARCH_X86, ARCH_PE)
