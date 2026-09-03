@@ -360,6 +360,36 @@ def _repair_missing_dependencies(
         log(msg("DependencyRestored", name), "OK")
 
 
+def _install_shaders(folder: Path, state: InstallState, log: LogFn) -> None:
+    """Copy the ReShade shader set and its textures into the game.
+
+    Every mode gets these. The Feeder needs its own chain to render at all, and
+    the optional filters (CAS, SMAA, FXAA, Vibrance, Tonemap) are useful beside
+    a Direct or bridge install too -- they ship switched off, so they cost
+    nothing until the user turns one on in the overlay. It also gives ReShade a
+    populated effect path, instead of the "no effect files found" warning an
+    empty one produces.
+    """
+    feeder_payload = C.PAYLOAD_ROOT / "feeder"
+    shader_dir = folder / "reshade-shaders" / "Shaders"
+    texture_dir = folder / "reshade-shaders" / "Textures"
+    shader_dir.mkdir(parents=True, exist_ok=True)
+    texture_dir.mkdir(parents=True, exist_ok=True)
+
+    src_shaders = feeder_payload / "shaders"
+    if src_shaders.is_dir():
+        shutil.copytree(src_shaders, shader_dir, dirs_exist_ok=True)
+        log(msg("ShadersInstalled"), "OK")
+
+    src_textures = feeder_payload / "textures"
+    if src_textures.is_dir():
+        shutil.copytree(src_textures, texture_dir, dirs_exist_ok=True)
+        log(msg("TexturesInstalled"), "OK")
+
+    if "reshade-shaders" not in state.injected_files:
+        state.injected_files.append("reshade-shaders")
+
+
 def _install_direct(
     target: GameTarget,
     folder: Path,
@@ -377,6 +407,13 @@ def _install_direct(
     write_dlss5_reshade_ini(target_ini, feeder_mode=False)
     if "ReShade.ini" not in state.injected_files:
         state.injected_files.append("ReShade.ini")
+
+    # The filters ship with every mode: DLSS 5 runs through the add-on here, so
+    # nothing is enabled, but they are one click away in the overlay.
+    _install_shaders(folder, state, log)
+    write_feeder_preset(folder / "ReShadePreset.ini", feeder_mode=False)
+    if "ReShadePreset.ini" not in state.injected_files:
+        state.injected_files.append("ReShadePreset.ini")
 
     files = C.FULL_FILES if full_package else C.MINIMAL_FILES
 
@@ -432,6 +469,11 @@ def _install_optiscaler(
     write_dlss5_reshade_ini(target_ini, feeder_mode=False)
     if "ReShade.ini" not in state.injected_files:
         state.injected_files.append("ReShade.ini")
+
+    _install_shaders(folder, state, log)
+    write_feeder_preset(folder / "ReShadePreset.ini", feeder_mode=False)
+    if "ReShadePreset.ini" not in state.injected_files:
+        state.injected_files.append("ReShadePreset.ini")
 
     opti_root = C.PAYLOAD_ROOT / "optiscaler"
     opti_src = opti_root / "OptiScaler.dll"
@@ -533,23 +575,7 @@ def _install_feeder(
             _payload_source(name, payload_folder), folder / name, backup_folder, state, name
         )
 
-    shader_dir = folder / "reshade-shaders" / "Shaders"
-    texture_dir = folder / "reshade-shaders" / "Textures"
-    shader_dir.mkdir(parents=True, exist_ok=True)
-    texture_dir.mkdir(parents=True, exist_ok=True)
-
-    src_shaders = feeder_payload / "shaders"
-    if src_shaders.is_dir():
-        shutil.copytree(src_shaders, shader_dir, dirs_exist_ok=True)
-        log(msg("ShadersInstalled"), "OK")
-
-    src_textures = feeder_payload / "textures"
-    if src_textures.is_dir():
-        shutil.copytree(src_textures, texture_dir, dirs_exist_ok=True)
-        log(msg("TexturesInstalled"), "OK")
-
-    if "reshade-shaders" not in state.injected_files:
-        state.injected_files.append("reshade-shaders")
+    _install_shaders(folder, state, log)
 
     cfg_src = feeder_payload / "dlss5-feed.cfg"
     if cfg_src.is_file():

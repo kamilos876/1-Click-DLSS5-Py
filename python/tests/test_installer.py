@@ -323,6 +323,43 @@ def test_preflight_flags_a_running_game_and_an_unwritable_folder(tmp: Path) -> N
         installer_mod.is_process_running = original_running
 
 
+def test_every_mode_ships_the_filters_but_only_feeder_runs_a_chain(tmp: Path) -> None:
+    """CAS, SMAA, FXAA and friends belong with every install.
+
+    They cost nothing switched off, they save the user hunting for shaders, and
+    a populated effect path spares ReShade's "no effect files found" warning.
+    What must NOT follow is a filter running by itself: only Feeder mode needs a
+    technique active, because only it renders through a shader.
+    """
+    _isolate_cache(tmp)
+    zip_path = _make_payload_zip(tmp)
+    filters = {"CAS.fx", "SMAA.fx", "FXAA.fx", "Vibrance.fx", "Tonemap.fx"}
+
+    for mode in (C.MODE_DIRECT, C.MODE_OPTISCALER, C.MODE_FEEDER):
+        game = tmp / f"Game_{mode}"
+        _write_exe(game / "Game.exe")
+        install_dlss5(str(game), str(zip_path), False, False, mode)
+
+        shaders = game / "reshade-shaders" / "Shaders"
+        present = {path.name for path in shaders.glob("*.fx")}
+        assert filters <= present, f"{mode}: missing {sorted(filters - present)}"
+
+        preset = game / "ReShadePreset.ini"
+        assert preset.is_file(), f"{mode}: no preset written"
+        active = next(
+            line
+            for line in preset.read_text(encoding="utf-8").splitlines()
+            if line.startswith("Techniques=")
+        )
+        if mode == C.MODE_FEEDER:
+            assert "DLSS5_Feed" in active, active
+        else:
+            assert active == "Techniques=", f"{mode}: {active!r} should be empty"
+        # Nothing optional may be switched on by itself in any mode.
+        for name in ("CAS", "SMAA", "FXAA", "Vibrance", "Tonemap"):
+            assert name not in active, f"{mode}: {name} enabled by default"
+
+
 if __name__ == "__main__":
     tests = [
         test_feeder_install_and_restore,
@@ -335,6 +372,7 @@ if __name__ == "__main__":
         test_restore_removes_injected_dlls_but_spares_the_game_s_own,
         test_restore_spares_a_game_s_own_streamline,
         test_preflight_flags_a_running_game_and_an_unwritable_folder,
+        test_every_mode_ships_the_filters_but_only_feeder_runs_a_chain,
     ]
     original_cache = C.CACHE_ROOT
     for func in tests:

@@ -104,13 +104,18 @@ _OPTIONAL_FILTERS = [
 ]
 
 
-def _technique_sorting() -> str:
-    """The Feeder chain, followed by whichever optional filters are installed."""
+def _technique_sorting(feeder_mode: bool = True) -> str:
+    """The installed filters, led by the Feeder chain when that mode is active."""
     shaders = C.PAYLOAD_ROOT / "feeder" / "shaders"
     available = [
-        entry for entry, filename in _OPTIONAL_FILTERS if (shaders / filename).is_file()
+        entry
+        for entry, filename in _OPTIONAL_FILTERS
+        if (shaders / filename).is_file()
+        # lumenite_TRAA belongs to the Feeder's own shader set.
+        and (feeder_mode or not filename.startswith("lumenite_"))
     ]
-    return ",".join([_ACTIVE_TECHNIQUES] + available)
+    lead = [_ACTIVE_TECHNIQUES] if feeder_mode else []
+    return ",".join(lead + available)
 
 
 _PRESET_BODY = "\r\n".join([
@@ -130,13 +135,61 @@ _PRESET_BODY = "\r\n".join([
 ])
 
 
-def feeder_preset_content() -> str:
-    """ReShadePreset.ini for Feeder mode: the chain, its order, and its tuning."""
+# Stock settings for the optional filters, so switching one on in the overlay
+# gives a sane starting point rather than whatever ReShade defaults to.
+_FILTER_DEFAULTS = "\r\n".join([
+    "",
+    "[CAS.fx]",
+    "Contrast=0.000000",
+    "Sharpening=1.000000",
+    "Sharpness=0.400000",
+    "",
+    "[Vibrance.fx]",
+    "Vibrance=0.280000",
+    "VibranceRGBBalance=1.000000,1.000000,1.000000",
+    "",
+    "[Tonemap.fx]",
+    "Bleach=0.000000",
+    "Defog=0.000000",
+    "Exposure=0.000000",
+    "Gamma=1.000000",
+    "Saturation=0.000000",
+    "",
+    "[SMAA.fx]",
+    "CornerRounding=25",
+    "DebugOutput=0",
+    "DepthEdgeDetectionThreshold=0.010000",
+    "EdgeDetectionThreshold=0.080000",
+    "EdgeDetectionType=1",
+    "MaxSearchSteps=32",
+    "MaxSearchStepsDiag=16",
+    "PredicationScale=2.000000",
+    "PredicationStrength=0.400000",
+    "PredicationThreshold=0.010000",
+    "",
+    "[FXAA.fx]",
+    "EdgeThreshold=0.166000",
+    "EdgeThresholdMin=0.083300",
+    "Subpix=0.750000",
+])
+
+
+def feeder_preset_content(feeder_mode: bool = True) -> str:
+    """ReShadePreset.ini: which techniques run, in what order, and their tuning.
+
+    In Feeder mode the Lumenite -> DLSS5_Feed chain must run, so it is the only
+    thing in Techniques. In Direct and bridge modes nothing has to run at all --
+    DLSS 5 works through the add-on, not through a shader -- so Techniques is
+    empty and the filters are merely offered.
+    """
+    active = _ACTIVE_TECHNIQUES if feeder_mode else ""
+    sorting = _technique_sorting(feeder_mode)
     header = "\r\n".join([
-        f"Techniques={_ACTIVE_TECHNIQUES}",
-        f"TechniqueSorting={_technique_sorting()}",
+        f"Techniques={active}",
+        f"TechniqueSorting={sorting}",
     ])
-    return header + _PRESET_BODY
+    body = _PRESET_BODY if feeder_mode else ""
+    return header + body + _FILTER_DEFAULTS
 
 
 def write_dlss5_reshade_ini(ini_path: Path, feeder_mode: bool = False) -> None:
@@ -208,6 +261,8 @@ def _build_sections(feeder_mode: bool) -> str:
     return f"{general}\n{_OVERLAY_SECTION}\n\n[ADDON]\n{addon_line}\n\n{_RENODX_SECTION}\n"
 
 
-def write_feeder_preset(preset_path: Path) -> None:
-    """Write ReShadePreset.ini pinning the LumeniteFX -> DLSS5_Feed chain."""
-    preset_path.write_text(feeder_preset_content(), encoding="utf-8", newline="")
+def write_feeder_preset(preset_path: Path, feeder_mode: bool = True) -> None:
+    """Write ReShadePreset.ini for the given mode."""
+    preset_path.write_text(
+        feeder_preset_content(feeder_mode), encoding="utf-8", newline=""
+    )

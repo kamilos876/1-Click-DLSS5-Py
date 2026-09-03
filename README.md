@@ -177,6 +177,13 @@ than one walk per family, so the full depth stays affordable: an Unreal title
 keeps its DLSS DLL under `Engine/Plugins/.../Binaries/ThirdParty/`, well past
 the depth a shallow scan would reach.
 
+**ReShade filters in every mode.** CAS, SMAA, FXAA, Vibrance, Tonemap and
+Splitscreen are installed alongside all three injection modes, listed in the
+overlay but switched off — DLSS 5 itself runs through the add-on, not a shader,
+so nothing changes the image until the user turns a filter on. It also leaves
+ReShade with a populated effect path instead of the "no effect files found"
+warning an empty one produces.
+
 **Runtime integrity checks.** A game's own Streamline, XeSS and DLSS DLLs are
 never deleted by a restore unless this install is on record as having injected
 them, and Direct mode leaves a game's native `sl.interposer.dll` alone rather
